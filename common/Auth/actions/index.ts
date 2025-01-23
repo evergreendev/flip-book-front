@@ -16,13 +16,21 @@ export async function handleLogin(prevState: { error?: string | null, redirect?:
     const res = await fetch(process.env.BACKEND_URL + sessionsResourceName, {
         method: "POST",
         body: JSON.stringify({email, password}),
+        headers: {
+            "Content-Type": "application/json",
+        }
     });
+    if (res.status !== 200) return {error: "Invalid Credentials. Please Try again"};
+
     const data = await res.json();
+
+
 
     const cookieStore = await cookies();
     cookieStore.set(userTokenKey, data[userTokenKey], {
         secure: process.env.NODE_ENV === "production",
-        sameSite: true,
+        sameSite: "strict",
+        httpOnly: true
     });
 
     return {error: null, redirect: true}
@@ -46,8 +54,6 @@ export async function handleRegister(prevState: {
         password: formData.get("password"),
     }
 
-    console.log(newUser);
-
     const res = await fetch(process.env.BACKEND_URL + usersResourceName, {
         method: "POST",
         headers: {"Content-Type": "application/json", "Authorization": `Bearer ${token}`},
@@ -64,7 +70,6 @@ export async function handleRegister(prevState: {
 }
 
 export async function getUsers() {
-    console.log(`${process.env.BACKEND_URL}${usersResourceName}`)
     const res = await fetch(`${process.env.BACKEND_URL}${usersResourceName}`)
     return await res.json();
 }
