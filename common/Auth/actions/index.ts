@@ -56,9 +56,15 @@ export async function handleRegister(prevState: {
 
     const res = await fetch(process.env.BACKEND_URL + usersResourceName, {
         method: "POST",
-        headers: {"Content-Type": "application/json", "Authorization": `Bearer ${token}`},
+        headers: {"Content-Type": "application/json", "Authorization": `Bearer ${token?.value}`},
         body: JSON.stringify(newUser)
     });
+
+    if (res.status === 401) {
+        cookieStore.delete('user_token');
+    }
+    if (res.status !== 200) return {...prevState, error: "Invalid Credentials. Please Try again"};
+
     if (res.status !== 200) {
         return {
             error: "Something went wrong please try again",
