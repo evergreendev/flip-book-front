@@ -1,5 +1,5 @@
 "use server"
-import RegisterForm from "@/common/Auth/components/RegisterForm";
+import RegisterForm from "@/app/common/Auth/components/RegisterForm";
 
 const Page = async () => {
     return <div>

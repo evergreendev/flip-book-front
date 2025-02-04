@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
-import AdminRoute from "@/common/Auth/AdminRoute";
-import LogoutButton from "@/common/Auth/components/LogoutButton";
-import {handleLogout} from "@/common/Auth/actions";
+import AdminRoute from "@/app/common/Auth/AdminRoute";
+import LogoutButton from "@/app/common/Auth/components/LogoutButton";
+import {handleLogout} from "@/app/common/Auth/actions";
 
 export const metadata: Metadata = {
     title: "Create Next App",
