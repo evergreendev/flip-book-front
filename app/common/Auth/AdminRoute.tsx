@@ -3,7 +3,13 @@ import { cookies } from 'next/headers'
 import {redirect} from "next/navigation";
 
 async function validateToken(token: string): Promise<boolean> {
-    const res = await fetch(`${process.env.BACKEND_URL}/session/validate/${token}`, {});
+    const res = await fetch(`${process.env.BACKEND_URL}/session/validate`, {
+        method: "POST",
+        body: JSON.stringify({token}),
+        headers: {
+            "Content-Type": "application/json",
+        }
+    });
     if (!res.ok) return false;
 
     const data = await res.json();
