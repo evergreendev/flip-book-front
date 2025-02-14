@@ -1,5 +1,4 @@
 "use client"
-import { useRouter } from "next/navigation";
 import {
     ColumnDef,
     flexRender,
@@ -33,7 +32,6 @@ export function DataTable<TData, TValue>({
         getCoreRowModel: getCoreRowModel(),
         getPaginationRowModel: getPaginationRowModel(),
     })
-    const router = useRouter();
 
     return (
         <div className="rounded-md border">
@@ -63,7 +61,6 @@ export function DataTable<TData, TValue>({
                                 <TableRow
                                     key={row.id}
                                     data-state={row.getIsSelected() && "selected"}
-                                    onClick={() => router.push(`/admin/dashboard/edit/${(row.original as {id:string}).id}`)}
                                 >
                                     {row.getVisibleCells().map((cell) => (
                                         <TableCell key={cell.id}>

@@ -3,6 +3,7 @@ import React, {useEffect, useRef, useState} from "react";
 import HTMLFlipBook from "react-pageflip";
 import {PDFDocumentProxy, RenderTask} from "pdfjs-dist";
 import {RenderParameters} from "pdfjs-dist/types/src/display/api";
+import {ChevronLeft, ChevronRight} from "lucide-react";
 
 // eslint-disable-next-line react/display-name
 const Page = React.forwardRef(({currPage, pdfUrl, shouldRender}: {
@@ -37,7 +38,7 @@ const Page = React.forwardRef(({currPage, pdfUrl, shouldRender}: {
         }
 
         async function renderPage(canvas: HTMLCanvasElement) {
-            try{
+            try {
                 // Import pdfjs-dist dynamically for client-side rendering.
                 // @ts-expect-error: TypeScript cannot verify dynamic import for pdfjs-dist.
                 const pdfJS = await import('pdfjs-dist/build/pdf');
@@ -116,17 +117,22 @@ const Page = React.forwardRef(({currPage, pdfUrl, shouldRender}: {
                         str: string
                     }) => {
 
-                        if (item.str.toLowerCase().includes(".com") || item.str.toLowerCase().includes(".edu")) {
+                        if (item.str.toLowerCase().includes(".com")
+                            || item.str.toLowerCase().includes(".edu")
+                            || item.str.toLowerCase().includes(".net")
+                            || item.str.toLowerCase().includes(".org")) {
                             const transform = item.transform;
                             const x = transform[4];
                             const y = transform[5];
                             const width = item.width;
                             const height = item.height;
                             canvasContext.fillStyle = "orange";
+                            canvasContext.globalAlpha = .5;
                             // @ts-expect-error silly tuple nonsense
                             canvasContext.fillRect(...convertToCanvasCoords([x, y, width, height]))
                         }
                     })
+                    canvasContext.globalAlpha = 1;
                     //canvasContext.fillStyle = "orange";
                     //canvasContext.fillRect(20, 50, canvas.width, canvas.height);
                 }
@@ -135,9 +141,9 @@ const Page = React.forwardRef(({currPage, pdfUrl, shouldRender}: {
                 if (!isCancelled) {
                     await pdf.destroy();
                 }
-            }catch (e){
+            } catch (e) {
                 console.log(e)
-            }finally {
+            } finally {
                 await pdf.destroy();
             }
 
@@ -196,7 +202,7 @@ export default function Flipbook({pdfUrl}: { pdfUrl: string }) {
 
         // Cleanup function to cancel the render task if the component unmounts.
         return () => {
-            if (pdf){
+            if (pdf) {
                 pdf.destroy();
             }
         };
@@ -217,31 +223,42 @@ export default function Flipbook({pdfUrl}: { pdfUrl: string }) {
         setRenderedPages(updatedRenderedPages);
     }, [currPage]);
 
-    return <div className="overflow-hidden py-24">
-        {/*        <button onClick={() =>
+    return <div className="flex justify-between items-center">
+        <button onClick={() => {
+            if(!book.current) return;
+            // @ts-expect-error I'm not looking up the type for this
+            book.current.pageFlip().flipPrev();
+        }} className="text-white"><ChevronLeft/></button>
+        <div className="overflow-hidden mx-auto my-4 h-[90vh] aspect-[28/19]">
+            {/*        <button onClick={() =>
             book.current.pageFlip().flipNext()}>Next page
         </button>*/}
 
-        {/* @ts-expect-error Ignore required attributes since they're not really required*/}
-        <HTMLFlipBook width={550}
-                      height={733}
-                      size="stretch"
-                      minWidth={315}
-                      maxWidth={1000}
-                      minHeight={400}
-                      maxHeight={1533}
-                      maxShadowOpacity={0.5}
-                      showCover={true}
-                      onFlip={(page: { data: number }) => {
-                          setCurrPage(page.data);
-                      }}
-                      mobileScrollSupport={true}
-                      ref={book}>
-            {Array.from({length: maxPage}).map((_, index) => {
-                return (
-                    <Page key={index} currPage={index + 1} pdfUrl={pdfUrl} shouldRender={renderedPages.has(index)}/>
-                );
-            })}
-        </HTMLFlipBook>
-    </div>;
+            {/* @ts-expect-error Ignore required attributes since they're not really required*/}
+            <HTMLFlipBook width={550}
+                          height={733}
+                          size="stretch"
+                          minWidth={315}
+                          minHeight={400}
+                          maxShadowOpacity={0.5}
+                          showCover={true}
+                          onFlip={(page: { data: number }) => {
+                              setCurrPage(page.data);
+                          }}
+                          mobileScrollSupport={true}
+                          ref={book}>
+                {Array.from({length: maxPage}).map((_, index) => {
+                    return (
+                        <Page key={index} currPage={index + 1} pdfUrl={pdfUrl} shouldRender={renderedPages.has(index)}/>
+                    );
+                })}
+            </HTMLFlipBook>
+        </div>
+        <button onClick={() => {
+            if(!book.current) return;
+            // @ts-expect-error I'm not looking up the type for this
+            book.current.pageFlip().flipNext();
+        }} className="text-white"><ChevronRight/></button>
+    </div>
+
 }

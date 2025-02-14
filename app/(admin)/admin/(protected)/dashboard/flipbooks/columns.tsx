@@ -12,13 +12,14 @@ import {
     DropdownMenuSeparator,
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
+import {useRouter} from "next/navigation";
 
 export type FlipBook = {
-    pdf_path: string|null,
-    path_name: string|null,
-    password: string|null,
+    pdf_path: string | null,
+    path_name: string | null,
+    password: string | null,
     id: string,
-    title: string|null,
+    title: string | null,
     status: "draft" | "published" | "private"
 }
 
@@ -32,27 +33,34 @@ export const columns: ColumnDef<FlipBook>[] = [{
     },
     {
         id: "actions",
-        cell: ({ row }) => {
+        cell: ({row}) => {
             const flipBook = row.original
+
+
+            // eslint-disable-next-line react-hooks/rules-of-hooks
+            const router = useRouter();
 
             return (
                 <DropdownMenu>
                     <DropdownMenuTrigger asChild>
                         <Button variant="ghost" className="h-8 w-8 p-0">
                             <span className="sr-only">Open menu</span>
-                            <MoreHorizontal className="h-4 w-4" />
+                            <MoreHorizontal className="h-4 w-4"/>
                         </Button>
                     </DropdownMenuTrigger>
                     <DropdownMenuContent align="end">
+                        <DropdownMenuItem onClick={() => router.push(`/admin/dashboard/edit/${(row.original as {id:string}).id}`)}>Edit Flipbook</DropdownMenuItem>
+                        <DropdownMenuSeparator/>
                         <DropdownMenuLabel>Actions</DropdownMenuLabel>
                         <DropdownMenuItem
-                            onClick={() => navigator.clipboard.writeText(flipBook.id)}
+                            onClick={(e) => {
+                                e.preventDefault();
+                                navigator.clipboard.writeText(process.env.NEXT_PUBLIC_BASE_URL + "/" + flipBook.path_name)
+                            }}
                         >
-                            Copy payment ID
+                            Copy Flipbook URL
                         </DropdownMenuItem>
-                        <DropdownMenuSeparator />
                         <DropdownMenuItem>View customer</DropdownMenuItem>
-                        <DropdownMenuItem>View payment details</DropdownMenuItem>
                     </DropdownMenuContent>
                 </DropdownMenu>
             )

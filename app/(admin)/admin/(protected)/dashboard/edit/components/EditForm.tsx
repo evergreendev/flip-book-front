@@ -58,14 +58,14 @@ const EditForm = ({flipBook, pdfPath}: { flipBook: FlipBook, pdfPath: string }) 
         setCurrTitle(e.currentTarget.value);
 
         if (!path_name && !pathHasBeenEdited){
-            setCurrPath(slugify(e.currentTarget.value));
+            setCurrPath(slugify(e.currentTarget.value, {lower: true}));
         }
     }
 
     function handleUpdatePath(e: { currentTarget: { value: string; }; }) {
         if (!canEditPath) return;
 
-        setCurrPath(e.currentTarget.value);
+        setCurrPath(e.currentTarget.value.toLowerCase());
         setPathHasBeenEdited(true);
     }
 
@@ -80,7 +80,7 @@ const EditForm = ({flipBook, pdfPath}: { flipBook: FlipBook, pdfPath: string }) 
 
         setPathHasBeenEdited(false);
 
-        setCurrPath(path_name||slugify(currTitle))
+        setCurrPath(path_name||slugify(currTitle,{lower: true}));
     }
 
     return <div className="flex items-center justify-center min-h-screen p-4 w-full">
