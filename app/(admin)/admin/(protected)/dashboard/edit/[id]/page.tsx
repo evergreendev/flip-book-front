@@ -1,6 +1,6 @@
 import {cookies} from "next/headers";
 import {FlipBook} from "@/app/(admin)/admin/(protected)/dashboard/flipbooks/columns";
-import Flipbook from "@/app/common/Flipbooks/components/Flipbook";
+import EditForm from "@/app/(admin)/admin/(protected)/dashboard/edit/components/EditForm";
 
 //todo move this somewhere better
 
@@ -24,14 +24,14 @@ type Args = {
 }
 
 export default async function Page({ params: paramsPromise }: Args) {
-    const { id = 'home' } = await paramsPromise
+    const { id = "" } = await paramsPromise
     const data = await getData(id)
 
     if (!data) return null;
 
     return (
         <div className="container mx-auto py-10">
-            {data.pdf_path && <Flipbook pdfUrl={process.env.PDF_URL + "/" + data.pdf_path}/>}
+            {data.pdf_path && <EditForm flipBook={data} pdfPath={process.env.PDF_URL + "/" + data.pdf_path}/>}
         </div>
     )
 }
