@@ -1,16 +1,61 @@
 "use client"
-import React, {useEffect, useRef, useState} from "react";
+import React, {useContext, useEffect, useRef, useState} from "react";
 import HTMLFlipBook from "react-pageflip";
 import {PDFDocumentProxy, RenderTask} from "pdfjs-dist";
 import {RenderParameters} from "pdfjs-dist/types/src/display/api";
 import {ChevronLeft, ChevronRight} from "lucide-react";
+import ModeContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/ModeContext";
+
+async function processOverlays(
+    currPage: number,
+    pdf: PDFDocumentProxy,
+    mode: { flipBookId: string; }) {
+    const page = await pdf.getPage(currPage);
+    const structureTree = await page.getTextContent();
+
+    const newOverlays: Overlay[] = [];
+
+    structureTree.items.forEach((item) => {
+
+        if (!("str" in item)) return;
+
+        if (item.str.toLowerCase().includes(".com")
+            || item.str.toLowerCase().includes(".fun")
+            || item.str.toLowerCase().includes(".edu")
+            || item.str.toLowerCase().includes(".net")
+            || item.str.toLowerCase().includes(".org")) {
+            const transform = item.transform;
+            const x = transform[4];
+            const y = transform[5];
+            const width = item.width;
+            const height = item.height;
+
+            newOverlays.push({
+                flipbook_id: mode.flipBookId,
+                h: height,
+                id: null,
+                page: currPage,
+                url: item.str,
+                w: width,
+                x: x,
+                y: y
+            })
+        }
+    })
+
+    return newOverlays;
+}
+
 
 // eslint-disable-next-line react/display-name
-const Page = React.forwardRef(({currPage, pdfUrl, shouldRender}: {
+const Page = React.forwardRef(({currPage, pdfUrl, shouldRender, overlays, setOverlays}: {
     currPage: number,
     pdfUrl: string,
-    shouldRender?: boolean
+    shouldRender?: boolean,
+    overlays: Overlay[][],
+    setOverlays: (value: Overlay[][]) => void;
 }, ref: React.ForwardedRef<HTMLDivElement>) => {
+    const mode = useContext(ModeContext);
     const canvasRef = useRef<HTMLCanvasElement>(null);
     const renderTaskRef = useRef<RenderTask>(null);
     const pdfRef = useRef<PDFDocumentProxy>(null);
@@ -89,54 +134,22 @@ const Page = React.forwardRef(({currPage, pdfUrl, shouldRender}: {
                     const scale = 1.5;
                     return [x * scale, canvas.height - ((y + height) * scale), width * scale, height * scale];
                 }
-
-                if (canvasContext) {
-                    const structureTree = await page.getTextContent();
-
-                    //console.log(page);
-                    /*                const operatorList = await page.getOperatorList();
-
-                                    const imgIndex = operatorList.fnArray.indexOf(OPS.paintImageXObject);
-                                    const imgArgs = operatorList.argsArray[imgIndex];
-                                    const data = page.objs.get(imgArgs[0]);*/
+                if (canvasContext && overlays[currPage - 1]?.length > 0) {
 
                     canvasContext.fillStyle = "orange";
-                    //canvasContext.fillRect(...convertToCanvasCoords([42.76, 45.388, 699, 467]))
-                    /*                console.log(OPS);
-                                    console.log(operatorList);
+                    canvasContext.globalAlpha = .5;
 
-                                    console.log(page);
-                                    console.log(data);*/
-
-
-                    // @ts-expect-error don't know
-                    structureTree.items.forEach((item: {
-                        transform: number[];
-                        width: number;
-                        height: number;
-                        str: string
-                    }) => {
-
-                        if (item.str.toLowerCase().includes(".com")
-                            || item.str.toLowerCase().includes(".edu")
-                            || item.str.toLowerCase().includes(".net")
-                            || item.str.toLowerCase().includes(".org")) {
-                            const transform = item.transform;
-                            const x = transform[4];
-                            const y = transform[5];
-                            const width = item.width;
-                            const height = item.height;
-                            canvasContext.fillStyle = "orange";
-                            canvasContext.globalAlpha = .5;
-                            // @ts-expect-error silly tuple nonsense
-                            canvasContext.fillRect(...convertToCanvasCoords([x, y, width, height]))
-                        }
+                    overlays[currPage - 1].forEach(overlay => {
+                        // @ts-expect-error silly tuple nonsense
+                        canvasContext.fillRect(...convertToCanvasCoords([overlay.x, overlay.y, overlay.w, overlay.h]))
                     })
+
+
                     canvasContext.globalAlpha = 1;
+
                     //canvasContext.fillStyle = "orange";
                     //canvasContext.fillRect(20, 50, canvas.width, canvas.height);
                 }
-
 
                 if (!isCancelled) {
                     await pdf.destroy();
@@ -164,24 +177,58 @@ const Page = React.forwardRef(({currPage, pdfUrl, shouldRender}: {
                 pdfRef.current.destroy().then(() => console.log("destroyed"));
             }
         };
-    }, [currPage, pdfUrl, shouldRender]);
+    }, [currPage, mode.flipBookId, mode.mode, overlays, pdfUrl, setOverlays, shouldRender]);
+
+    function handleMouseMove(e: React.MouseEvent) {
+        e.preventDefault();
+        console.log(e)
+    }
 
     return (
         <div ref={ref}>
-            <canvas ref={canvasRef}/>
+            <canvas ref={canvasRef} onMouseMove={handleMouseMove}/>
         </div>
     );
 });
 
-export default function Flipbook({pdfUrl}: { pdfUrl: string }) {
-    const [maxPage, setMaxPage] = useState(1);
+export type Overlay = {
+    id: string | null,
+    flipbook_id: string,
+    x: number,
+    y: number,
+    w: number,
+    h: number,
+    url: string,
+    page: number
+}
+
+export default function Flipbook({pdfUrl, initialOverlays, setFormOverlays}: {
+    pdfUrl: string,
+    initialOverlays: Overlay[] | null,
+    setFormOverlays?: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void
+}) {
+    const formattedInitialOverlays: Overlay[][] = [];
+    if (initialOverlays && initialOverlays?.length > 0) {
+        initialOverlays.forEach(overlay => {
+            if (formattedInitialOverlays[overlay.page-1]){
+                formattedInitialOverlays[overlay.page-1].push(overlay);
+            } else {
+                formattedInitialOverlays[overlay.page-1] = [overlay];
+            }
+        })
+    }
+
+    const [maxPage, setMaxPage] = useState<number|null>(null);
     const [currPage, setCurrPage] = useState(1);
     const [renderedPages, setRenderedPages] = useState(new Set<number>());
+    const [overlays, setOverlays] = useState<Overlay[][]>(formattedInitialOverlays);
+    const mode = useContext(ModeContext);
     /*    const [width, setWidth] = useState(0);
         const [height, setHeight] = useState(0);*/
 
-    const book = useRef(null);
 
+
+    const book = useRef(null);
 
     useEffect(() => {
         let pdf: PDFDocumentProxy;
@@ -196,7 +243,22 @@ export default function Flipbook({pdfUrl}: { pdfUrl: string }) {
 
             // Load the PDF document.
             pdf = await pdfJS.getDocument(pdfUrl).promise;
+
+
+            if (initialOverlays?.length === 0 && mode.mode === "edit" && setFormOverlays){
+                const initialOverlayArray: React.SetStateAction<Overlay[][]> = [];
+
+                for (let i = 0; i < pdf.numPages; i++) {
+                    const overlays = await processOverlays(i+1, pdf, mode);
+                    initialOverlayArray.push(overlays);
+                }
+
+                setOverlays(initialOverlayArray);
+                setFormOverlays(initialOverlayArray.flatMap(x => x));
+            }
+
             setMaxPage(pdf.numPages);
+
             await pdf.destroy();
         })();
 
@@ -209,6 +271,8 @@ export default function Flipbook({pdfUrl}: { pdfUrl: string }) {
     }, [pdfUrl]);
 
     useEffect(() => {
+        if (!maxPage) return;
+
         const updatedRenderedPages = new Set(renderedPages);
         updatedRenderedPages.add(currPage);
         updatedRenderedPages.add(currPage + 1);
@@ -221,11 +285,13 @@ export default function Flipbook({pdfUrl}: { pdfUrl: string }) {
         updatedRenderedPages.add(currPage - 4);
 
         setRenderedPages(updatedRenderedPages);
-    }, [currPage]);
+    }, [maxPage, currPage]);
+
+    if (!maxPage) return null;
 
     return <div className="flex justify-between items-center">
         <button onClick={() => {
-            if(!book.current) return;
+            if (!book.current) return;
             // @ts-expect-error I'm not looking up the type for this
             book.current.pageFlip().flipPrev();
         }} className="text-white"><ChevronLeft/></button>
@@ -249,13 +315,14 @@ export default function Flipbook({pdfUrl}: { pdfUrl: string }) {
                           ref={book}>
                 {Array.from({length: maxPage}).map((_, index) => {
                     return (
-                        <Page key={index} currPage={index + 1} pdfUrl={pdfUrl} shouldRender={renderedPages.has(index)}/>
+                        <Page setOverlays={setOverlays} overlays={overlays} key={index} currPage={index + 1}
+                              pdfUrl={pdfUrl} shouldRender={renderedPages.has(index)}/>
                     );
                 })}
             </HTMLFlipBook>
         </div>
         <button onClick={() => {
-            if(!book.current) return;
+            if (!book.current) return;
             // @ts-expect-error I'm not looking up the type for this
             book.current.pageFlip().flipNext();
         }} className="text-white"><ChevronRight/></button>

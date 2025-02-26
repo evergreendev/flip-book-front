@@ -2,13 +2,18 @@
 
 import {useActionState, useEffect, useRef, useState} from "react";
 import {handleEdit} from "@/app/(admin)/admin/(protected)/dashboard/edit/actions/edit";
-import Flipbook from "@/app/common/Flipbooks/components/Flipbook";
+import Flipbook, {Overlay} from "@/app/common/Flipbooks/components/Flipbook";
 import {FlipBook} from "@/app/(admin)/admin/(protected)/dashboard/flipbooks/columns";
 import { LockKeyhole, LockKeyholeOpen} from "lucide-react"
 import slugify from "slugify";
 import {useRouter} from "next/navigation";
+import ModeContext from "../context/ModeContext";
 
-const EditForm = ({flipBook, pdfPath}: { flipBook: FlipBook, pdfPath: string }) => {
+const EditForm = ({flipBook, pdfPath, initialOverlays}: {
+    flipBook: FlipBook,
+    pdfPath: string,
+    initialOverlays: Overlay[] | null
+}) => {
     const router = useRouter();
     const {id, title, status, path_name} = flipBook;
     const [state, formAction] = useActionState(handleEdit, {error: null, redirect: "", flipBookId: id});
@@ -16,6 +21,7 @@ const EditForm = ({flipBook, pdfPath}: { flipBook: FlipBook, pdfPath: string }) 
     const [currTitle, setCurrTitle] = useState(title || "untitled flipbook");
     const [canEditPath, setCanEditPath] = useState(false);
     const [pathHasBeenEdited, setPathHasBeenEdited] = useState(false);
+    const [overlays, setOverlays] = useState<Overlay[] | null>(null);
 
     const formRef = useRef<HTMLFormElement>(null);
     const draftFieldRef = useRef<HTMLInputElement>(null);
@@ -120,8 +126,12 @@ const EditForm = ({flipBook, pdfPath}: { flipBook: FlipBook, pdfPath: string }) 
                     }
                 </div>
             </div>
+            <input readOnly name="overlays" value={JSON.stringify(overlays)} />
 
-            <Flipbook pdfUrl={pdfPath}/>
+            <ModeContext.Provider value={{status: status, mode: "edit",flipBookId:id}}>
+                <Flipbook pdfUrl={pdfPath} initialOverlays={initialOverlays} setFormOverlays={setOverlays} />
+            </ModeContext.Provider>
+
 
             <input ref={draftFieldRef} aria-hidden={true} className="hidden" type="checkbox" name="isDraft"/>
 
