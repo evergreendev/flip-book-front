@@ -5,6 +5,7 @@ import {PDFDocumentProxy, RenderTask} from "pdfjs-dist";
 import {RenderParameters} from "pdfjs-dist/types/src/display/api";
 import {ChevronLeft, ChevronRight} from "lucide-react";
 import ModeContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/ModeContext";
+import { useRouter } from 'next/navigation'
 
 async function processOverlays(
     currPage: number,
@@ -53,16 +54,43 @@ const Page = React.forwardRef(({currPage, pdfUrl, shouldRender, overlays, setOve
     pdfUrl: string,
     shouldRender?: boolean,
     overlays: Overlay[][],
-    setOverlays: (value: Overlay[][]) => void;
+    setOverlays: (value: Overlay[][]) => void,
 }, ref: React.ForwardedRef<HTMLDivElement>) => {
     const mode = useContext(ModeContext);
     const canvasRef = useRef<HTMLCanvasElement>(null);
+    const overlayRef = useRef<HTMLCanvasElement>(null);
     const renderTaskRef = useRef<RenderTask>(null);
     const pdfRef = useRef<PDFDocumentProxy>(null);
+    const currOverlays = overlays[currPage-1];
+
+    function renderOverlay(canvas:HTMLCanvasElement, hideOverlays:boolean){
+        const overlayContext = canvas.getContext('2d');
+        function convertToCanvasCoords([x, y, width, height]: [number, number, number, number]) {
+            const scale = 1.5;
+            return [x * scale, canvas.height - ((y + height) * scale), width * scale, height * scale];
+        }
+        if (overlayContext && currOverlays?.length > 0) {
+            overlayContext.clearRect(0, 0, canvas.width, canvas.height);
+            overlayContext.fillStyle = "#66cc33";
+            overlayContext.globalAlpha = hideOverlays ? 0 : .5;
+
+            currOverlays.forEach(overlay => {
+                // @ts-expect-error silly tuple nonsense
+                overlayContext.fillRect(...convertToCanvasCoords([overlay.x, overlay.y, overlay.w, overlay.h]))
+            })
+
+
+            overlayContext.globalAlpha = 1;
+
+            //canvasContext.fillStyle = "orange";
+            //canvasContext.fillRect(20, 50, canvas.width, canvas.height);
+        }
+    }
 
     useEffect(() => {
         let isCancelled = false;
         const canvas = canvasRef.current;
+        const overlayCanvas = overlayRef.current;
         let pdf: PDFDocumentProxy;
 
         if (!shouldRender) return async () => {
@@ -72,17 +100,19 @@ const Page = React.forwardRef(({currPage, pdfUrl, shouldRender, overlays, setOve
             }
             const ctx = canvas?.getContext("2d");
 
-            if (!canvas || !ctx) return;
+            if (!canvas || !ctx || !overlayCanvas) return;
 
             canvas.height = 1024;
             canvas.width = 768;
+            overlayCanvas.height = 1024;
+            overlayCanvas.width = 768;
 
             ctx.fillStyle = "#58ca70";
             ctx.fillRect(0, 0, canvas.width, canvas.height);//todo add loading
             ctx.fillStyle = "#75b543";
         }
 
-        async function renderPage(canvas: HTMLCanvasElement) {
+        async function renderPage(canvas: HTMLCanvasElement, overlayCanvas: HTMLCanvasElement) {
             try {
                 // Import pdfjs-dist dynamically for client-side rendering.
                 // @ts-expect-error: TypeScript cannot verify dynamic import for pdfjs-dist.
@@ -102,9 +132,12 @@ const Page = React.forwardRef(({currPage, pdfUrl, shouldRender, overlays, setOve
 
                 // Prepare the canvas.
                 const canvas1 = canvas;
+                const canvas2 = overlayCanvas;
                 const canvasContext = canvas1.getContext('2d');
                 canvas1.height = viewport.height;
+                canvas2.height = viewport.height;
                 canvas1.width = viewport.width;
+                canvas2.width = viewport.width;
 
                 // Ensure no other render tasks are running.
                 if (renderTaskRef.current) {
@@ -130,27 +163,6 @@ const Page = React.forwardRef(({currPage, pdfUrl, shouldRender, overlays, setOve
                     }
                 }
 
-                function convertToCanvasCoords([x, y, width, height]: [number, number, number, number]) {
-                    const scale = 1.5;
-                    return [x * scale, canvas.height - ((y + height) * scale), width * scale, height * scale];
-                }
-                if (canvasContext && overlays[currPage - 1]?.length > 0) {
-
-                    canvasContext.fillStyle = "orange";
-                    canvasContext.globalAlpha = .5;
-
-                    overlays[currPage - 1].forEach(overlay => {
-                        // @ts-expect-error silly tuple nonsense
-                        canvasContext.fillRect(...convertToCanvasCoords([overlay.x, overlay.y, overlay.w, overlay.h]))
-                    })
-
-
-                    canvasContext.globalAlpha = 1;
-
-                    //canvasContext.fillStyle = "orange";
-                    //canvasContext.fillRect(20, 50, canvas.width, canvas.height);
-                }
-
                 if (!isCancelled) {
                     await pdf.destroy();
                 }
@@ -163,8 +175,9 @@ const Page = React.forwardRef(({currPage, pdfUrl, shouldRender, overlays, setOve
         }
 
         (async function () {
-            if (!canvasRef.current) return;
-            await renderPage(canvasRef.current);
+            if (!canvasRef.current||!overlayRef.current) return;
+            await renderPage(canvasRef.current, overlayRef.current);
+            renderOverlay(overlayRef.current, true);
         })();
 
         // Cleanup function to cancel the render task if the component unmounts.
@@ -179,14 +192,60 @@ const Page = React.forwardRef(({currPage, pdfUrl, shouldRender, overlays, setOve
         };
     }, [currPage, mode.flipBookId, mode.mode, overlays, pdfUrl, setOverlays, shouldRender]);
 
-    function handleMouseMove(e: React.MouseEvent) {
+    function findInsideOverlay(position:number[], overlays:Overlay[]){
+        if (!overlays) return;
+        return overlays.find(overlay => {
+            const left = overlay.x;
+            const right = overlay.x + overlay.w;
+            const bottom = overlay.y;
+            const top = overlay.y + overlay.h;
+            return position[0] > left && position[0] < right && position[1] > bottom && position[1] < top;
+        })
+    }
+    const router = useRouter();
+    function handleMouse(e: React.MouseEvent) {
         e.preventDefault();
-        console.log(e)
+        if (!overlayRef.current) return;
+        renderOverlay(overlayRef.current,false);
+        const canvas = overlayRef.current;
+
+        function translateCoordinates(e:React.MouseEvent) {
+            const transform = window.getComputedStyle(canvas).transform;
+            const matrix = new DOMMatrixReadOnly(transform);
+            const invertedMatrix = matrix.inverse();
+
+            const rect = canvas.getBoundingClientRect();
+            const mouseX = e.clientX - rect.left;
+            const mouseY = rect.bottom - e.clientY;
+            const canvasScaledHeight = canvas.height/1.5;
+            const canvasScaledWidth = canvas.width/1.5;
+            const widthAdjust = canvas.getBoundingClientRect().width/canvasScaledWidth;
+            const heightAdjust = canvas.getBoundingClientRect().height/canvasScaledHeight;
+
+            const transformedPoint = invertedMatrix.transformPoint({ x: mouseX, y: mouseY });
+            const adjustedX = transformedPoint.x/widthAdjust;
+            const adjustedY = transformedPoint.y/heightAdjust;
+
+            return [adjustedX, adjustedY];
+        }
+
+        const insideOverlay = findInsideOverlay(translateCoordinates(e), currOverlays);
+        if (insideOverlay){
+            if (e.type === "click"){
+                router.push(insideOverlay.url);
+            }
+        }
+    }
+    function handleMouseExit(e: React.MouseEvent){
+        e.preventDefault();
+        if (!overlayRef.current) return;
+        renderOverlay(overlayRef.current,true);
     }
 
     return (
         <div ref={ref}>
-            <canvas ref={canvasRef} onMouseMove={handleMouseMove}/>
+            <canvas ref={canvasRef}/>
+            <canvas ref={overlayRef} onMouseLeave={handleMouseExit} onClick={handleMouse} onMouseMove={handleMouse}/>
         </div>
     );
 });
@@ -295,13 +354,14 @@ export default function Flipbook({pdfUrl, initialOverlays, setFormOverlays}: {
             // @ts-expect-error I'm not looking up the type for this
             book.current.pageFlip().flipPrev();
         }} className="text-white"><ChevronLeft/></button>
-        <div className="overflow-hidden mx-auto my-4 h-[90vh] aspect-[28/19]">
+        <div className={`overflow-hidden mx-auto my-4 h-[90vh] aspect-[28/19]`}>
             {/*        <button onClick={() =>
             book.current.pageFlip().flipNext()}>Next page
         </button>*/}
 
             {/* @ts-expect-error Ignore required attributes since they're not really required*/}
-            <HTMLFlipBook width={550}
+            <HTMLFlipBook
+                width={550}
                           height={733}
                           size="stretch"
                           minWidth={315}
