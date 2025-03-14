@@ -126,7 +126,7 @@ const EditForm = ({flipBook, pdfPath, initialOverlays}: {
                     }
                 </div>
             </div>
-            <input readOnly name="overlays" value={JSON.stringify(overlays)} />
+            <input readOnly className="hidden" aria-hidden={true} name="overlays" value={JSON.stringify(overlays)} />
 
             <ModeContext.Provider value={{status: status, mode: "edit",flipBookId:id}}>
                 <Flipbook pdfUrl={pdfPath} initialOverlays={initialOverlays} setFormOverlays={setOverlays} />
