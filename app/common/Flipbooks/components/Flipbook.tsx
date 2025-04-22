@@ -6,6 +6,7 @@ import {RenderParameters} from "pdfjs-dist/types/src/display/api";
 import {ChevronLeft, ChevronRight} from "lucide-react";
 import ModeContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/ModeContext";
 import {useRouter} from 'next/navigation'
+import {usePdfCache} from "@/app/common/Flipbooks/hooks/PdfCacheHook";
 
 async function processOverlays(
     currPage: number,
@@ -293,45 +294,46 @@ export default function Flipbook({pdfUrl, initialOverlays, setFormOverlays}: {
 
     const book = useRef(null);
 
+    const { loadPdf, prefetchPdf } = usePdfCache();
+
     useEffect(() => {
-        let pdf: PDFDocumentProxy;
+        let isMounted = true;
+
         (async function () {
-            // Import pdfjs-dist dynamically for client-side rendering.
-            // @ts-expect-error: TypeScript cannot verify dynamic import for pdfjs-dist.
-            const pdfJS = await import('pdfjs-dist/build/pdf');
+            try {
+                // Use the cached PDF loader
+                const pdf = await loadPdf(pdfUrl);
 
-            // Set up the worker.
-            pdfJS.GlobalWorkerOptions.workerSrc =
-                window.location.origin + '/pdf.worker.min.mjs';
+                if (!isMounted) return;
 
-            // Load the PDF document.
-            pdf = await pdfJS.getDocument(pdfUrl).promise;
+                if (initialOverlays?.length === 0 && mode.mode === "edit" && setFormOverlays) {
+                    const initialOverlayArray: React.SetStateAction<Overlay[][]> = [];
 
+                    for (let i = 0; i < pdf.numPages; i++) {
+                        const overlays = await processOverlays(i + 1, pdf, mode);
+                        initialOverlayArray.push(overlays);
+                    }
 
-            if (initialOverlays?.length === 0 && mode.mode === "edit" && setFormOverlays) {
-                const initialOverlayArray: React.SetStateAction<Overlay[][]> = [];
-
-                for (let i = 0; i < pdf.numPages; i++) {
-                    const overlays = await processOverlays(i + 1, pdf, mode);
-                    initialOverlayArray.push(overlays);
+                    setOverlays(initialOverlayArray);
+                    setFormOverlays(initialOverlayArray.flatMap(x => x));
                 }
 
-                setOverlays(initialOverlayArray);
-                setFormOverlays(initialOverlayArray.flatMap(x => x));
+                setMaxPage(pdf.numPages);
+
+                // Prefetch the next few pages
+                for (let i = 1; i <= Math.min(5, pdf.numPages); i++) {
+                    prefetchPdf(pdfUrl);
+                }
+            } catch (error) {
+                console.error("Error loading PDF:", error);
             }
-
-            setMaxPage(pdf.numPages);
-
-            await pdf.destroy();
         })();
 
-        // Cleanup function to cancel the render task if the component unmounts.
         return () => {
-            if (pdf) {
-                pdf.destroy();
-            }
+            isMounted = false;
         };
-    }, [pdfUrl]);
+    }, [pdfUrl, initialOverlays, mode, setFormOverlays, loadPdf, prefetchPdf]);
+
 
     useEffect(() => {
         if (!maxPage) return;
