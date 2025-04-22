@@ -355,7 +355,8 @@ export default function Flipbook({pdfUrl, initialOverlays, setFormOverlays}: {
     if (!maxPage) return null;
 
     return <div className="flex justify-between items-center">
-        <button onClick={() => {
+        <button onClick={(e) => {
+            e.preventDefault();
             if (!book.current) return;
             // @ts-expect-error I'm not looking up the type for this
             book.current.pageFlip().flipPrev();
@@ -389,7 +390,8 @@ export default function Flipbook({pdfUrl, initialOverlays, setFormOverlays}: {
                 })}
             </HTMLFlipBook>
         </div>
-        <button onClick={() => {
+        <button onClick={(e) => {
+            e.preventDefault();
             if (!book.current) return;
             // @ts-expect-error I'm not looking up the type for this
             book.current.pageFlip().flipNext();
