@@ -6,8 +6,6 @@ import {Overlay} from "@/app/common/Flipbooks/components/Flipbook";
 export async function handleEdit(prevState: { flipBookId:string, error?: string | null, redirect?: string | null | boolean }, formData: FormData) {
     if (!process.env.BACKEND_URL) return {...prevState, error: "Something went wrong. Please try again."};
 
-    console.log(formData)
-
     const overlays = formData.get("overlays");
 
 
