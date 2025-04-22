@@ -50,12 +50,13 @@ async function processOverlays(
 
 
 // eslint-disable-next-line react/display-name
-const Page = React.forwardRef(({currPage, pdfUrl, shouldRender, overlays, setOverlays}: {
+const Page = React.forwardRef(({currPage, pdfUrl, shouldRender, overlays, setOverlays, setActiveOverlayId}: {
     currPage: number,
     pdfUrl: string,
     shouldRender?: boolean,
     overlays: Overlay[][],
     setOverlays: (value: Overlay[][]) => void,
+    setActiveOverlayId?: (value: (((prevState: (string | null)) => (string | null)) | string | null)) => void
 }, ref: React.ForwardedRef<HTMLDivElement>) => {
     const mode = useContext(ModeContext);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -172,9 +173,8 @@ const Page = React.forwardRef(({currPage, pdfUrl, shouldRender, overlays, setOve
             } catch (e) {
                 console.log(e)
             } finally {
-                await pdf.destroy();
+                await pdf?.destroy();
             }
-
         }
 
         (async function () {
@@ -235,10 +235,19 @@ const Page = React.forwardRef(({currPage, pdfUrl, shouldRender, overlays, setOve
         }
 
         const insideOverlay = findInsideOverlay(translateCoordinates(e), currOverlays);
-        if (insideOverlay) {
+        if (insideOverlay && mode.mode !== "edit") {
             if (e.type === "click") {
                 router.push(insideOverlay.url);
             }
+        } else {
+            if (setActiveOverlayId && e.type === "click"){
+                if (insideOverlay) {
+                    setActiveOverlayId(insideOverlay.id);
+                } else{
+                    setActiveOverlayId(null);
+                }
+            }
+
         }
     }
 
@@ -267,10 +276,11 @@ export type Overlay = {
     page: number
 }
 
-export default function Flipbook({pdfUrl, initialOverlays, setFormOverlays}: {
+export default function Flipbook({pdfUrl, initialOverlays, setFormOverlays, setActiveOverlayId}: {
     pdfUrl: string,
     initialOverlays: Overlay[] | null,
-    setFormOverlays?: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void
+    setFormOverlays?: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void,
+    setActiveOverlayId?: (value: (((prevState: (string | null)) => (string | null)) | string | null)) => void
 }) {
     const formattedInitialOverlays: Overlay[][] = [];
     if (initialOverlays && initialOverlays?.length > 0) {
@@ -384,7 +394,7 @@ export default function Flipbook({pdfUrl, initialOverlays, setFormOverlays}: {
                 ref={book}>
                 {Array.from({length: maxPage}).map((_, index) => {
                     return (
-                        <Page setOverlays={setOverlays} overlays={overlays} key={index} currPage={index + 1}
+                        <Page setOverlays={setOverlays} setActiveOverlayId={setActiveOverlayId} overlays={overlays} key={index} currPage={index + 1}
                               pdfUrl={pdfUrl} shouldRender={renderedPages.has(index)}/>
                     );
                 })}
