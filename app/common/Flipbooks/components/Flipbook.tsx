@@ -1,5 +1,5 @@
 "use client"
-import React, {useContext, useEffect, useRef, useState} from "react";
+import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
 import HTMLFlipBook from "react-pageflip";
 import {PDFDocumentProxy, RenderTask} from "pdfjs-dist";
 import {RenderParameters} from "pdfjs-dist/types/src/display/api";
@@ -85,7 +85,7 @@ const Page = React.forwardRef(({
     const [activeGrip, setActiveGrip] = useState<{ overlay: Overlay, grip: string | null } | null>(null);
     const [movingOverlay, setMovingOverlay] = useState<Overlay | null>(null);
 
-    function renderOverlay(canvas: HTMLCanvasElement, hideOverlays: boolean) {
+    const renderOverlay = useCallback((canvas: HTMLCanvasElement, hideOverlays: boolean) => {
         const overlayContext = canvas.getContext('2d');
 
         function convertToCanvasCoords([x, y, width, height]: [number, number, number, number]) {
@@ -100,7 +100,7 @@ const Page = React.forwardRef(({
             overlayContext.globalAlpha = hideOverlays ? 0 : .5;
 
             currOverlays.forEach(overlay => {
-                if (overlaysToDelete && overlaysToDelete.find(id => overlay.id === id)){
+                if (overlaysToDelete && overlaysToDelete.find(id => overlay.id === id)) {
 
                 } else {
                     if (mode.activeTool === "delete" && activeOverlayId === overlay.id) {
@@ -135,16 +135,35 @@ const Page = React.forwardRef(({
             //canvasContext.fillStyle = "orange";
             //canvasContext.fillRect(20, 50, canvas.width, canvas.height);
         }
-    }
+    }, [currOverlays, mode.activeTool, mode.mode, activeOverlayId, overlaysToDelete]);
 
+    //overlay render effect
     useEffect(() => {
-        let isCancelled = false;
-        const canvas = canvasRef.current;
-        const overlayCanvas = overlayRef.current;
+        (async function () {
+            if (!canvasRef.current || !overlayRef.current) return;
+            renderOverlay(overlayRef.current, mode.mode !== "edit");
+        })();
+
+        // Cleanup function to cancel the render task if the component unmounts.
+        return () => {
+            if (renderTaskRef.current) {
+                renderTaskRef.current.cancel();
+            }
+            if (pdfRef.current) {
+                pdfRef.current.destroy().then(() => console.log("destroyed"));
+            }
+        };
+    }, [renderOverlay]);
+
+    //page render effect
+    useEffect(() => {
+        const isCancelled = false;
         let pdf: PDFDocumentProxy;
 
+        const canvas = canvasRef.current;
+        const overlayCanvas = overlayRef.current;
+
         if (!shouldRender) return async () => {
-            isCancelled = true;
             if (renderTaskRef.current) {
                 renderTaskRef.current.cancel();
             }
@@ -226,12 +245,10 @@ const Page = React.forwardRef(({
         (async function () {
             if (!canvasRef.current || !overlayRef.current) return;
             await renderPage(canvasRef.current, overlayRef.current);
-            renderOverlay(overlayRef.current, true);
         })();
 
         // Cleanup function to cancel the render task if the component unmounts.
         return () => {
-            isCancelled = true;
             if (renderTaskRef.current) {
                 renderTaskRef.current.cancel();
             }
@@ -239,7 +256,9 @@ const Page = React.forwardRef(({
                 pdfRef.current.destroy().then(() => console.log("destroyed"));
             }
         };
-    }, [currPage, mode.flipBookId, mode.mode, pdfUrl, setOverlays, shouldRender]);
+    }, [currPage, pdfUrl, shouldRender]);
+    
+    
 
     function findInsideOverlay(position: number[], overlays: Overlay[]) {
         if (!overlays) return;
