@@ -50,12 +50,23 @@ async function processOverlays(
 
 
 // eslint-disable-next-line react/display-name
-const Page = React.forwardRef(({currPage, pdfUrl, shouldRender, overlays, setOverlays, setActiveOverlayId}: {
+const Page = React.forwardRef(({
+                                   currPage,
+                                   pdfUrl,
+                                   shouldRender,
+                                   overlays,
+                                   formOverlays,
+                                   setOverlays,
+                                   setFormOverlays,
+                                   setActiveOverlayId
+                               }: {
     currPage: number,
     pdfUrl: string,
     shouldRender?: boolean,
     overlays: Overlay[][],
+    formOverlays?: Overlay[] | null,
     setOverlays: (value: Overlay[][]) => void,
+    setFormOverlays?: (value: Overlay[]) => void,
     setActiveOverlayId?: (value: (((prevState: (string | null)) => (string | null)) | string | null)) => void
 }, ref: React.ForwardedRef<HTMLDivElement>) => {
     const mode = useContext(ModeContext);
@@ -64,6 +75,9 @@ const Page = React.forwardRef(({currPage, pdfUrl, shouldRender, overlays, setOve
     const renderTaskRef = useRef<RenderTask>(null);
     const pdfRef = useRef<PDFDocumentProxy>(null);
     const currOverlays = overlays[currPage - 1];
+    const [draggingMode, setDraggingMode] = useState<"none" | "move" | "resize">("none");
+    const [activeGrip, setActiveGrip] = useState<{ overlay: Overlay, grip: string | null } | null>(null);
+    const [movingOverlay, setMovingOverlay] = useState<Overlay | null>(null);
 
     function renderOverlay(canvas: HTMLCanvasElement, hideOverlays: boolean) {
         const overlayContext = canvas.getContext('2d');
@@ -81,6 +95,24 @@ const Page = React.forwardRef(({currPage, pdfUrl, shouldRender, overlays, setOve
             currOverlays.forEach(overlay => {
                 // @ts-expect-error silly tuple nonsense
                 overlayContext.fillRect(...convertToCanvasCoords([overlay.x, overlay.y, overlay.w, overlay.h]))
+
+                if (mode.mode === "edit") {//render grips if in edit mode
+                    overlayContext.fillStyle = "#ccb333";
+                    overlayContext.globalAlpha = 1;
+                    const gripSize = 8;
+                    // @ts-expect-error silly tuple nonsense
+                    overlayContext.fillRect(...convertToCanvasCoords([overlay.x - gripSize / 2, overlay.y - gripSize / 2, gripSize, gripSize]))
+                    // @ts-expect-error silly tuple nonsense
+                    overlayContext.fillRect(...convertToCanvasCoords([overlay.x - ((gripSize / 2) - overlay.w), overlay.y - gripSize / 2, gripSize, gripSize]))
+                    // @ts-expect-error silly tuple nonsense
+                    overlayContext.fillRect(...convertToCanvasCoords([overlay.x - gripSize / 2, overlay.y - ((gripSize / 2) - overlay.h), gripSize, gripSize]))
+                    // @ts-expect-error silly tuple nonsense
+                    overlayContext.fillRect(...convertToCanvasCoords([overlay.x - ((gripSize / 2) - overlay.w), overlay.y - ((gripSize / 2) - overlay.h), gripSize, gripSize]))
+
+                    overlayContext.fillStyle = "#66cc33";
+                    overlayContext.globalAlpha = hideOverlays ? 0 : .5;
+                }
+
             })
 
 
@@ -193,7 +225,7 @@ const Page = React.forwardRef(({currPage, pdfUrl, shouldRender, overlays, setOve
                 pdfRef.current.destroy().then(() => console.log("destroyed"));
             }
         };
-    }, [currPage, mode.flipBookId, mode.mode, overlays, pdfUrl, setOverlays, shouldRender]);
+    }, [currPage, mode.flipBookId, mode.mode, pdfUrl, setOverlays, shouldRender]);
 
     function findInsideOverlay(position: number[], overlays: Overlay[]) {
         if (!overlays) return;
@@ -206,10 +238,81 @@ const Page = React.forwardRef(({currPage, pdfUrl, shouldRender, overlays, setOve
         })
     }
 
+    function findInsideGrip(position: number[], overlays: Overlay[], gripSize: number = 8) {
+        if (!overlays) return;
+        let grip: string | null = null;
+
+        const foundOverlay = overlays.find(overlay => {
+            const topLeft = {x: overlay.x - gripSize / 2, y: overlay.y - gripSize / 2};
+            const topRight = {x: overlay.x + overlay.w - gripSize / 2, y: overlay.y - gripSize / 2};
+            const bottomLeft = {x: overlay.x - gripSize / 2, y: overlay.y + overlay.h - gripSize / 2};
+            const bottomRight = {x: overlay.x + overlay.w - gripSize / 2, y: overlay.y + overlay.h - gripSize / 2};
+
+            if ((position[0] >= topLeft.x && position[0] <= topLeft.x + gripSize &&
+                position[1] >= topLeft.y && position[1] <= topLeft.y + gripSize)) {
+                grip = "bottomLeft";
+            }
+            if ((position[0] >= topRight.x && position[0] <= topRight.x + gripSize &&
+                position[1] >= topRight.y && position[1] <= topRight.y + gripSize)) {
+                grip = "bottomRight";
+            }
+            if ((position[0] >= bottomLeft.x && position[0] <= bottomLeft.x + gripSize &&
+                position[1] >= bottomLeft.y && position[1] <= bottomLeft.y + gripSize)) {
+                grip = "topLeft";
+            }
+            if ((position[0] >= bottomRight.x && position[0] <= bottomRight.x + gripSize &&
+                position[1] >= bottomRight.y && position[1] <= bottomRight.y + gripSize)) {
+                grip = "topRight";
+            }
+
+            if (grip) return true;
+        })
+
+        if (!foundOverlay) return null;
+
+        return {
+            overlay: foundOverlay,
+            grip: grip
+        }
+    }
+
     const router = useRouter();
+
+
+    function updateOverlayDimensions(grip: string, overlay: Overlay, mouseX: number, mouseY: number): Partial<Overlay> {
+        switch (grip) {
+            case "bottomLeft":
+                return {
+                    w: Math.max((overlay.w + (overlay.x - mouseX)), 0),
+                    x: mouseX,
+                    h: Math.max(overlay.h + (overlay.y - mouseY), 0),
+                    y: mouseY
+                };
+            case "bottomRight":
+                return {
+                    w: Math.max(mouseX - overlay.x, 0),
+                    h: Math.max(overlay.h + (overlay.y - mouseY), 0),
+                    y: mouseY
+                };
+            case "topLeft":
+                return {
+                    w: Math.max(overlay.w + (overlay.x - mouseX), 0),
+                    h: Math.max(mouseY - overlay.y, 0),
+                    x: mouseX
+                };
+            case "topRight":
+                return {
+                    w: Math.max(mouseX - overlay.x, 0),
+                    h: Math.max(mouseY - overlay.y, 0),
+                };
+            default:
+                return {};
+        }
+    }
 
     function handleMouse(e: React.MouseEvent) {
         e.preventDefault();
+
         if (!overlayRef.current) return;
         renderOverlay(overlayRef.current, false);
         const canvas = overlayRef.current;
@@ -235,19 +338,96 @@ const Page = React.forwardRef(({currPage, pdfUrl, shouldRender, overlays, setOve
         }
 
         const insideOverlay = findInsideOverlay(translateCoordinates(e), currOverlays);
+        const insideGrip = findInsideGrip(translateCoordinates(e), currOverlays);
+
         if (insideOverlay && mode.mode !== "edit") {
             if (e.type === "click") {
                 router.push(insideOverlay.url);
             }
+        }
+
+        if (e.buttons !== 1) {
+            setDraggingMode("none");
+            setActiveGrip(null);
+        }
+        if (e.buttons === 1 && draggingMode === "none" && mode.mode === "edit") {
+            if (insideGrip) {
+                setDraggingMode("resize");
+                setActiveGrip(insideGrip);
+                setMovingOverlay(null);
+            }
+            else if (insideOverlay) {
+                setDraggingMode("move");
+                setActiveGrip(null);
+                setMovingOverlay(insideOverlay);
+            }
+        }
+
+
+        if (draggingMode === "resize" && activeGrip && mode.mode === "edit") {
+            const [mouseX, mouseY] = translateCoordinates(e);
+            const index = currOverlays.findIndex(o => o.id === activeGrip.overlay.id);
+            if (index !== -1) {
+                const updatedDimensions = updateOverlayDimensions(activeGrip.grip!, activeGrip.overlay, mouseX, mouseY);
+                const updatedOverlay = {...currOverlays[index], ...updatedDimensions};
+                const newOverlays = [...overlays];
+                newOverlays[currPage - 1] = [...currOverlays];
+                newOverlays[currPage - 1][index] = updatedOverlay;
+                setOverlays(newOverlays);
+
+                if (!setFormOverlays) return;
+
+                if (formOverlays) {
+                    const existingOverlayToUpdate = formOverlays.find(overlay => overlay.id === activeGrip.overlay.id);
+                    setFormOverlays(existingOverlayToUpdate ? formOverlays.map(overlay => {
+                        if (overlay.id === activeGrip.overlay.id) {
+                            return {...overlay, ...updatedDimensions}
+                        }
+                        return overlay
+                    }) : formOverlays.concat([{...activeGrip.overlay, ...updatedDimensions}]));
+                    return;
+                }
+
+                setFormOverlays([{...activeGrip.overlay, ...updatedDimensions}]);
+            }
         } else {
-            if (setActiveOverlayId && e.type === "click"){
-                if (insideOverlay) {
-                    setActiveOverlayId(insideOverlay.id);
-                } else{
-                    setActiveOverlayId(null);
+            if (mode.mode === "edit" && !insideGrip && draggingMode === "move" && movingOverlay) {
+                const [mouseX, mouseY] = translateCoordinates(e);
+                const index = currOverlays.findIndex(o => o.id === movingOverlay.id);
+                if (index !== -1) {
+                    const updatedOverlay = {...currOverlays[index]};
+                    updatedOverlay.x = mouseX - (updatedOverlay.w / 2);
+                    updatedOverlay.y = mouseY - (updatedOverlay.h / 2);
+                    const newOverlays = [...overlays];
+                    newOverlays[currPage - 1] = [...currOverlays];
+                    newOverlays[currPage - 1][index] = updatedOverlay;
+                    setOverlays(newOverlays);
+
+                    if (!setFormOverlays) return;
+
+                    if (formOverlays) {
+                        const existingOverlayToUpdate = formOverlays.find(overlay => overlay.id === movingOverlay.id);
+                        setFormOverlays(existingOverlayToUpdate ? formOverlays.map(overlay => {
+                            if (overlay.id === movingOverlay.id) {
+                                return {...overlay, x: updatedOverlay.x, y: updatedOverlay.y}
+                            }
+                            return overlay
+                        }) : formOverlays.concat([{...movingOverlay, x: updatedOverlay.x, y: updatedOverlay.y}]))
+
+                        return;
+                    }
+
+                    setFormOverlays([{...movingOverlay, x: updatedOverlay.x, y: updatedOverlay.y}]);
                 }
             }
 
+            if (setActiveOverlayId && e.type === "click") {
+                if (insideOverlay) {
+                    setActiveOverlayId(insideOverlay.id);
+                } else {
+                    setActiveOverlayId(null);
+                }
+            }
         }
     }
 
@@ -276,10 +456,11 @@ export type Overlay = {
     page: number
 }
 
-export default function Flipbook({pdfUrl, initialOverlays, setFormOverlays, setActiveOverlayId}: {
+export default function Flipbook({pdfUrl, initialOverlays, formOverlays, setFormOverlays, setActiveOverlayId}: {
     pdfUrl: string,
     initialOverlays: Overlay[] | null,
     setFormOverlays?: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void,
+    formOverlays?: Overlay[] | null,
     setActiveOverlayId?: (value: (((prevState: (string | null)) => (string | null)) | string | null)) => void
 }) {
     const formattedInitialOverlays: Overlay[][] = [];
@@ -304,7 +485,7 @@ export default function Flipbook({pdfUrl, initialOverlays, setFormOverlays, setA
 
     const book = useRef(null);
 
-    const { loadPdf, prefetchPdf } = usePdfCache();
+    const {loadPdf, prefetchPdf} = usePdfCache();
 
     useEffect(() => {
         let isMounted = true;
@@ -394,7 +575,9 @@ export default function Flipbook({pdfUrl, initialOverlays, setFormOverlays, setA
                 ref={book}>
                 {Array.from({length: maxPage}).map((_, index) => {
                     return (
-                        <Page setOverlays={setOverlays} setActiveOverlayId={setActiveOverlayId} overlays={overlays} key={index} currPage={index + 1}
+                        <Page formOverlays={formOverlays} setOverlays={setOverlays} setFormOverlays={setFormOverlays}
+                              setActiveOverlayId={setActiveOverlayId} overlays={overlays}
+                              key={index} currPage={index + 1}
                               pdfUrl={pdfUrl} shouldRender={renderedPages.has(index)}/>
                     );
                 })}

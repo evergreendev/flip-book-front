@@ -189,7 +189,7 @@ const EditForm = ({flipBook, pdfPath, initialOverlays}: {
             <OverlayForm overlaysToUpdate={overlaysToUpdate} overlays={overlaysToRender} setOverlays={setOverlaysToRender} activeOverlayId={activeOverlayId}
                          setOverlaysToUpdate={setOverlaysToUpdate}/>
             <ModeContext.Provider value={{status: status, mode: "edit", flipBookId: id}}>
-                <Flipbook pdfUrl={pdfPath} initialOverlays={overlaysToRender} setFormOverlays={setOverlaysToUpdate}
+                <Flipbook formOverlays={overlaysToUpdate} pdfUrl={pdfPath} initialOverlays={overlaysToRender} setFormOverlays={setOverlaysToUpdate}
                           setActiveOverlayId={setActiveOverlayId}/>
             </ModeContext.Provider>
 
