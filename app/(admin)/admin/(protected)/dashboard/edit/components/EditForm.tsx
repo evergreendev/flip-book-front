@@ -9,14 +9,15 @@ import slugify from "slugify";
 import {useRouter} from "next/navigation";
 import ModeContext from "../context/ModeContext";
 
-const OverlayForm = ({activeOverlayId, setOverlays, overlays, overlaysToUpdate, setOverlaysToUpdate}: {
+const OverlayForm = ({hideForm, activeOverlayId, setOverlays, overlays, overlaysToUpdate, setOverlaysToUpdate}: {
     activeOverlayId: string | null,
     setOverlays: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void,
     overlays: Overlay[] | null,
     overlaysToUpdate: Overlay[] | null,
+    hideForm: boolean,
     setOverlaysToUpdate: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void
 }) => {
-    if (!activeOverlayId || !overlays) return null;
+    if (!activeOverlayId || !overlays || hideForm) return null;
     const activeOverlay = overlays.find(overlay => overlay.id === activeOverlayId);
     if (!activeOverlay) return null;
 
@@ -228,7 +229,7 @@ const EditForm = ({flipBook, pdfPath, initialOverlays}: {
             </div>
             <input readOnly className="hidden" aria-hidden={true} name="overlays" value={JSON.stringify(overlaysToUpdate)}/>
             <input readOnly className="hidden" aria-hidden={true} name="overlaysToDelete" value={overLaysToDelete}/>
-            <OverlayForm overlaysToUpdate={overlaysToUpdate} overlays={overlaysToRender} setOverlays={setOverlaysToRender} activeOverlayId={activeOverlayId}
+            <OverlayForm hideForm={activeTool !== "edit"} overlaysToUpdate={overlaysToUpdate} overlays={overlaysToRender} setOverlays={setOverlaysToRender} activeOverlayId={activeOverlayId}
                          setOverlaysToUpdate={setOverlaysToUpdate}/>
             <ToolBar setActiveTool={setActiveTool} activeTool={activeTool}/>
             <ModeContext.Provider value={{status: status, mode: "edit", flipBookId: id, activeTool: activeTool}}>
