@@ -65,6 +65,45 @@ const OverlayForm = ({activeOverlayId, setOverlays, overlays, overlaysToUpdate, 
     );
 }
 
+const ToolBar = (props: {
+    setActiveTool: (value: (((prevState: (string)) => (string)) | string )) => void,
+    activeTool: string
+})=> {
+    const {setActiveTool, activeTool} = props;
+
+    return <div className="flex flex-wrap my-2 items-center mx-auto justify-center bg-slate-700 rounded-lg">
+        <button onClick={() => setActiveTool(activeTool === 'create' ? '' : 'create')}
+                className={`px-4 py-2 border-x border-x-slate-300 ${activeTool === 'create' ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}>
+            Create Overlay
+        </button>
+        <button onClick={() => setActiveTool(activeTool === 'delete' ? '' : 'delete')}
+                className={`px-4 py-2 border-x border-x-slate-300 ${activeTool === 'delete' ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}>
+            Delete Overlay
+        </button>
+        <button onClick={() => setActiveTool(activeTool === 'edit' ? '' : 'edit')}
+                className={`px-4 py-2 border-x border-x-slate-300 ${activeTool === 'edit' ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}>
+            Edit Overlay
+        </button>
+        <div className="w-full">
+            {activeTool === 'create' && (
+                <div className="bg-slate-600 text-white p-2 text-center">
+                    Click and drag anywhere on the page to create a new overlay
+                </div>
+            )}
+            {activeTool === 'delete' && (
+                <div className="bg-slate-600 text-white p-2 text-center">
+                    Click on an existing overlay twice to delete it
+                </div>
+            )}
+            {activeTool === 'edit' && (
+                <div className="bg-slate-600 text-white p-2 text-center">
+                    Click on an existing overlay to edit its URL, or click and drag on overlays to update positions
+                </div>
+            )}
+        </div>
+    </div>;
+}
+
 const EditForm = ({flipBook, pdfPath, initialOverlays}: {
     flipBook: FlipBook,
     pdfPath: string,
@@ -80,6 +119,7 @@ const EditForm = ({flipBook, pdfPath, initialOverlays}: {
     const [overlaysToUpdate, setOverlaysToUpdate] = useState<Overlay[] | null>(null);
     const [overlaysToRender, setOverlaysToRender] = useState<Overlay[] | null>(initialOverlays);
     const [activeOverlayId, setActiveOverlayId] = useState<string | null>(null);
+    const [activeTool, setActiveTool] = useState<string>('edit');
 
     const formRef = useRef<HTMLFormElement>(null);
     const draftFieldRef = useRef<HTMLInputElement>(null);
@@ -188,7 +228,8 @@ const EditForm = ({flipBook, pdfPath, initialOverlays}: {
             <input readOnly className="hidden" aria-hidden={true} name="overlays" value={JSON.stringify(overlaysToUpdate)}/>
             <OverlayForm overlaysToUpdate={overlaysToUpdate} overlays={overlaysToRender} setOverlays={setOverlaysToRender} activeOverlayId={activeOverlayId}
                          setOverlaysToUpdate={setOverlaysToUpdate}/>
-            <ModeContext.Provider value={{status: status, mode: "edit", flipBookId: id}}>
+            <ToolBar setActiveTool={setActiveTool} activeTool={activeTool}/>
+            <ModeContext.Provider value={{status: status, mode: "edit", flipBookId: id, activeTool: activeTool}}>
                 <Flipbook formOverlays={overlaysToUpdate} pdfUrl={pdfPath} initialOverlays={overlaysToRender} setFormOverlays={setOverlaysToUpdate}
                           setActiveOverlayId={setActiveOverlayId}/>
             </ModeContext.Provider>
