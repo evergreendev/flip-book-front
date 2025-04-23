@@ -117,6 +117,7 @@ const EditForm = ({flipBook, pdfPath, initialOverlays}: {
     const [canEditPath, setCanEditPath] = useState(false);
     const [pathHasBeenEdited, setPathHasBeenEdited] = useState(false);
     const [overlaysToUpdate, setOverlaysToUpdate] = useState<Overlay[] | null>(null);
+    const [overLaysToDelete, setOverLaysToDelete] = useState<string[]>([]);
     const [overlaysToRender, setOverlaysToRender] = useState<Overlay[] | null>(initialOverlays);
     const [activeOverlayId, setActiveOverlayId] = useState<string | null>(null);
     const [activeTool, setActiveTool] = useState<string>('edit');
@@ -226,17 +227,16 @@ const EditForm = ({flipBook, pdfPath, initialOverlays}: {
                 </div>
             </div>
             <input readOnly className="hidden" aria-hidden={true} name="overlays" value={JSON.stringify(overlaysToUpdate)}/>
+            <input readOnly aria-hidden={true} name="overlaysToDelete" value={overLaysToDelete}/>
             <OverlayForm overlaysToUpdate={overlaysToUpdate} overlays={overlaysToRender} setOverlays={setOverlaysToRender} activeOverlayId={activeOverlayId}
                          setOverlaysToUpdate={setOverlaysToUpdate}/>
             <ToolBar setActiveTool={setActiveTool} activeTool={activeTool}/>
             <ModeContext.Provider value={{status: status, mode: "edit", flipBookId: id, activeTool: activeTool}}>
-                <Flipbook formOverlays={overlaysToUpdate} pdfUrl={pdfPath} initialOverlays={overlaysToRender} setFormOverlays={setOverlaysToUpdate}
+                <Flipbook overlaysToDelete={overLaysToDelete} activeOverlayId={activeOverlayId} setOverlaysToDelete={setOverLaysToDelete} formOverlays={overlaysToUpdate} pdfUrl={pdfPath} initialOverlays={overlaysToRender} setFormOverlays={setOverlaysToUpdate}
                           setActiveOverlayId={setActiveOverlayId}/>
             </ModeContext.Provider>
 
-
             <input ref={draftFieldRef} aria-hidden={true} className="hidden" type="checkbox" name="isDraft"/>
-
 
             <div className="flex justify-end gap-2 items-center">
                 <button type="submit" onClick={(e) => handleSubmit(e, true)}

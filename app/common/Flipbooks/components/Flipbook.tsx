@@ -55,19 +55,25 @@ const Page = React.forwardRef(({
                                    pdfUrl,
                                    shouldRender,
                                    overlays,
+    overlaysToDelete,
+                                   activeOverlayId,
                                    formOverlays,
                                    setOverlays,
                                    setFormOverlays,
-                                   setActiveOverlayId
+                                   setActiveOverlayId,
+                                   setOverlaysToDelete
                                }: {
     currPage: number,
     pdfUrl: string,
     shouldRender?: boolean,
     overlays: Overlay[][],
+    overlaysToDelete?: string[],
+    activeOverlayId?: string | null,
     formOverlays?: Overlay[] | null,
     setOverlays: (value: Overlay[][]) => void,
     setFormOverlays?: (value: Overlay[]) => void,
-    setActiveOverlayId?: (value: (((prevState: (string | null)) => (string | null)) | string | null)) => void
+    setActiveOverlayId?: (value: (((prevState: (string | null)) => (string | null)) | string | null)) => void,
+    setOverlaysToDelete?: (value: (((prevState: string[]) => string[]) | string[])) => void
 }, ref: React.ForwardedRef<HTMLDivElement>) => {
     const mode = useContext(ModeContext);
     const canvasRef = useRef<HTMLCanvasElement>(null);
@@ -90,27 +96,35 @@ const Page = React.forwardRef(({
         if (overlayContext && currOverlays?.length > 0) {
             overlayContext.clearRect(0, 0, canvas.width, canvas.height);
             overlayContext.fillStyle = "#66cc33";
+
             overlayContext.globalAlpha = hideOverlays ? 0 : .5;
 
             currOverlays.forEach(overlay => {
-                // @ts-expect-error silly tuple nonsense
-                overlayContext.fillRect(...convertToCanvasCoords([overlay.x, overlay.y, overlay.w, overlay.h]))
+                if (overlaysToDelete && overlaysToDelete.find(id => overlay.id === id)){
 
-                if (mode.mode === "edit") {//render grips if in edit mode
-                    overlayContext.fillStyle = "#ccb333";
-                    overlayContext.globalAlpha = 1;
-                    const gripSize = 8;
+                } else {
+                    if (mode.activeTool === "delete" && activeOverlayId === overlay.id) {
+                        overlayContext.fillStyle = "#e41919";
+                    }
                     // @ts-expect-error silly tuple nonsense
-                    overlayContext.fillRect(...convertToCanvasCoords([overlay.x - gripSize / 2, overlay.y - gripSize / 2, gripSize, gripSize]))
-                    // @ts-expect-error silly tuple nonsense
-                    overlayContext.fillRect(...convertToCanvasCoords([overlay.x - ((gripSize / 2) - overlay.w), overlay.y - gripSize / 2, gripSize, gripSize]))
-                    // @ts-expect-error silly tuple nonsense
-                    overlayContext.fillRect(...convertToCanvasCoords([overlay.x - gripSize / 2, overlay.y - ((gripSize / 2) - overlay.h), gripSize, gripSize]))
-                    // @ts-expect-error silly tuple nonsense
-                    overlayContext.fillRect(...convertToCanvasCoords([overlay.x - ((gripSize / 2) - overlay.w), overlay.y - ((gripSize / 2) - overlay.h), gripSize, gripSize]))
+                    overlayContext.fillRect(...convertToCanvasCoords([overlay.x, overlay.y, overlay.w, overlay.h]))
 
-                    overlayContext.fillStyle = "#66cc33";
-                    overlayContext.globalAlpha = hideOverlays ? 0 : .5;
+                    if (mode.mode === "edit") {//render grips if in edit mode
+                        overlayContext.fillStyle = "#ccb333";
+                        overlayContext.globalAlpha = 1;
+                        const gripSize = 8;
+                        // @ts-expect-error silly tuple nonsense
+                        overlayContext.fillRect(...convertToCanvasCoords([overlay.x - gripSize / 2, overlay.y - gripSize / 2, gripSize, gripSize]))
+                        // @ts-expect-error silly tuple nonsense
+                        overlayContext.fillRect(...convertToCanvasCoords([overlay.x - ((gripSize / 2) - overlay.w), overlay.y - gripSize / 2, gripSize, gripSize]))
+                        // @ts-expect-error silly tuple nonsense
+                        overlayContext.fillRect(...convertToCanvasCoords([overlay.x - gripSize / 2, overlay.y - ((gripSize / 2) - overlay.h), gripSize, gripSize]))
+                        // @ts-expect-error silly tuple nonsense
+                        overlayContext.fillRect(...convertToCanvasCoords([overlay.x - ((gripSize / 2) - overlay.w), overlay.y - ((gripSize / 2) - overlay.h), gripSize, gripSize]))
+
+                        overlayContext.fillStyle = "#66cc33";
+                        overlayContext.globalAlpha = hideOverlays ? 0 : .5;
+                    }
                 }
 
             })
@@ -355,8 +369,7 @@ const Page = React.forwardRef(({
                 setDraggingMode("resize");
                 setActiveGrip(insideGrip);
                 setMovingOverlay(null);
-            }
-            else if (insideOverlay) {
+            } else if (insideOverlay) {
                 setDraggingMode("move");
                 setActiveGrip(null);
                 setMovingOverlay(insideOverlay);
@@ -364,7 +377,7 @@ const Page = React.forwardRef(({
         }
 
 
-        if (draggingMode === "resize" && activeGrip && mode.mode === "edit") {
+        if (draggingMode === "resize" && activeGrip && mode.mode === "edit" && mode.activeTool === "edit") {
             const [mouseX, mouseY] = translateCoordinates(e);
             const index = currOverlays.findIndex(o => o.id === activeGrip.overlay.id);
             if (index !== -1) {
@@ -391,7 +404,7 @@ const Page = React.forwardRef(({
                 setFormOverlays([{...activeGrip.overlay, ...updatedDimensions}]);
             }
         } else {
-            if (mode.mode === "edit" && !insideGrip && draggingMode === "move" && movingOverlay) {
+            if (mode.mode === "edit" && !insideGrip && draggingMode === "move" && movingOverlay && mode.activeTool === "edit") {
                 const [mouseX, mouseY] = translateCoordinates(e);
                 const index = currOverlays.findIndex(o => o.id === movingOverlay.id);
                 if (index !== -1) {
@@ -424,6 +437,15 @@ const Page = React.forwardRef(({
             if (setActiveOverlayId && e.type === "click") {
                 if (insideOverlay) {
                     setActiveOverlayId(insideOverlay.id);
+                    if (mode.activeTool === "delete"){
+                        if (setOverlaysToDelete && activeOverlayId && activeOverlayId === insideOverlay.id){
+                            setOverlaysToDelete((overlays)=>overlays.concat([activeOverlayId]));
+                        }
+                        if (setFormOverlays && formOverlays){
+                            setFormOverlays(formOverlays.filter(overlay => overlay.id !== activeOverlayId));
+                        }
+
+                    }
                 } else {
                     setActiveOverlayId(null);
                 }
@@ -456,12 +478,24 @@ export type Overlay = {
     page: number
 }
 
-export default function Flipbook({pdfUrl, initialOverlays, formOverlays, setFormOverlays, setActiveOverlayId}: {
+export default function Flipbook({
+                                     pdfUrl,
+                                     initialOverlays,
+                                     formOverlays,
+    overlaysToDelete,
+    activeOverlayId,
+                                     setFormOverlays,
+                                     setActiveOverlayId,
+                                     setOverlaysToDelete
+                                 }: {
     pdfUrl: string,
     initialOverlays: Overlay[] | null,
     setFormOverlays?: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void,
     formOverlays?: Overlay[] | null,
-    setActiveOverlayId?: (value: (((prevState: (string | null)) => (string | null)) | string | null)) => void
+    overlaysToDelete?: string[],
+    activeOverlayId?: string | null,
+    setActiveOverlayId?: (value: (((prevState: (string | null)) => (string | null)) | string | null)) => void,
+    setOverlaysToDelete?: (value: (((prevState: string[]) => string[]) | string[])) => void
 }) {
     const formattedInitialOverlays: Overlay[][] = [];
     if (initialOverlays && initialOverlays?.length > 0) {
@@ -575,10 +609,14 @@ export default function Flipbook({pdfUrl, initialOverlays, formOverlays, setForm
                 ref={book}>
                 {Array.from({length: maxPage}).map((_, index) => {
                     return (
-                        <Page formOverlays={formOverlays} setOverlays={setOverlays} setFormOverlays={setFormOverlays}
-                              setActiveOverlayId={setActiveOverlayId} overlays={overlays}
-                              key={index} currPage={index + 1}
-                              pdfUrl={pdfUrl} shouldRender={renderedPages.has(index)}/>
+                        <Page
+                            overlaysToDelete={overlaysToDelete}
+                            activeOverlayId={activeOverlayId}
+                            setOverlaysToDelete={setOverlaysToDelete}
+                            formOverlays={formOverlays} setOverlays={setOverlays} setFormOverlays={setFormOverlays}
+                            setActiveOverlayId={setActiveOverlayId} overlays={overlays}
+                            key={index} currPage={index + 1}
+                            pdfUrl={pdfUrl} shouldRender={renderedPages.has(index)}/>
                     );
                 })}
             </HTMLFlipBook>

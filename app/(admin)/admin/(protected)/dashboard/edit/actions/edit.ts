@@ -7,7 +7,7 @@ export async function handleEdit(prevState: { flipBookId:string, error?: string 
     if (!process.env.BACKEND_URL) return {...prevState, error: "Something went wrong. Please try again."};
 
     const overlays = formData.get("overlays");
-
+    const overlaysToDelete = formData.get("overlaysToDelete");
 
 
     const cookieStore = await cookies();
@@ -38,6 +38,17 @@ export async function handleEdit(prevState: { flipBookId:string, error?: string 
                 }
             });
         });
+    }
+
+    if (overlaysToDelete && typeof overlaysToDelete === "string"){
+        overlaysToDelete.split(",").forEach((id:string) => {
+            fetch(`${process.env.BACKEND_URL}/flipbooks/overlays/${id}`, {
+                method: "DELETE",
+                headers: {
+                    "Authorization": `Bearer ${userToken?.value}`,
+                }
+            });
+        })
     }
 
 
