@@ -227,7 +227,7 @@ const EditForm = ({flipBook, pdfPath, initialOverlays}: {
                 </div>
             </div>
             <input readOnly className="hidden" aria-hidden={true} name="overlays" value={JSON.stringify(overlaysToUpdate)}/>
-            <input readOnly aria-hidden={true} name="overlaysToDelete" value={overLaysToDelete}/>
+            <input readOnly className="hidden" aria-hidden={true} name="overlaysToDelete" value={overLaysToDelete}/>
             <OverlayForm overlaysToUpdate={overlaysToUpdate} overlays={overlaysToRender} setOverlays={setOverlaysToRender} activeOverlayId={activeOverlayId}
                          setOverlaysToUpdate={setOverlaysToUpdate}/>
             <ToolBar setActiveTool={setActiveTool} activeTool={activeTool}/>
