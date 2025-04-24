@@ -36,14 +36,14 @@ const OverlayForm = ({hideForm, activeOverlayId, setOverlays, overlays, overlays
             return overlay
         }));
 
-        if (overlaysToUpdate){
+        if (overlaysToUpdate) {
             const existingOverlayToUpdate = overlaysToUpdate.find(overlay => overlay.id === activeOverlayId);
             setOverlaysToUpdate(existingOverlayToUpdate ? overlaysToUpdate.map(overlay => {
                 if (overlay.id === activeOverlayId) {
                     return {...overlay, url: e.currentTarget.value}
                 }
                 return overlay
-            }): overlaysToUpdate.concat([{...overlayToUpdate, url: e.currentTarget.value}]))
+            }) : overlaysToUpdate.concat([{...overlayToUpdate, url: e.currentTarget.value}]))
 
             return;
         }
@@ -67,21 +67,30 @@ const OverlayForm = ({hideForm, activeOverlayId, setOverlays, overlays, overlays
 }
 
 const ToolBar = (props: {
-    setActiveTool: (value: (((prevState: (string)) => (string)) | string )) => void,
+    setActiveTool: (value: (((prevState: (string)) => (string)) | string)) => void,
     activeTool: string
-})=> {
+}) => {
     const {setActiveTool, activeTool} = props;
 
     return <div className="flex flex-wrap my-2 items-center mx-auto justify-center bg-slate-700 rounded-lg">
-        <button onClick={() => setActiveTool(activeTool === 'create' ? '' : 'create')}
+        <button onClick={(e) => {
+            e.preventDefault()
+            setActiveTool(activeTool === 'create' ? '' : 'create')
+        }}
                 className={`px-4 py-2 border-x border-x-slate-300 ${activeTool === 'create' ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}>
             Create Overlay
         </button>
-        <button onClick={() => setActiveTool(activeTool === 'delete' ? '' : 'delete')}
+        <button onClick={(e) => {
+            e.preventDefault();
+            setActiveTool(activeTool === 'delete' ? '' : 'delete')
+        }}
                 className={`px-4 py-2 border-x border-x-slate-300 ${activeTool === 'delete' ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}>
             Delete Overlay
         </button>
-        <button onClick={() => setActiveTool(activeTool === 'edit' ? '' : 'edit')}
+        <button onClick={(e) => {
+            e.preventDefault();
+            setActiveTool(activeTool === 'edit' ? '' : 'edit')
+        }}
                 className={`px-4 py-2 border-x border-x-slate-300 ${activeTool === 'edit' ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}>
             Edit Overlay
         </button>
@@ -227,13 +236,18 @@ const EditForm = ({flipBook, pdfPath, initialOverlays}: {
                     }
                 </div>
             </div>
-            <input readOnly className="hidden" aria-hidden={true} name="overlays" value={JSON.stringify(overlaysToUpdate)}/>
+            <input readOnly className="hidden" aria-hidden={true} name="overlays"
+                   value={JSON.stringify(overlaysToUpdate)}/>
             <input readOnly className="hidden" aria-hidden={true} name="overlaysToDelete" value={overLaysToDelete}/>
-            <OverlayForm hideForm={activeTool !== "edit"} overlaysToUpdate={overlaysToUpdate} overlays={overlaysToRender} setOverlays={setOverlaysToRender} activeOverlayId={activeOverlayId}
-                         setOverlaysToUpdate={setOverlaysToUpdate}/>
             <ToolBar setActiveTool={setActiveTool} activeTool={activeTool}/>
+            <OverlayForm hideForm={activeTool === "delete"} overlaysToUpdate={overlaysToUpdate}
+                         overlays={overlaysToRender} setOverlays={setOverlaysToRender} activeOverlayId={activeOverlayId}
+                         setOverlaysToUpdate={setOverlaysToUpdate}/>
             <ModeContext.Provider value={{status: status, mode: "edit", flipBookId: id, activeTool: activeTool}}>
-                <Flipbook overlaysToDelete={overLaysToDelete} activeOverlayId={activeOverlayId} setOverlaysToDelete={setOverLaysToDelete} formOverlays={overlaysToUpdate} pdfUrl={pdfPath} initialOverlays={overlaysToRender} setFormOverlays={setOverlaysToUpdate}
+                <Flipbook setOverlaysToRender={setOverlaysToRender} overlaysToDelete={overLaysToDelete}
+                          activeOverlayId={activeOverlayId} setOverlaysToDelete={setOverLaysToDelete}
+                          formOverlays={overlaysToUpdate} pdfUrl={pdfPath} initialOverlays={overlaysToRender}
+                          setFormOverlays={setOverlaysToUpdate}
                           setActiveOverlayId={setActiveOverlayId}/>
             </ModeContext.Provider>
 

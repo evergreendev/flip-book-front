@@ -6,6 +6,7 @@
     "copy-assets": "cp ./node_modules/pdfjs-dist/build/pdf.worker.min.mjs ./public/",
     "dev": "next dev",
     "build": "npm run copy-assets && next build",
+    "window-build": "next build",
     "start": "next start",
     "lint": "next lint"
   },
@@ -24,7 +25,8 @@
     "react-pageflip": "^2.0.3",
     "slugify": "^1.6.6",
     "tailwind-merge": "^3.0.1",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "uuid": "^11.1.0"
   },
   "devDependencies": {
     "@eslint/eslintrc": "^3",
