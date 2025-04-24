@@ -13,6 +13,7 @@ import {
     DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import {useRouter} from "next/navigation";
+import {deleteFlipBook} from "@/app/(admin)/admin/(protected)/dashboard/flipbooks/actions/flipbook";
 
 export type FlipBook = {
     pdf_path: string | null,
@@ -60,7 +61,16 @@ export const columns: ColumnDef<FlipBook>[] = [{
                         >
                             Copy Flipbook URL
                         </DropdownMenuItem>
-                        <DropdownMenuItem>View customer</DropdownMenuItem>
+                        <form action={async () => {
+                            if (!confirm("Are you sure you want to delete this flipbook?")) return;
+                            await deleteFlipBook(flipBook.id);
+                            router.refresh();
+                        }}>
+                            <DropdownMenuItem asChild>
+                                <button type="submit">Delete FlipBook</button>
+                            </DropdownMenuItem>
+                        </form>
+
                     </DropdownMenuContent>
                 </DropdownMenu>
             )

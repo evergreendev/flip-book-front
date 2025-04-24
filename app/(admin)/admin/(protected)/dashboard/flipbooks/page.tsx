@@ -9,6 +9,9 @@ async function getData(): Promise<FlipBook[]> {
         headers: {
             "Content-Type": "application/json",
             "Authorization": `Bearer ${userToken?.value}`
+        },
+        next: {
+            tags: ["flipbooks"]
         }
     });
     const data = await flipbookRes.json();
