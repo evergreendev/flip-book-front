@@ -1,6 +1,7 @@
 import {cookies} from "next/headers";
 import {FlipBook} from "@/app/(admin)/admin/(protected)/dashboard/flipbooks/columns";
 import Flipbook, {Overlay} from "@/app/common/Flipbooks/components/Flipbook";
+import {Metadata} from "next";
 
 //todo move this somewhere better
 
@@ -30,6 +31,15 @@ type Args = {
     params: Promise<{
         slug: string
     }>
+}
+
+export async function generateMetadata({params: paramsPromise}: Args): Promise<Metadata> {
+    const {slug} = await paramsPromise;
+    const data = await getData(slug);
+
+    return {
+        title: data?.title || 'Flipbook'
+    };
 }
 
 export default async function Page({params: paramsPromise}: Args) {
