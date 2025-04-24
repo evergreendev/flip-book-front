@@ -698,6 +698,7 @@ export default function Flipbook({
                 minHeight={400}
                 maxShadowOpacity={0.5}
                 disableFlipByClick={true}
+                showPageCorners={false}
                 useMouseEvents={mode.mode !== "edit"}
                 showCover={true}
                 onFlip={(page: { data: number }) => {

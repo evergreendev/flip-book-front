@@ -199,7 +199,13 @@ const EditForm = ({flipBook, pdfPath, initialOverlays}: {
     }
 
     return <div className="flex items-center justify-center min-h-screen p-4 w-full">
-        <form ref={formRef} action={formAction} className="w-full">
+        <form     onKeyDown={(e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+            }
+        }}
+
+                  ref={formRef} action={formAction} className="w-full">
             {
                 state.error && <div className="text-red-900 bg-red-100 p-4">{state.error}</div>
             }
