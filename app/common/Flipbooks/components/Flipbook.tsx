@@ -9,7 +9,7 @@ import ModeContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/
 import {useRouter} from 'next/navigation'
 import {usePdfCache} from "@/app/common/Flipbooks/hooks/PdfCacheHook";
 
-async function processOverlays(
+/*async function processOverlays(
     currPage: number,
     pdf: PDFDocumentProxy,
     mode: { flipBookId: string; }) {
@@ -47,7 +47,7 @@ async function processOverlays(
     })
 
     return newOverlays;
-}
+}*/
 
 
 // eslint-disable-next-line react/display-name
@@ -611,7 +611,7 @@ export default function Flipbook({
 
                 if (!isMounted) return;
 
-                if (initialOverlays?.length === 0 && mode.mode === "edit" && setFormOverlays) {
+/*                if (initialOverlays?.length === 0 && mode.mode === "edit" && setFormOverlays) {
                     const initialOverlayArray: React.SetStateAction<Overlay[][]> = [];
 
                     for (let i = 0; i < pdf.numPages; i++) {
@@ -621,7 +621,7 @@ export default function Flipbook({
 
                     setOverlays(initialOverlayArray);
                     setFormOverlays(initialOverlayArray.flatMap(x => x));
-                }
+                }*/
 
                 setMaxPage(pdf.numPages);
 

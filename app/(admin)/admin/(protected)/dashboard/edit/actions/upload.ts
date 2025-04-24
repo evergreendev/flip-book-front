@@ -2,8 +2,8 @@
 
 import {cookies} from "next/headers";
 
-export async function handleUpload(prevState: { error?: string | null, redirect?: string | null }, formData: FormData) {
-    if (!process.env.BACKEND_URL) return {...prevState, error: "Something went wrong. Please try again."};
+export async function handleUpload(prevState: { error: string | null, redirect: string | null }, formData: FormData) {
+    if (!process.env.BACKEND_URL) return {...prevState, error: "Something went wrong. Please try again.", redirect: null};
 
     const cookieStore = await cookies();
     const userToken = cookieStore.get('user_token');
@@ -18,7 +18,7 @@ export async function handleUpload(prevState: { error?: string | null, redirect?
     if (res.status === 401) {
         cookieStore.delete('user_token');
     }
-    if (res.status !== 200) return {...prevState, error: "Invalid Credentials. Please Try again"};
+    if (res.status !== 200) return {...prevState, error: "Invalid Credentials. Please Try again", redirect: null};
 
     const pdf = await res.json();
 
@@ -33,8 +33,8 @@ export async function handleUpload(prevState: { error?: string | null, redirect?
             "Authorization": `Bearer ${userToken?.value}`
         }
     });
-    if (res.status !== 200) return {...prevState, error: "Invalid Credentials. Please Try again"};
+    if (res.status !== 200) return {...prevState, error: "Invalid Credentials. Please Try again", redirect: null};
     const flipbookBody = await flipbookRes.json();
 
-    return {error: null, redirect: flipbookBody.flipbook.id}
+    return {error: null, redirect: "edit/"+flipbookBody.flipbook.id}
 }

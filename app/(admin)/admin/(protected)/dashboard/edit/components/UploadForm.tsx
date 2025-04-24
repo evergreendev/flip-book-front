@@ -5,6 +5,7 @@ import {RefObject, useActionState, useMemo, useRef} from "react";
 import {useDropzone} from "react-dropzone";
 import {Property} from "csstype";
 import FlexDirection = Property.FlexDirection;
+import {useRouter} from "next/navigation";
 
 const baseStyle = {
     flex: 1,
@@ -42,7 +43,7 @@ function Dropzone(props: { required: boolean, name: string }) {
     const {
         isFocused,
         isDragAccept,
-        isDragReject, getRootProps, getInputProps, open, acceptedFiles
+        isDragReject, getRootProps, getInputProps, acceptedFiles
     } = useDropzone({
         onDrop: (incomingFiles) => {
             if (hiddenInputRef.current) {
@@ -86,9 +87,6 @@ function Dropzone(props: { required: boolean, name: string }) {
                 <input type="file" name={name} required={required} style={{opacity: 0}} ref={hiddenInputRef}/>
                 <input {...getInputProps()} />
                 <p>Drop PDF here</p>
-                <button type="button" onClick={open}>
-                    Open File Dialog
-                </button>
             </div>
             <aside>
                 <h4>Files</h4>
@@ -98,8 +96,22 @@ function Dropzone(props: { required: boolean, name: string }) {
     );
 }
 
+type UploadFormState = {
+    error: string | null,
+    redirect: string | null
+}
+const initialState:UploadFormState = {
+    error: null,
+    redirect: null
+}
+
 const UploadForm = () => {
-    const [state, formAction] = useActionState(handleUpload, {error: null, redirect: false});
+    const router = useRouter();
+    const [state, formAction] = useActionState(handleUpload, initialState);
+
+    if (state.redirect) {
+        router.push(state.redirect);
+    }
 
     return <div className="flex items-center justify-center min-h-screen p-4">
         <form action={formAction}>
@@ -108,8 +120,6 @@ const UploadForm = () => {
             }
             <div className="flex gap-2 m-2">
                 <Dropzone required={true} name="file"/>
-                {/*            <label htmlFor="file">PDF:</label>
-            <input name="file" type="file"/>*/}
             </div>
 
             <button className="bg-white text-black rounded px-4 mx-auto block">Submit</button>
