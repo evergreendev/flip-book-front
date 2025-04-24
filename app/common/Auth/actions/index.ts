@@ -76,6 +76,6 @@ export async function handleRegister(prevState: {
 }
 
 export async function getUsers() {
-    const res = await fetch(`${process.env.BACKEND_URL}${usersResourceName}`)
+    const res = await fetch(`${process.env.BACKEND_URL}${usersResourceName}`,{cache: "no-store"})
     return await res.json();
 }
