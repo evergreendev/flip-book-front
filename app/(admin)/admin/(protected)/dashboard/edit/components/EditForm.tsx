@@ -4,10 +4,51 @@ import {useActionState, useEffect, useRef, useState} from "react";
 import {handleEdit} from "@/app/(admin)/admin/(protected)/dashboard/edit/actions/edit";
 import Flipbook, {Overlay} from "@/app/common/Flipbooks/components/Flipbook";
 import {FlipBook} from "@/app/(admin)/admin/(protected)/dashboard/flipbooks/columns";
-import {LockKeyhole, LockKeyholeOpen} from "lucide-react"
+import {Check, Loader2, LockKeyhole, LockKeyholeOpen} from "lucide-react"
 import slugify from "slugify";
 import {useRouter} from "next/navigation";
 import ModeContext from "../context/ModeContext";
+import Link from "next/link";
+
+interface NotificationProps {
+  message: string;
+  type: 'success' | 'error';
+  isVisible: boolean;
+  onClose: () => void;
+}
+
+const Notification = ({ message, type, isVisible, onClose }: NotificationProps) => {
+  useEffect(() => {
+    if (isVisible) {
+      const timer = setTimeout(() => {
+        onClose();
+      }, 5000);
+      
+      return () => clearTimeout(timer);
+    }
+  }, [isVisible, onClose]);
+
+  if (!isVisible) return null;
+
+  return (
+    <div className="fixed top-5 right-5 z-50 animate-in fade-in slide-in-from-top-5 duration-300">
+      <div className={`
+        flex items-center gap-2 rounded-lg shadow-lg p-4 pl-3 pr-6
+        ${type === 'success' ? 'bg-green-100 border-l-4 border-green-500' : 'bg-red-100 border-l-4 border-red-500'}
+      `}>
+        <div className={`
+          rounded-full p-1
+          ${type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}
+        `}>
+          <Check size={16} />
+        </div>
+        <p className={`text-sm font-medium ${type === 'success' ? 'text-green-800' : 'text-red-800'}`}>
+          {message}
+        </p>
+      </div>
+    </div>
+  );
+};
 
 const OverlayForm = ({hideForm, activeOverlayId, setOverlays, overlays, overlaysToUpdate, setOverlaysToUpdate}: {
     activeOverlayId: string | null,
@@ -131,6 +172,16 @@ const EditForm = ({flipBook, pdfPath, initialOverlays}: {
     const [overlaysToRender, setOverlaysToRender] = useState<Overlay[] | null>(initialOverlays);
     const [activeOverlayId, setActiveOverlayId] = useState<string | null>(null);
     const [activeTool, setActiveTool] = useState<string>('edit');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const [notification, setNotification] = useState<{
+        message: string;
+        type: 'success' | 'error';
+        isVisible: boolean;
+    }>({
+        message: '',
+        type: 'success',
+        isVisible: false
+    });
 
     const formRef = useRef<HTMLFormElement>(null);
     const draftFieldRef = useRef<HTMLInputElement>(null);
@@ -148,17 +199,28 @@ const EditForm = ({flipBook, pdfPath, initialOverlays}: {
     }, [draftFieldRef, title]);
 
     useEffect(() => {
-        console.log(state);
         if (state.redirect) {
             console.log(state.redirect);
-            //this will reload the page without doing SSR
-            router.refresh();
+            // Show success notification
+            const wasDraft = draftFieldRef.current?.checked;
+            setNotification({
+                message: wasDraft 
+                    ? 'Successfully saved as draft' 
+                    : 'Successfully published',
+                type: 'success',
+                isVisible: true
+            });
+            // Refresh after a short delay to let the notification be seen
+            setTimeout(() => {
+                router.refresh();
+            }, 500);
         }
     }, [router, state]);
 
 
     function handleSubmit(e: React.MouseEvent<HTMLButtonElement>, isDraft: boolean) {
         e.preventDefault();
+        setIsSubmitting(true);
 
         if (draftFieldRef.current) {
             draftFieldRef.current.checked = isDraft;
@@ -167,7 +229,34 @@ const EditForm = ({flipBook, pdfPath, initialOverlays}: {
         if (formRef.current) {
             formRef.current.requestSubmit();
         }
+        if (!state.error){
+            setOverLaysToDelete([]);
+            setOverlaysToUpdate(null);
+        }
     }
+
+    useEffect(() => {
+        if (state.redirect || state.error) {
+            setIsSubmitting(false);
+            
+            if (state.error) {
+                setNotification({
+                    message: state.error,
+                    type: 'error',
+                    isVisible: true
+                });
+            }
+            
+            if (state.error) {
+                setNotification({
+                    message: state.error,
+                    type: 'error',
+                    isVisible: true
+                });
+            }
+        }
+    }, [state]);
+
 
     function handleUpdateTitle(e: { currentTarget: { value: string; }; }) {
         setCurrTitle(e.currentTarget.value);
@@ -199,6 +288,22 @@ const EditForm = ({flipBook, pdfPath, initialOverlays}: {
     }
 
     return <div className="flex items-center justify-center min-h-screen p-4 w-full">
+        {isSubmitting && (
+            <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+                <div className="bg-white p-4 rounded-md flex items-center gap-2">
+                    <Loader2 className="animate-spin h-6 w-6" />
+                    <span>Saving changes...</span>
+                </div>
+            </div>
+        )}
+
+        <Notification 
+            message={notification.message}
+            type={notification.type}
+            isVisible={notification.isVisible}
+            onClose={() => setNotification(prev => ({ ...prev, isVisible: false }))}
+        />
+    
         <form     onKeyDown={(e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
@@ -243,8 +348,8 @@ const EditForm = ({flipBook, pdfPath, initialOverlays}: {
                 </div>
             </div>
             <input readOnly className="hidden" aria-hidden={true} name="overlays"
-                   value={JSON.stringify(overlaysToUpdate)}/>
-            <input readOnly className="hidden" aria-hidden={true} name="overlaysToDelete" value={overLaysToDelete}/>
+                   value={JSON.stringify(overlaysToUpdate || [])}/>
+            <input readOnly className="hidden" aria-hidden={true} name="overlaysToDelete" value={overLaysToDelete || []}/>
             <ToolBar setActiveTool={setActiveTool} activeTool={activeTool}/>
             <OverlayForm hideForm={activeTool === "delete"} overlaysToUpdate={overlaysToUpdate}
                          overlays={overlaysToRender} setOverlays={setOverlaysToRender} activeOverlayId={activeOverlayId}
@@ -258,7 +363,15 @@ const EditForm = ({flipBook, pdfPath, initialOverlays}: {
             </ModeContext.Provider>
 
             <input ref={draftFieldRef} aria-hidden={true} className="hidden" type="checkbox" name="isDraft"/>
-
+            <div className="flex justify-end">
+                <p className={`my-2 py-1 px-8 rounded-full ${statusStyles[status]}`}>{status}</p>
+                {
+                    status === "published" &&
+                    <Link href={`${process.env.NEXT_PUBLIC_BASE_URL}/${currPath}`} target="_blank" className={`my-2 mx-4 py-1 px-8 rounded-full bg-slate-700 text-white`}>
+                        View Flipbook
+                    </Link>
+                }
+            </div>
             <div className="flex justify-end gap-2 items-center">
                 <button type="submit" onClick={(e) => handleSubmit(e, true)}
                         className="bg-gray-100 my-2 text-black rounded px-4 block">Save Draft
