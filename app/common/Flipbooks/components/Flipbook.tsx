@@ -2,12 +2,11 @@
 import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {v4 as uuidv4} from 'uuid';
 import HTMLFlipBook from "react-pageflip";
-import {PDFDocumentProxy, RenderTask} from "pdfjs-dist";
-import {RenderParameters} from "pdfjs-dist/types/src/display/api";
 import {ChevronLeft, ChevronRight} from "lucide-react";
 import ModeContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/ModeContext";
 import {useRouter} from 'next/navigation'
 import {usePdfCache} from "@/app/common/Flipbooks/hooks/PdfCacheHook";
+import PDFRenderer from "@/app/common/Flipbooks/components/PDFRenderer";
 
 /*async function processOverlays(
     currPage: number,
@@ -76,10 +75,7 @@ const Page = React.forwardRef(({
     setOverlaysToDelete?: (value: (((prevState: string[]) => string[]) | string[])) => void
 }, ref: React.ForwardedRef<HTMLDivElement>) => {
     const mode = useContext(ModeContext);
-    const canvasRef = useRef<HTMLCanvasElement>(null);
     const overlayRef = useRef<HTMLCanvasElement>(null);
-    const renderTaskRef = useRef<RenderTask>(null);
-    const pdfRef = useRef<PDFDocumentProxy>(null);
     const [draggingMode, setDraggingMode] = useState<"none" | "move" | "resize">("none");
     const [activeGrip, setActiveGrip] = useState<{ overlay: Overlay, grip: string | null } | null>(null);
     const [movingOverlay, setMovingOverlay] = useState<Overlay | null>(null);
@@ -103,7 +99,7 @@ const Page = React.forwardRef(({
                 if (mode.activeTool === "delete" && activeOverlayId === overlay.id) {
                     overlayContext.fillStyle = "#e41919";
                 }
-                if (mode.activeTool !== "delete" && activeOverlayId === overlay.id){
+                if (mode.activeTool !== "delete" && activeOverlayId === overlay.id) {
                     overlayContext.fillStyle = "#338ccc";
                 }
                 // @ts-expect-error silly tuple nonsense
@@ -140,123 +136,10 @@ const Page = React.forwardRef(({
     //overlay render effect
     useEffect(() => {
         (async function () {
-            if (!canvasRef.current || !overlayRef.current) return;
+            if (!overlayRef.current) return;
             renderOverlay(overlayRef.current, mode.mode !== "edit");
         })();
-
-        // Cleanup function to cancel the render task if the component unmounts.
-        return () => {
-            if (renderTaskRef.current) {
-                renderTaskRef.current.cancel();
-            }
-            if (pdfRef.current) {
-                pdfRef.current.destroy().then(() => console.log("destroyed"));
-            }
-        };
     }, [mode.mode, renderOverlay]);
-
-    //page render effect
-    useEffect(() => {
-        const isCancelled = false;
-        let pdf: PDFDocumentProxy;
-
-        const canvas = canvasRef.current;
-        const overlayCanvas = overlayRef.current;
-
-        if (!shouldRender) return async () => {
-            if (renderTaskRef.current) {
-                renderTaskRef.current.cancel();
-            }
-            const ctx = canvas?.getContext("2d");
-
-            if (!canvas || !ctx || !overlayCanvas) return;
-
-            canvas.height = 1024;
-            canvas.width = 768;
-            overlayCanvas.height = 1024;
-            overlayCanvas.width = 768;
-
-            ctx.fillStyle = "#58ca70";
-            ctx.fillRect(0, 0, canvas.width, canvas.height);//todo add loading
-            ctx.fillStyle = "#75b543";
-        }
-
-        async function renderPage(canvas: HTMLCanvasElement, overlayCanvas: HTMLCanvasElement) {
-            try {
-                // Import pdfjs-dist dynamically for client-side rendering.
-                // @ts-expect-error: TypeScript cannot verify dynamic import for pdfjs-dist.
-                const pdfJS = await import('pdfjs-dist/build/pdf');
-
-                // Set up the worker.
-                pdfJS.GlobalWorkerOptions.workerSrc =
-                    window.location.origin + '/pdf.worker.min.mjs';
-
-                // Load the PDF document.
-                pdf = await pdfJS.getDocument(pdfUrl).promise;
-                pdfRef.current = pdf;
-
-                // Get the first page.
-                const page = await pdf.getPage(currPage);
-                const viewport = page.getViewport({scale: 1.5});
-
-                // Prepare the canvas.
-                const canvas1 = canvas;
-                const canvas2 = overlayCanvas;
-                const canvasContext = canvas1.getContext('2d');
-                canvas1.height = viewport.height;
-                canvas2.height = viewport.height;
-                canvas1.width = viewport.width;
-                canvas2.width = viewport.width;
-
-                // Ensure no other render tasks are running.
-                if (renderTaskRef.current) {
-                    await renderTaskRef.current.promise;
-                }
-
-                // Render the page into the canvas.
-                const renderContext = {canvasContext, viewport};
-                const renderTask = page.render(renderContext as RenderParameters);
-
-                // Store the render task.
-                renderTaskRef.current = renderTask;
-
-                // Wait for rendering to finish.
-                try {
-                    await renderTask.promise;
-                } catch (error) {
-                    // @ts-expect-error Don't need to know the error type
-                    if (error.name === 'RenderingCancelledException') {
-                        console.log('Rendering cancelled.');
-                    } else {
-                        console.error('Render error:', error);
-                    }
-                }
-
-                if (!isCancelled) {
-                    await pdf.destroy();
-                }
-            } catch (e) {
-                console.log(e)
-            } finally {
-                await pdf?.destroy();
-            }
-        }
-
-        (async function () {
-            if (!canvasRef.current || !overlayRef.current) return;
-            await renderPage(canvasRef.current, overlayRef.current);
-        })();
-
-        // Cleanup function to cancel the render task if the component unmounts.
-        return () => {
-            if (renderTaskRef.current) {
-                renderTaskRef.current.cancel();
-            }
-            if (pdfRef.current) {
-                pdfRef.current.destroy().then(() => console.log("destroyed"));
-            }
-        };
-    }, [currPage, pdfUrl, shouldRender]);
 
 
     function findInsideOverlay(position: number[], overlays: Overlay[]) {
@@ -421,7 +304,7 @@ const Page = React.forwardRef(({
         }
 
 
-        if (draggingMode === "resize" && activeGrip && mode.mode === "edit" && (mode.activeTool === "edit"|| mode.activeTool === "create")) {
+        if (draggingMode === "resize" && activeGrip && mode.mode === "edit" && (mode.activeTool === "edit" || mode.activeTool === "create")) {
             const [mouseX, mouseY] = translateCoordinates(e);
             const index = currOverlays.findIndex(o => o.id === activeGrip.overlay.id);
             if (index !== -1) {
@@ -459,7 +342,7 @@ const Page = React.forwardRef(({
                 setFormOverlays([{...activeGrip.overlay, ...updatedDimensions}]);
             }
         } else {
-            if (mode.mode === "edit" && !insideGrip && draggingMode === "move" && movingOverlay && (mode.activeTool === "edit"||mode.activeTool === "create")) {
+            if (mode.mode === "edit" && !insideGrip && draggingMode === "move" && movingOverlay && (mode.activeTool === "edit" || mode.activeTool === "create")) {
                 const [mouseX, mouseY] = translateCoordinates(e);
                 const index = currOverlays.findIndex(o => o.id === movingOverlay.id);
                 if (index !== -1) {
@@ -510,8 +393,8 @@ const Page = React.forwardRef(({
                         if (setFormOverlays && formOverlays && activeOverlayId === insideOverlay.id) {
                             setFormOverlays(formOverlays.filter(overlay => overlay.id !== activeOverlayId));
                         }
-                        if (setOverlays && activeOverlayId === insideOverlay.id){
-                            setOverlays((overlays)=>{
+                        if (setOverlays && activeOverlayId === insideOverlay.id) {
+                            setOverlays((overlays) => {
                                 if (!overlays) {
                                     return overlays
                                 }
@@ -539,7 +422,7 @@ const Page = React.forwardRef(({
 
     return (
         <div ref={ref}>
-            <canvas ref={canvasRef}/>
+            <PDFRenderer currPage={currPage} pdfUrl={pdfUrl} shouldRender={shouldRender}/>
             <canvas ref={overlayRef} onMouseLeave={handleMouseExit} onClick={handleMouse} onMouseMove={handleMouse}/>
         </div>
     );
@@ -611,17 +494,17 @@ export default function Flipbook({
 
                 if (!isMounted) return;
 
-/*                if (initialOverlays?.length === 0 && mode.mode === "edit" && setFormOverlays) {
-                    const initialOverlayArray: React.SetStateAction<Overlay[][]> = [];
+                /*                if (initialOverlays?.length === 0 && mode.mode === "edit" && setFormOverlays) {
+                                    const initialOverlayArray: React.SetStateAction<Overlay[][]> = [];
 
-                    for (let i = 0; i < pdf.numPages; i++) {
-                        const overlays = await processOverlays(i + 1, pdf, mode);
-                        initialOverlayArray.push(overlays);
-                    }
+                                    for (let i = 0; i < pdf.numPages; i++) {
+                                        const overlays = await processOverlays(i + 1, pdf, mode);
+                                        initialOverlayArray.push(overlays);
+                                    }
 
-                    setOverlays(initialOverlayArray);
-                    setFormOverlays(initialOverlayArray.flatMap(x => x));
-                }*/
+                                    setOverlays(initialOverlayArray);
+                                    setFormOverlays(initialOverlayArray.flatMap(x => x));
+                                }*/
 
                 setMaxPage(pdf.numPages);
 
@@ -660,7 +543,7 @@ export default function Flipbook({
     useEffect(() => {
         if (initialOverlays && maxPage) {
             const formattedOverlays: Overlay[][] = [];
-            for (let i = 0; i < maxPage; i++){
+            for (let i = 0; i < maxPage; i++) {
                 formattedOverlays.push([]);
             }
             initialOverlays.forEach(overlay => {
