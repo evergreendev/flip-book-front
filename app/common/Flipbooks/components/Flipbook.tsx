@@ -1,10 +1,11 @@
 "use client"
-import React, {useContext, useEffect, useRef, useState} from "react";
+import React, {HTMLAttributes, useContext, useEffect, useState} from "react";
 import {ChevronLeft, ChevronRight} from "lucide-react";
 import ModeContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/ModeContext";
 import {usePdfCache} from "@/app/common/Flipbooks/hooks/PdfCacheHook";
-import { Overlay } from "../types";
+import {Overlay} from "../types";
 import Page from "@/app/common/Flipbooks/components/Page";
+import {animated, to, useSpring} from "@react-spring/web";
 
 export default function Flipbook({
                                      pdfUrl,
@@ -42,12 +43,23 @@ export default function Flipbook({
     const [currPage, setCurrPage] = useState(1);
     const [renderedPages, setRenderedPages] = useState(new Set<number>());
     const [overlays, setOverlays] = useState<Overlay[][]>(formattedInitialOverlays);
+    const [animationDirection, setAnimationDirection] = useState<"left" | "right">("left");
     const mode = useContext(ModeContext);
-    /*    const [width, setWidth] = useState(0);
-        const [height, setHeight] = useState(0);*/
 
-
-    const book = useRef(null);
+    const [gradientSpring, gradientApi] = useSpring(() => ({
+        from: {
+            rotation: 0,
+            g1: 0,
+            g2: 0,
+            g3: 0,
+        },
+        to: {
+            rotation: 45,
+            g1: 1,
+            g2: 1,
+            g3: 1,
+        }
+    }));
 
     const {loadPdf, prefetchPdf} = usePdfCache();
 
@@ -123,42 +135,87 @@ export default function Flipbook({
             setOverlays(formattedOverlays);
         }
     }, [initialOverlays, maxPage]);
+    // Effect to trigger gradient animation when current page changes
+    useEffect(() => {
+        if (animationDirection === "left") {
+            gradientApi.start({
+                to: {
+                    g1: 0,
+                    g2: 0,
+                    g3: 0,
+                    rotation: 90
+                },
+                from: {
+                    g1: 68,
+                    g2: 80,
+                    g3: 93,
+                    rotation: 133
+                },
+
+            });
+        } else {
+            gradientApi.start({
+                from: {
+                    g1: 0,
+                    g2: 7,
+                    g3: 23,
+                    rotation: 136
+                },
+                to: {
+                    g1: 100,
+                    g2: 100,
+                    g3: 100,
+                    rotation: 90
+                },
+            });
+        }
+
+    }, [animationDirection, currPage, gradientApi]);
 
     if (!maxPage) return null;
-
 
     return <div className="flex justify-between items-center">
         <button onClick={(e) => {
             e.preventDefault();
-            e.preventDefault();
-            setCurrPage(currPage - 1);
-            if (!book.current) return;
-            // @ts-expect-error I'm not looking up the type for this
-            book.current.pageFlip().flipPrev();
-        }} className="text-white bg-black"><ChevronLeft/></button>
-        <div className={`overflow-hidden mx-auto my-4 h-[90vh] aspect-[28/19] relative`}>
-            {Array.from({length: maxPage}).map((_, index) => {
-                return (
-                    <Page
-                        currentPage={currPage}
-                        overlaysToDelete={overlaysToDelete}
-                        activeOverlayId={activeOverlayId}
-                        setOverlaysToDelete={setOverlaysToDelete}
-                        formOverlays={formOverlays} setOverlays={setOverlaysToRender}
-                        setFormOverlays={setFormOverlays}
-                        setActiveOverlayId={setActiveOverlayId} overlays={overlays}
-                        key={index} thisPage={index + 1}
-                        pdfUrl={pdfUrl} shouldRender={renderedPages.has(index)}/>
-                );
-            })}
+            if (currPage === 1) return;
+            setAnimationDirection("right");
+            setCurrPage(currPage - 2);
+        }} className={`text-white bg-black ${currPage === 1 ? "bg-slate-300" : ""}`}><ChevronLeft/></button>
+        <div className={`overflow-hidden mx-auto my-4 h-[90vh] aspect-[28/19] flex justify-center`}>
+            <div className="relative flex h-full">
+                <animated.div
+                    className="absolute inset-0 pointer-events-none"
+                    style={{
+                        zIndex: 3,
+                        position: "absolute",
+                        background: to(
+                            [gradientSpring.rotation, gradientSpring.g1, gradientSpring.g2, gradientSpring.g3],
+                            (rotation, g1, g2, g3) => `linear-gradient(${rotation}deg,rgba(2, 0, 36, 0) ${g1}%, rgba(255,255,255, 1) ${g2}%, rgba(0, 212, 255, 0) ${g3}%)`
+                        )
+                    }}
+                    {...({} as HTMLAttributes<HTMLDivElement>)}
+                />
+                {Array.from({length: maxPage}).map((_, index) => {
+                    return (
+                        <Page
+                            currentPage={currPage}
+                            overlaysToDelete={overlaysToDelete}
+                            activeOverlayId={activeOverlayId}
+                            setOverlaysToDelete={setOverlaysToDelete}
+                            formOverlays={formOverlays} setOverlays={setOverlaysToRender}
+                            setFormOverlays={setFormOverlays}
+                            setActiveOverlayId={setActiveOverlayId} overlays={overlays}
+                            key={index} thisPage={index + 1}
+                            pdfUrl={pdfUrl} shouldRender={renderedPages.has(index)}/>
+                    );
+                })}
+            </div>
         </div>
         <button onClick={(e) => {
             e.preventDefault();
-            setCurrPage(currPage + 1);
-            if (!book.current) return;
-            // @ts-expect-error I'm not looking up the type for this
-            book.current.pageFlip().flipNext();
-        }} className="text-white bg-black"><ChevronRight/></button>
+            setCurrPage(Math.min((currPage + 2), maxPage + 1));
+            setAnimationDirection("left");
+        }} className={`text-white bg-black`}><ChevronRight/></button>
     </div>
 
 }

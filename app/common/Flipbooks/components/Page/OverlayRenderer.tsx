@@ -374,8 +374,8 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
     }
 
     return (
-        <canvas 
-            className="inset-0 absolute" 
+        <canvas
+            className="h-full absolute top-0 left-0"
             ref={overlayRef} 
             onMouseLeave={handleMouseExit}
             onClick={handleMouse} 

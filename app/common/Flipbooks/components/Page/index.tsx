@@ -72,22 +72,25 @@ const Page = (({
                    setActiveOverlayId,
                    setOverlaysToDelete
                }: PageProps) => {
+    const isLeft = thisPage === 1 || thisPage % 2 === 0;
 
     const [springs, api] = useSpring(() => ({
-        from: {x: 0, width: 0, rotation: 0, transform: 'skewX(0deg)', transformOrigin: '0% 0%'},
+        from: {x: 0, width: 0, rotation: 0, transform: 'skewX(0deg)', transformOrigin: '0% 0%', zIndex: 1},
         config: {tension: 170, friction: 500, mass: 100.0}
-    }))
-    const [gradientSpring, gradientApi] = useSpring(() => ({
-        from: {
-            background: "linear-gradient(137deg,rgba(2, 0, 36, 0) 48%, rgba(47, 47, 56, 0.52) 53%, rgba(0, 212, 255, 0) 58%)",
-        }
     }))
 
     const [pageWidth, setPageWidth] = useState(0);
 
 
     useEffect(() => {
-        if (currentPage === thisPage) {
+        if (currentPage === thisPage || (currentPage === thisPage + 1 && currentPage !== 2)) {
+            if (isLeft){
+                api.start({
+                    to: {
+                        width: pageWidth,
+                    }
+                })
+            }
             api.start({
                 from: {
                     width: 0,
@@ -99,25 +102,17 @@ const Page = (({
                     transform: 'rotateY(0deg)'
                 },
             })
-
-            gradientApi.start({
-                from: {
-                    background: "linear-gradient(137deg,rgba(2, 0, 36, .2) 48%, rgba(47, 47, 56, 1) 53%, rgba(0, 212, 255, .2) 58%)",
-                },
-                to: {
-                    background: "linear-gradient(90deg, rgba(2, 0, 36, 0) 50%, rgba(47, 47, 56, 0) 97%, rgba(0, 212, 255, 0) 100%)",
-                }
-            })
         } else {
             api.start({
                 to: {
                     width: 0,
+                    zIndex:0,
                     transform: 'rotateY(90deg)',
                     transformOrigin: "right center"
                 }
             })
         }
-    }, [api, currentPage, gradientApi, pageWidth, thisPage]);
+    }, [api, currentPage, isLeft, pageWidth, thisPage]);
 
     const pageRef = useRef<HTMLDivElement>(null);
     const pdfCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -146,13 +141,9 @@ const Page = (({
             style={{
                 height: "100%",
                 overflow: "hidden",
-                position: "absolute",
-                inset: 0,
                 ...springs,
             }}
         >
-            {/*@ts-expect-error Type problems*/}
-            <animated.div className="absolute inset-0" style={{...gradientSpring}}/>
             <PDFRenderer canvasRef={pdfCanvasRef} currPage={thisPage} pdfUrl={pdfUrl} shouldRender={shouldRender}/>
             <OverlayRenderer
                 thisPage={thisPage}
