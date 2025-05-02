@@ -76,7 +76,7 @@ const Page = (({
 
     const [springs, api] = useSpring(() => ({
         from: {x: 0, width: 0, rotation: 0, transform: 'skewX(0deg)', transformOrigin: '0% 0%', zIndex: 1},
-        config: {tension: 170, friction: 500, mass: 100.0}
+        config: {tension: 120, friction: 700, mass: 150.0}
     }))
 
     const [pageWidth, setPageWidth] = useState(0);
@@ -94,7 +94,7 @@ const Page = (({
             api.start({
                 from: {
                     width: 0,
-                    transform: 'rotateY(90deg)',
+                    transform: 'rotateY(10deg)',
                     transformOrigin: "right center"
                 },
                 to: {
@@ -107,7 +107,7 @@ const Page = (({
                 to: {
                     width: 0,
                     zIndex:0,
-                    transform: 'rotateY(90deg)',
+                    transform: 'rotateY(10deg)',
                     transformOrigin: "right center"
                 }
             })
