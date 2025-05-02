@@ -107,7 +107,7 @@ const PDFRenderer = ({currPage, pdfUrl, shouldRender, canvasRef}: PDFRendererPro
                 pdfRef.current.destroy().then(() => console.log("destroyed"));
             }
         };
-    }, [currPage, pdfRef, pdfUrl, renderTaskRef, shouldRender]);
+    }, [canvasRef, currPage, pdfRef, pdfUrl, renderTaskRef, shouldRender]);
 
 
     return <canvas className="h-full" ref={canvasRef}/>

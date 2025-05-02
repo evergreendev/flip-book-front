@@ -2,7 +2,7 @@ import React, {useCallback, useContext, useEffect, useRef} from "react";
 import {useRouter} from 'next/navigation';
 import ModeContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/ModeContext";
 import {v4 as uuidv4} from 'uuid';
-import {Overlay} from "./Flipbook";
+import {Overlay} from "../../types";
 
 interface OverlayRendererProps {
     thisPage: number;
