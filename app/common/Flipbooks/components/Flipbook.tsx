@@ -1,12 +1,12 @@
 "use client"
 import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {v4 as uuidv4} from 'uuid';
-import HTMLFlipBook from "react-pageflip";
 import {ChevronLeft, ChevronRight} from "lucide-react";
 import ModeContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/ModeContext";
 import {useRouter} from 'next/navigation'
 import {usePdfCache} from "@/app/common/Flipbooks/hooks/PdfCacheHook";
 import PDFRenderer from "@/app/common/Flipbooks/components/PDFRenderer";
+import {animated, useSpring} from '@react-spring/web'
 
 /*async function processOverlays(
     currPage: number,
@@ -49,9 +49,10 @@ import PDFRenderer from "@/app/common/Flipbooks/components/PDFRenderer";
 }*/
 
 
-// eslint-disable-next-line react/display-name
-const Page = React.forwardRef(({
-                                   currPage,
+
+const Page = (({
+                                   thisPage,
+                                   currentPage,
                                    pdfUrl,
                                    shouldRender,
                                    overlays,
@@ -62,7 +63,8 @@ const Page = React.forwardRef(({
                                    setActiveOverlayId,
                                    setOverlaysToDelete
                                }: {
-    currPage: number,
+    thisPage: number,
+    currentPage: number,
     pdfUrl: string,
     shouldRender?: boolean,
     overlays: Overlay[][],
@@ -73,7 +75,7 @@ const Page = React.forwardRef(({
     setFormOverlays?: (value: Overlay[]) => void,
     setActiveOverlayId?: (value: (((prevState: (string | null)) => (string | null)) | string | null)) => void,
     setOverlaysToDelete?: (value: (((prevState: string[]) => string[]) | string[])) => void
-}, ref: React.ForwardedRef<HTMLDivElement>) => {
+}) => {
     const mode = useContext(ModeContext);
     const overlayRef = useRef<HTMLCanvasElement>(null);
     const [draggingMode, setDraggingMode] = useState<"none" | "move" | "resize">("none");
@@ -82,7 +84,7 @@ const Page = React.forwardRef(({
 
     const renderOverlay = useCallback((canvas: HTMLCanvasElement, hideOverlays: boolean) => {
         const overlayContext = canvas.getContext('2d');
-        const currOverlays = overlays[currPage - 1];
+        const currOverlays = overlays[thisPage - 1];
 
         function convertToCanvasCoords([x, y, width, height]: [number, number, number, number]) {
             const scale = 1.5;
@@ -131,7 +133,7 @@ const Page = React.forwardRef(({
             //canvasContext.fillStyle = "orange";
             //canvasContext.fillRect(20, 50, canvas.width, canvas.height);
         }
-    }, [overlays, currPage, mode.activeTool, mode.mode, activeOverlayId]);
+    }, [overlays, thisPage, mode.activeTool, mode.mode, activeOverlayId]);
 
     //overlay render effect
     useEffect(() => {
@@ -235,7 +237,7 @@ const Page = React.forwardRef(({
             w: 50,
             h: 50,
             url: "",
-            page: currPage
+            page: thisPage
         };
         setOverlays((prevState) => {
             if (!prevState) return [updatedOverlay];
@@ -248,7 +250,7 @@ const Page = React.forwardRef(({
             console.log("setting active overlay id");
             setActiveOverlayId(updatedOverlay.id);
         }
-    }, [currPage, formOverlays, mode.flipBookId, setActiveOverlayId, setFormOverlays, setOverlays]);
+    }, [thisPage, formOverlays, mode.flipBookId, setActiveOverlayId, setFormOverlays, setOverlays]);
 
     function handleMouse(e: React.MouseEvent) {
         e.preventDefault();
@@ -256,7 +258,7 @@ const Page = React.forwardRef(({
         if (!overlayRef.current) return;
         renderOverlay(overlayRef.current, false);
         const canvas = overlayRef.current;
-        const currOverlays = overlays ? overlays[currPage - 1] : [];
+        const currOverlays = overlays ? overlays[thisPage - 1] : [];
 
         function translateCoordinates(e: React.MouseEvent) {
             const transform = window.getComputedStyle(canvas).transform;
@@ -311,8 +313,8 @@ const Page = React.forwardRef(({
                 const updatedDimensions = updateOverlayDimensions(activeGrip.grip!, activeGrip.overlay, mouseX, mouseY);
                 const updatedOverlay = {...currOverlays[index], ...updatedDimensions};
                 const newOverlays = [...overlays];
-                newOverlays[currPage - 1] = [...currOverlays];
-                newOverlays[currPage - 1][index] = updatedOverlay;
+                newOverlays[thisPage - 1] = [...currOverlays];
+                newOverlays[thisPage - 1][index] = updatedOverlay;
                 if (setOverlays) {
                     setOverlays((overlays) => {
                         if (!overlays) return overlays;
@@ -350,8 +352,8 @@ const Page = React.forwardRef(({
                     updatedOverlay.x = mouseX - (updatedOverlay.w / 2);
                     updatedOverlay.y = mouseY - (updatedOverlay.h / 2);
                     const newOverlays = [...overlays];
-                    newOverlays[currPage - 1] = [...currOverlays];
-                    newOverlays[currPage - 1][index] = updatedOverlay;
+                    newOverlays[thisPage - 1] = [...currOverlays];
+                    newOverlays[thisPage - 1][index] = updatedOverlay;
                     if (setOverlays) {
                         setOverlays((overlays) => {
                             if (!overlays) return overlays;
@@ -420,11 +422,90 @@ const Page = React.forwardRef(({
         renderOverlay(overlayRef.current, true);
     }
 
+    const [springs, api] = useSpring(() => ({
+        from: {x: 0, width: 0, rotation: 0, transform: 'skewX(0deg)', transformOrigin: '0% 0%'},
+        config: {tension: 170, friction: 500, mass: 100.0}
+    }))
+    const [gradientSpring, gradientApi] = useSpring(() => ({
+        from: {
+            background: "linear-gradient(137deg,rgba(2, 0, 36, 0) 48%, rgba(47, 47, 56, 0.52) 53%, rgba(0, 212, 255, 0) 58%)",
+        }
+    }))
+
+    const [pageWidth, setPageWidth] = useState(0);
+
+
+    useEffect(() => {
+        if (currentPage === thisPage) {
+            api.start({
+                from: {
+                    width: 0,
+                    transform: 'rotateY(90deg)',
+                    transformOrigin: "right center"
+                },
+                to: {
+                    width: pageWidth,
+                    transform: 'rotateY(0deg)'
+                },
+            })
+
+            gradientApi.start({
+                from: {
+                    background: "linear-gradient(137deg,rgba(2, 0, 36, .2) 48%, rgba(47, 47, 56, 1) 53%, rgba(0, 212, 255, .2) 58%)",
+                },
+                to: {
+                    background: "linear-gradient(90deg, rgba(2, 0, 36, 0) 50%, rgba(47, 47, 56, 0) 97%, rgba(0, 212, 255, 0) 100%)",
+                }
+            })
+        } else {
+            api.start({
+                to: {
+                    width: 0,
+                    transform: 'rotateY(90deg)',
+                    transformOrigin: "right center"
+                }
+            })
+        }
+    }, [api, currentPage, gradientApi, pageWidth, thisPage]);
+
+    const pageRef = useRef<HTMLDivElement>(null);
+    const pdfCanvasRef = useRef<HTMLCanvasElement>(null);
+
+    useEffect(() => {
+        if (!pdfCanvasRef.current) return;
+        const observer = new ResizeObserver(() => {
+            if (!pdfCanvasRef.current) return;
+                const element = pageRef.current as HTMLDivElement;
+                const rect = element.getBoundingClientRect();
+                const canvasWidthAdjust = rect.height / pdfCanvasRef.current.height;
+                const adjustedCanvasWidth = pdfCanvasRef.current.width * canvasWidthAdjust;
+
+                setPageWidth(adjustedCanvasWidth);
+        });
+        observer.observe(pdfCanvasRef.current);
+        return () => observer.disconnect();
+    }, [pdfCanvasRef, setPageWidth]);
+
+
     return (
-        <div ref={ref}>
-            <PDFRenderer currPage={currPage} pdfUrl={pdfUrl} shouldRender={shouldRender}/>
-            <canvas ref={overlayRef} onMouseLeave={handleMouseExit} onClick={handleMouse} onMouseMove={handleMouse}/>
-        </div>
+        /*@ts-expect-error Type problems*/
+        <animated.div
+            ref={pageRef}
+            className="relative w-full h-full"
+            style={{
+                height: "100%",
+                overflow: "hidden",
+                position: "absolute",
+                inset: 0,
+                ...springs,
+            }}
+        >
+            {/*@ts-expect-error Type problems*/}
+            <animated.div className="absolute inset-0" style={{...gradientSpring}}/>
+            <PDFRenderer canvasRef={pdfCanvasRef} currPage={thisPage} pdfUrl={pdfUrl} shouldRender={shouldRender}/>
+            <canvas className="inset-0 absolute" ref={overlayRef} onMouseLeave={handleMouseExit}
+                    onClick={handleMouse} onMouseMove={handleMouse}/>
+        </animated.div>
     );
 });
 
@@ -557,55 +638,40 @@ export default function Flipbook({
         }
     }, [initialOverlays, maxPage]);
 
-
     if (!maxPage) return null;
+
 
     return <div className="flex justify-between items-center">
         <button onClick={(e) => {
             e.preventDefault();
+            e.preventDefault();
+            setCurrPage(currPage - 1);
             if (!book.current) return;
             // @ts-expect-error I'm not looking up the type for this
             book.current.pageFlip().flipPrev();
         }} className="text-white bg-black"><ChevronLeft/></button>
-        <div className={`overflow-hidden mx-auto my-4 h-[90vh] aspect-[28/19]`}>
+        <div className={`overflow-hidden mx-auto my-4 h-[90vh] aspect-[28/19] relative`}>
             {/*        <button onClick={() =>
             book.current.pageFlip().flipNext()}>Next page
         </button>*/}
-
-            {/* @ts-expect-error Ignore required attributes since they're not really required*/}
-            <HTMLFlipBook
-                width={550}
-                height={733}
-                size="stretch"
-                minWidth={315}
-                minHeight={400}
-                maxShadowOpacity={0.5}
-                disableFlipByClick={true}
-                showPageCorners={false}
-                useMouseEvents={mode.mode !== "edit"}
-                showCover={true}
-                onFlip={(page: { data: number }) => {
-                    setCurrPage(page.data);
-                }}
-                mobileScrollSupport={true}
-                ref={book}>
-                {Array.from({length: maxPage}).map((_, index) => {
-                    return (
-                        <Page
-                            overlaysToDelete={overlaysToDelete}
-                            activeOverlayId={activeOverlayId}
-                            setOverlaysToDelete={setOverlaysToDelete}
-                            formOverlays={formOverlays} setOverlays={setOverlaysToRender}
-                            setFormOverlays={setFormOverlays}
-                            setActiveOverlayId={setActiveOverlayId} overlays={overlays}
-                            key={index} currPage={index + 1}
-                            pdfUrl={pdfUrl} shouldRender={renderedPages.has(index)}/>
-                    );
-                })}
-            </HTMLFlipBook>
+            {Array.from({length: maxPage}).map((_, index) => {
+                return (
+                    <Page
+                        currentPage={currPage}
+                        overlaysToDelete={overlaysToDelete}
+                        activeOverlayId={activeOverlayId}
+                        setOverlaysToDelete={setOverlaysToDelete}
+                        formOverlays={formOverlays} setOverlays={setOverlaysToRender}
+                        setFormOverlays={setFormOverlays}
+                        setActiveOverlayId={setActiveOverlayId} overlays={overlays}
+                        key={index} thisPage={index + 1}
+                        pdfUrl={pdfUrl} shouldRender={renderedPages.has(index)}/>
+                );
+            })}
         </div>
         <button onClick={(e) => {
             e.preventDefault();
+            setCurrPage(currPage + 1);
             if (!book.current) return;
             // @ts-expect-error I'm not looking up the type for this
             book.current.pageFlip().flipNext();

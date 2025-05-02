@@ -6,11 +6,11 @@ import {RenderParameters} from "pdfjs-dist/types/src/display/api";
 interface PDFRendererProps {
     currPage: number,
     pdfUrl: string,
+    canvasRef: React.RefObject<HTMLCanvasElement|null>,
     shouldRender?: boolean,
 }
 
-const PDFRenderer = ({currPage, pdfUrl, shouldRender}: PDFRendererProps) => {
-    const canvasRef = useRef<HTMLCanvasElement>(null);
+const PDFRenderer = ({currPage, pdfUrl, shouldRender, canvasRef}: PDFRendererProps) => {
     const pdfRef = useRef<PDFDocumentProxy>(null);
     const renderTaskRef = useRef<RenderTask>(null);
 
@@ -110,7 +110,7 @@ const PDFRenderer = ({currPage, pdfUrl, shouldRender}: PDFRendererProps) => {
     }, [currPage, pdfRef, pdfUrl, renderTaskRef, shouldRender]);
 
 
-    return <canvas ref={canvasRef}/>
+    return <canvas className="h-full" ref={canvasRef}/>
 }
 
 export default PDFRenderer;
