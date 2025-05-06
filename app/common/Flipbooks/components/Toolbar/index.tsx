@@ -29,8 +29,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
     setPage(prev => {
       // If we're at page 3 or higher, generally flip 2 pages back
       if (prev > 2) {
-        // If we're at the last page of an odd-numbered total, move back just 1 page
-        if (totalPages % 2 === 1 && prev === totalPages) {
+        // If we're at the last page of an even-numbered total, move back just 1 page
+        if (totalPages % 2 !== 1 && prev === totalPages) {
           return prev - 1;
         }
         return prev - 2;

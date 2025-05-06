@@ -226,6 +226,7 @@ export default function Flipbook({
                             formOverlays={formOverlays} setOverlays={setOverlaysToRender}
                             setFormOverlays={setFormOverlays}
                             setActiveOverlayId={setActiveOverlayId} overlays={overlays}
+                            maxPage={maxPage}
                             key={index} thisPage={index + 1}
                             pdfUrl={pdfUrl} shouldRender={renderedPages.has(index)}/>
                     );

@@ -56,6 +56,7 @@ interface PageProps {
     formOverlays?: Overlay[] | null
     flipBookWidth: number
     flipBookHeight: number
+    maxPage?: number | null
     setOverlays?: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void
     setFormOverlays?: (value: Overlay[]) => void
     setActiveOverlayId?: (value: (((prevState: (string | null)) => (string | null)) | string | null)) => void
@@ -72,6 +73,7 @@ const Page = (({
                    flipBookHeight,
                    activeOverlayId,
                    formOverlays,
+                   maxPage,
                    setOverlays,
                    setFormOverlays,
                    setActiveOverlayId,
@@ -99,7 +101,7 @@ const Page = (({
 
 
     useEffect(() => {
-        if (currentPage === thisPage || (currentPage === thisPage + 1 && currentPage !== 2)) {
+        if (currentPage === thisPage || (currentPage === thisPage + 1 && currentPage !== 2 && currentPage !== maxPage)) {
             if (isLeft) {
                 api.start({
                     to: {
