@@ -1,5 +1,5 @@
 import {Overlay} from "@/app/common/Flipbooks/types";
-import {animated, useSpring} from "@react-spring/web";
+import {animated, to, useSpring} from "@react-spring/web";
 import React, {useEffect, useRef, useState} from "react";
 import PDFRenderer from "@/app/common/Flipbooks/components/Page/PDFRenderer";
 import OverlayRenderer from "@/app/common/Flipbooks/components/Page/OverlayRenderer";
@@ -75,7 +75,7 @@ const Page = (({
     const isLeft = thisPage === 1 || thisPage % 2 === 0;
 
     const [springs, api] = useSpring(() => ({
-        from: {x: 0, width: 0, rotation: 0, transform: 'skewX(0deg)', transformOrigin: '0% 0%', zIndex: 1},
+        from: {x: 0, width: 0, rotate: 0, transformOrigin: '0% 0%', zIndex: 1},
         config: {tension: 120, friction: 700, mass: 150.0}
     }))
 
@@ -94,12 +94,12 @@ const Page = (({
             api.start({
                 from: {
                     width: 0,
-                    transform: 'rotateY(10deg)',
-                    transformOrigin: "right center"
+                    rotate: -180,
+                    transformOrigin: "left center"
                 },
                 to: {
                     width: pageWidth,
-                    transform: 'rotateY(0deg)'
+                    rotate: 0
                 },
             })
         } else {
@@ -107,8 +107,7 @@ const Page = (({
                 to: {
                     width: 0,
                     zIndex:0,
-                    transform: 'rotateY(10deg)',
-                    transformOrigin: "right center"
+                    transformOrigin: "left center"
                 }
             })
         }
@@ -141,7 +140,13 @@ const Page = (({
             style={{
                 height: "100%",
                 overflow: "hidden",
-                ...springs,
+                width: springs.width,
+                transformOrigin: springs.transformOrigin,
+                zIndex: springs.zIndex,
+                transform: to(
+                    [springs.rotate],
+                    (rotate) => `rotateY(${rotate}deg)`
+                )
             }}
         >
             <PDFRenderer canvasRef={pdfCanvasRef} currPage={thisPage} pdfUrl={pdfUrl} shouldRender={shouldRender}/>
