@@ -1,11 +1,11 @@
 "use client"
 import React, {HTMLAttributes, useCallback, useContext, useEffect, useState} from "react";
-import {ChevronLeft, ChevronRight} from "lucide-react";
 import ModeContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/ModeContext";
 import {usePdfCache} from "@/app/common/Flipbooks/hooks/PdfCacheHook";
 import {Overlay} from "../types";
 import Page from "@/app/common/Flipbooks/components/Page";
 import {animated, to, useSpring} from "@react-spring/web";
+import Toolbar from "@/app/common/Flipbooks/components/Toolbar";
 
 export default function Flipbook({
                                      pdfUrl,
@@ -46,8 +46,7 @@ export default function Flipbook({
     const [animationDirection, setAnimationDirection] = useState<"left" | "right">("left");
     const [flipbookWidth, setFlipbookWidth] = useState<number>(0);
     const [flipbookHeight, setFlipbookHeight] = useState<number>(0);
-    const [visiblePagesWidth, setVisiblePagesWidth] = useState<number>(0);
-    const [visiblePagesHeight, setVisiblePagesHeight] = useState<number>(0);
+    const [zoomLevel, setZoomLevel] = useState<number>(1.0);
     const mode = useContext(ModeContext);
 
     const [gradientSpring, gradientApi] = useSpring(() => ({
@@ -200,13 +199,7 @@ export default function Flipbook({
 
     if (!maxPage) return null;
 
-    return <div className="flex justify-between items-center">
-        <button onClick={(e) => {
-            e.preventDefault();
-            if (currPage === 1) return;
-            setAnimationDirection("right");
-            setCurrPage(currPage - 2);
-        }} className={`text-white bg-black ${currPage === 1 ? "bg-slate-300" : ""}`}><ChevronLeft/></button>
+    return <div className="flex justify-between items-center flex-wrap">
         <div ref={flipbookRef} className={`overflow-hidden mx-auto my-4 h-[90vh] aspect-[28/19] flex justify-center`}>
         <div className="relative flex h-full">
                 <animated.div
@@ -239,11 +232,11 @@ export default function Flipbook({
                 })}
             </div>
         </div>
-        <button onClick={(e) => {
-            e.preventDefault();
-            setCurrPage(Math.min((currPage + 2), maxPage + 1));
-            setAnimationDirection("left");
-        }} className={`text-white bg-black`}><ChevronRight/></button>
+        <div className="w-full">
+            <Toolbar setPage={setCurrPage} setZoomLevel={setZoomLevel} currentPage={currPage} totalPages={maxPage}
+                     currentZoom={zoomLevel}/>
+        </div>
+
     </div>
 
 }
