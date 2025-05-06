@@ -234,7 +234,7 @@ export default function Flipbook({
             </div>
         </div>
         <div className="w-full">
-            <Toolbar setPage={setCurrPage} setZoomLevel={setZoomLevel} currentPage={currPage} totalPages={maxPage}
+            <Toolbar setAnimationDirection={setAnimationDirection} setPage={setCurrPage} setZoomLevel={setZoomLevel} currentPage={currPage} totalPages={maxPage}
                      currentZoom={zoomLevel}/>
         </div>
 
