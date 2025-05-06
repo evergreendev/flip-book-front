@@ -84,7 +84,7 @@ const Page = (({
     const pagePosition = isLeft ? "left" : "right";
 
     const [springs, api] = useSpring(() => ({
-        from: {x: 0, width: 0, rotate: 0, transformOrigin: '0% 0%', zIndex: 1},
+        from: {width: 0, rotate: 0, transformOrigin: '0% 0%', zIndex: 1},
         config: {tension: 120, friction: 700, mass: 150.0}
     }))
 
@@ -133,7 +133,7 @@ const Page = (({
         /*@ts-expect-error Type problems*/
         <animated.div
             ref={pageRef}
-            className={`relative w-full h-full flex ${pagePosition === "left" && "justify-end"} ${pagePosition === "right" && "justify-start"}`}
+            className={`relative w-full h-full`}
             style={{
                 height: "100%",
                 overflow: "hidden",
