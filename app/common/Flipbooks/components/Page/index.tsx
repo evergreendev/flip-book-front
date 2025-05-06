@@ -4,20 +4,6 @@ import React, {useEffect, useRef, useState} from "react";
 import PDFRenderer from "@/app/common/Flipbooks/components/Page/PDFRenderer";
 import OverlayRenderer from "@/app/common/Flipbooks/components/Page/OverlayRenderer";
 
-type PageProps = {
-    thisPage: number,
-    currentPage: number,
-    pdfUrl: string,
-    shouldRender?: boolean,
-    overlays: Overlay[][],
-    overlaysToDelete?: string[],
-    activeOverlayId?: string | null,
-    formOverlays?: Overlay[] | null,
-    setOverlays?: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void,
-    setFormOverlays?: (value: Overlay[]) => void,
-    setActiveOverlayId?: (value: (((prevState: (string | null)) => (string | null)) | string | null)) => void,
-    setOverlaysToDelete?: (value: (((prevState: string[]) => string[]) | string[])) => void
-}
 
 /*async function processOverlays(
     currPage: number,
@@ -59,12 +45,31 @@ type PageProps = {
     return newOverlays;
 }*/
 
+interface PageProps {
+    thisPage: number
+    currentPage: number
+    pdfUrl: string
+    shouldRender?: boolean
+    overlays: Overlay[][]
+    overlaysToDelete?: string[]
+    activeOverlayId?: string | null
+    formOverlays?: Overlay[] | null
+    flipBookWidth: number
+    flipBookHeight: number
+    setOverlays?: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void
+    setFormOverlays?: (value: Overlay[]) => void
+    setActiveOverlayId?: (value: (((prevState: (string | null)) => (string | null)) | string | null)) => void
+    setOverlaysToDelete?: (value: (((prevState: string[]) => string[]) | string[])) => void
+}
+
 const Page = (({
                    thisPage,
                    currentPage,
                    pdfUrl,
                    shouldRender,
                    overlays,
+                   flipBookWidth,
+                   flipBookHeight,
                    activeOverlayId,
                    formOverlays,
                    setOverlays,
@@ -72,19 +77,27 @@ const Page = (({
                    setActiveOverlayId,
                    setOverlaysToDelete
                }: PageProps) => {
+    // Determine if the page is on the left side of the spread
     const isLeft = thisPage === 1 || thisPage % 2 === 0;
+    
+    // Determine page position based on page number
+    const pagePosition = isLeft ? "left" : "right";
 
     const [springs, api] = useSpring(() => ({
         from: {x: 0, width: 0, rotate: 0, transformOrigin: '0% 0%', zIndex: 1},
         config: {tension: 120, friction: 700, mass: 150.0}
     }))
 
-    const [pageWidth, setPageWidth] = useState(0);
+    const [pageWidth, setPageWidth] = useState(flipBookWidth/2);
+
+    useEffect(() => {
+        setPageWidth(flipBookWidth/2);
+    }, [pageWidth, flipBookWidth]);
 
 
     useEffect(() => {
         if (currentPage === thisPage || (currentPage === thisPage + 1 && currentPage !== 2)) {
-            if (isLeft){
+            if (isLeft) {
                 api.start({
                     to: {
                         width: pageWidth,
@@ -106,7 +119,7 @@ const Page = (({
             api.start({
                 to: {
                     width: 0,
-                    zIndex:0,
+                    zIndex: 0,
                     transformOrigin: "left center"
                 }
             })
@@ -116,27 +129,11 @@ const Page = (({
     const pageRef = useRef<HTMLDivElement>(null);
     const pdfCanvasRef = useRef<HTMLCanvasElement>(null);
 
-    useEffect(() => {
-        if (!pdfCanvasRef.current) return;
-        const observer = new ResizeObserver(() => {
-            if (!pdfCanvasRef.current) return;
-            const element = pageRef.current as HTMLDivElement;
-            const rect = element.getBoundingClientRect();
-            const canvasWidthAdjust = rect.height / pdfCanvasRef.current.height;
-            const adjustedCanvasWidth = pdfCanvasRef.current.width * canvasWidthAdjust;
-
-            setPageWidth(adjustedCanvasWidth);
-        });
-        observer.observe(pdfCanvasRef.current);
-        return () => observer.disconnect();
-    }, [pdfCanvasRef, setPageWidth]);
-
-
     return (
         /*@ts-expect-error Type problems*/
         <animated.div
             ref={pageRef}
-            className="relative w-full h-full"
+            className={`relative w-full h-full flex ${pagePosition === "left" && "justify-end"} ${pagePosition === "right" && "justify-start"}`}
             style={{
                 height: "100%",
                 overflow: "hidden",
@@ -149,7 +146,15 @@ const Page = (({
                 )
             }}
         >
-            <PDFRenderer canvasRef={pdfCanvasRef} currPage={thisPage} pdfUrl={pdfUrl} shouldRender={shouldRender}/>
+            <PDFRenderer 
+                flipbookHeight={flipBookHeight} 
+                flipbookWidth={flipBookWidth} 
+                canvasRef={pdfCanvasRef}
+                currPage={thisPage} 
+                pdfUrl={pdfUrl} 
+                shouldRender={shouldRender}
+                pagePosition={pagePosition}
+            />
             <OverlayRenderer
                 thisPage={thisPage}
                 overlays={overlays}

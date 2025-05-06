@@ -1,5 +1,5 @@
 "use client"
-import React, {HTMLAttributes, useContext, useEffect, useState} from "react";
+import React, {HTMLAttributes, useCallback, useContext, useEffect, useState} from "react";
 import {ChevronLeft, ChevronRight} from "lucide-react";
 import ModeContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/ModeContext";
 import {usePdfCache} from "@/app/common/Flipbooks/hooks/PdfCacheHook";
@@ -44,6 +44,10 @@ export default function Flipbook({
     const [renderedPages, setRenderedPages] = useState(new Set<number>());
     const [overlays, setOverlays] = useState<Overlay[][]>(formattedInitialOverlays);
     const [animationDirection, setAnimationDirection] = useState<"left" | "right">("left");
+    const [flipbookWidth, setFlipbookWidth] = useState<number>(0);
+    const [flipbookHeight, setFlipbookHeight] = useState<number>(0);
+    const [visiblePagesWidth, setVisiblePagesWidth] = useState<number>(0);
+    const [visiblePagesHeight, setVisiblePagesHeight] = useState<number>(0);
     const mode = useContext(ModeContext);
 
     const [gradientSpring, gradientApi] = useSpring(() => ({
@@ -101,6 +105,28 @@ export default function Flipbook({
         };
     }, [pdfUrl, initialOverlays, mode, setFormOverlays, loadPdf, prefetchPdf]);
 
+
+    const flipbookRef = useCallback((node: HTMLDivElement) => {
+        if (node !== null) {
+            // This runs when the DOM node is available
+            const rect = node.getBoundingClientRect();
+            setFlipbookWidth(rect.width);
+            setFlipbookHeight(rect.height);
+
+            const resizeObserver = new ResizeObserver(entries => {
+                for (const entry of entries) {
+                    setFlipbookWidth(entry.contentRect.width);
+                    setFlipbookHeight(entry.contentRect.height);
+                }
+            });
+
+            resizeObserver.observe(node);
+
+            // Store the observer to disconnect it later
+            const currentObserver = resizeObserver;
+            return () => currentObserver.disconnect();
+        }
+    }, []);
 
     useEffect(() => {
         if (!maxPage) return;
@@ -181,8 +207,8 @@ export default function Flipbook({
             setAnimationDirection("right");
             setCurrPage(currPage - 2);
         }} className={`text-white bg-black ${currPage === 1 ? "bg-slate-300" : ""}`}><ChevronLeft/></button>
-        <div className={`overflow-hidden mx-auto my-4 h-[90vh] aspect-[28/19] flex justify-center`}>
-            <div className="relative flex h-full">
+        <div ref={flipbookRef} className={`overflow-hidden mx-auto my-4 h-[90vh] aspect-[28/19] flex justify-center`}>
+        <div className="relative flex h-full">
                 <animated.div
                     className="absolute inset-0 pointer-events-none"
                     style={{
@@ -198,6 +224,8 @@ export default function Flipbook({
                 {Array.from({length: maxPage}).map((_, index) => {
                     return (
                         <Page
+                            flipBookWidth={flipbookWidth}
+                            flipBookHeight={flipbookHeight}
                             currentPage={currPage}
                             overlaysToDelete={overlaysToDelete}
                             activeOverlayId={activeOverlayId}
