@@ -79,6 +79,9 @@ const Page = (({
                }: PageProps) => {
     // Determine if the page is on the left side of the spread
     const isLeft = thisPage === 1 || thisPage % 2 === 0;
+    const [canvasWidth, setCanvasWidth] = useState(0);
+    const [canvasHeight, setCanvasHeight] = useState(0);
+    const [canvasScale, setCanvasScale] = useState(1);
     
     // Determine page position based on page number
     const pagePosition = isLeft ? "left" : "right";
@@ -100,7 +103,7 @@ const Page = (({
             if (isLeft) {
                 api.start({
                     to: {
-                        width: pageWidth,
+                        width: canvasWidth,
                     }
                 })
             }
@@ -111,7 +114,7 @@ const Page = (({
                     transformOrigin: "left center"
                 },
                 to: {
-                    width: pageWidth,
+                    width: canvasWidth,
                     rotate: 0
                 },
             })
@@ -124,7 +127,7 @@ const Page = (({
                 }
             })
         }
-    }, [api, currentPage, isLeft, pageWidth, thisPage]);
+    }, [api, canvasWidth, currentPage, isLeft, pageWidth, thisPage]);
 
     const pageRef = useRef<HTMLDivElement>(null);
     const pdfCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -148,7 +151,10 @@ const Page = (({
         >
             <PDFRenderer 
                 flipbookHeight={flipBookHeight} 
-                flipbookWidth={flipBookWidth} 
+                flipbookWidth={flipBookWidth}
+                setCanvasHeight={setCanvasHeight}
+                setCanvasWidth={setCanvasWidth}
+                setCanvasScale={setCanvasScale}
                 canvasRef={pdfCanvasRef}
                 currPage={thisPage} 
                 pdfUrl={pdfUrl} 
@@ -158,6 +164,9 @@ const Page = (({
             <OverlayRenderer
                 thisPage={thisPage}
                 overlays={overlays}
+                canvasWidth={canvasWidth}
+                canvasHeight={canvasHeight}
+                canvasScale={canvasScale}
                 activeOverlayId={activeOverlayId}
                 formOverlays={formOverlays}
                 setOverlays={setOverlays}

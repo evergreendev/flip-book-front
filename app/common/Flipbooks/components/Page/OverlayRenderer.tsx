@@ -5,28 +5,34 @@ import {v4 as uuidv4} from 'uuid';
 import {Overlay} from "../../types";
 
 interface OverlayRendererProps {
-    thisPage: number;
-    overlays: Overlay[][];
-    activeOverlayId?: string | null;
-    formOverlays?: Overlay[] | null;
-    setOverlays?: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void;
-    setFormOverlays?: (value: Overlay[]) => void;
-    setActiveOverlayId?: (value: (((prevState: (string | null)) => (string | null)) | string | null)) => void;
-    setOverlaysToDelete?: (value: (((prevState: string[]) => string[]) | string[])) => void;
-    pdfCanvasRef?: React.RefObject<HTMLCanvasElement|null>;
+    thisPage: number,
+    overlays: Overlay[][],
+    activeOverlayId?: string | null,
+    formOverlays?: Overlay[] | null,
+    setOverlays?: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void,
+    setFormOverlays?: (value: Overlay[]) => void,
+    setActiveOverlayId?: (value: (((prevState: (string | null)) => (string | null)) | string | null)) => void,
+    setOverlaysToDelete?: (value: (((prevState: string[]) => string[]) | string[])) => void,
+    pdfCanvasRef?: React.RefObject<HTMLCanvasElement | null>,
+    canvasWidth: number,
+    canvasHeight: number,
+    canvasScale: number
 }
 
 const OverlayRenderer: React.FC<OverlayRendererProps> = ({
-    thisPage,
-    overlays,
-    activeOverlayId,
-    formOverlays,
-    setOverlays,
-    setFormOverlays,
-    setActiveOverlayId,
-    setOverlaysToDelete,
-    pdfCanvasRef
-}) => {
+                                                             thisPage,
+                                                             overlays,
+                                                             activeOverlayId,
+                                                             formOverlays,
+                                                             setOverlays,
+                                                             setFormOverlays,
+                                                             setActiveOverlayId,
+                                                             setOverlaysToDelete,
+                                                             pdfCanvasRef,
+                                                             canvasWidth,
+                                                             canvasHeight,
+                                                             canvasScale
+                                                         }) => {
     const mode = useContext(ModeContext);
     const overlayRef = useRef<HTMLCanvasElement>(null);
     const [draggingMode, setDraggingMode] = React.useState<"none" | "move" | "resize">("none");
@@ -39,7 +45,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
         const currOverlays = overlays[thisPage - 1];
 
         function convertToCanvasCoords([x, y, width, height]: [number, number, number, number]) {
-            const scale = 1.5;
+            const scale = canvasScale;
             return [x * scale, canvas.height - ((y + height) * scale), width * scale, height * scale];
         }
 
@@ -79,19 +85,19 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
 
             overlayContext.globalAlpha = 1;
         }
-    }, [overlays, thisPage, mode.activeTool, mode.mode, activeOverlayId]);
+    }, [overlays, thisPage, canvasScale, mode.activeTool, mode.mode, activeOverlayId]);
 
     // Effect to sync overlay canvas size with PDF canvas size
     useEffect(() => {
         if (!overlayRef.current || !pdfCanvasRef || !pdfCanvasRef.current) return;
 
         // Set the overlay canvas dimensions to match the PDF canvas
-        overlayRef.current.width = pdfCanvasRef.current.width;
-        overlayRef.current.height = pdfCanvasRef.current.height;
+        overlayRef.current.width = canvasWidth;
+        overlayRef.current.height = canvasHeight;
 
         // Re-render the overlay after resizing
         renderOverlay(overlayRef.current, mode.mode !== "edit");
-    }, [pdfCanvasRef, pdfCanvasRef?.current?.width, pdfCanvasRef?.current?.height, mode.mode, renderOverlay]);
+    }, [canvasHeight, canvasWidth, mode.mode, pdfCanvasRef, renderOverlay]);
 
     //overlay render effect
     useEffect(() => {
@@ -222,8 +228,8 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
             const rect = canvas.getBoundingClientRect();
             const mouseX = e.clientX - rect.left;
             const mouseY = rect.bottom - e.clientY;
-            const canvasScaledHeight = canvas.height / 1.5;
-            const canvasScaledWidth = canvas.width / 1.5;
+            const canvasScaledHeight = canvas.height / canvasScale;
+            const canvasScaledWidth = canvas.width / canvasScale;
             const widthAdjust = canvas.getBoundingClientRect().width / canvasScaledWidth;
             const heightAdjust = canvas.getBoundingClientRect().height / canvasScaledHeight;
 
@@ -375,10 +381,10 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
 
     return (
         <canvas
-            className="h-full absolute top-0 left-0"
-            ref={overlayRef} 
+            ref={overlayRef}
+            className="absolute inset-0"
             onMouseLeave={handleMouseExit}
-            onClick={handleMouse} 
+            onClick={handleMouse}
             onMouseMove={handleMouse}
         />
     );

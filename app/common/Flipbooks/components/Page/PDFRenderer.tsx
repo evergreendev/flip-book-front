@@ -11,6 +11,9 @@ interface PDFRendererProps {
     pagePosition: "left" | "right" | "center",
     canvasRef: React.RefObject<HTMLCanvasElement | null>,
     shouldRender?: boolean,
+    setCanvasHeight: (value: (((prevState: number) => number) | number)) => void,
+    setCanvasWidth: (value: (((prevState: number) => number) | number)) => void,
+    setCanvasScale: (value: (((prevState: number) => number) | number)) => void,
 }
 
 const getSizedCanvasDims = (flipbookWidth: number, flipbookHeight: number) => {
@@ -41,7 +44,10 @@ const PDFRenderer = ({
                          canvasRef,
                          flipbookWidth,
                          flipbookHeight,
-                         pagePosition
+                         pagePosition,
+                         setCanvasHeight,
+                         setCanvasWidth,
+                         setCanvasScale
                      }: PDFRendererProps) => {
     const pdfRef = useRef<PDFDocumentProxy>(null);
     const renderTaskRef = useRef<RenderTask>(null);
@@ -134,6 +140,9 @@ const PDFRenderer = ({
                 const canvasContext = canvas.getContext('2d');
                 canvas.height = canvasHeight;
                 canvas.width = canvasWidth;
+                setCanvasWidth(canvas.width)
+                setCanvasHeight(canvas.height)
+                setCanvasScale(scale)
 
                 // Ensure no other render tasks are running.
                 if (renderTaskRef.current) {
