@@ -80,7 +80,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
     };
 
     return (
-        <div className="flex items-center justify-between w-full bg-white dark:bg-slate-800 p-2 rounded-md shadow-md">
+        <div className="flex items-center justify-between w-full border-b border-b-[#75b543] bg-slate-400 dark:bg-slate-800 p-2 rounded-md shadow-md">
             <div className="flex items-center space-x-2">
                 <Button
                     variant="outline"
