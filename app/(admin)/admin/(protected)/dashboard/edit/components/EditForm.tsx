@@ -2,13 +2,14 @@
 
 import {useActionState, useEffect, useRef, useState} from "react";
 import {handleEdit} from "@/app/(admin)/admin/(protected)/dashboard/edit/actions/edit";
-import Flipbook, {Overlay} from "@/app/common/Flipbooks/components/Flipbook";
+import Flipbook from "@/app/common/Flipbooks/components/Flipbook";
 import {FlipBook} from "@/app/(admin)/admin/(protected)/dashboard/flipbooks/columns";
 import {Check, Loader2, LockKeyhole, LockKeyholeOpen} from "lucide-react"
 import slugify from "slugify";
 import {useRouter} from "next/navigation";
 import ModeContext from "../context/ModeContext";
 import Link from "next/link";
+import {Overlay} from "@/app/common/Flipbooks/types";
 
 interface NotificationProps {
   message: string;
