@@ -57,6 +57,7 @@ const PDFRenderer = ({
     useEffect(() => {
         const isCancelled = false;
         let pdf: PDFDocumentProxy;
+        const MAX_RENDER_RETRIES = 5;
 
         const canvas = canvasRef.current;
 
@@ -159,16 +160,42 @@ const PDFRenderer = ({
                 renderTaskRef.current = renderTask;
 
                 // Wait for rendering to finish.
-                try {
-                    await renderTask.promise;
-                } catch (error) {
-                    // @ts-expect-error Don't need to know the error type
-                    if (error.name === 'RenderingCancelledException') {
-                        console.log('Rendering cancelled.');
-                    } else {
-                        console.error('Render error:', error);
+                // Function to attempt rendering with retries
+                async function attemptRender(currentRetry = 0): Promise<void> {
+                    if (currentRetry > 0) {
+                        console.log(`Attempting render retry ${currentRetry}/${MAX_RENDER_RETRIES}`);
+                    }
+
+                    try {
+                        // If this is a retry, create a new render task
+                        if (currentRetry > 0) {
+                            const newRenderTask = page.render(renderContext as RenderParameters);
+                            renderTaskRef.current = newRenderTask;
+                            await newRenderTask.promise;
+                        } else {
+                            // First attempt uses the original render task
+                            await renderTask.promise;
+                        }
+                        // If we get here, rendering succeeded
+                        console.log(currentRetry > 0 ? `Render retry ${currentRetry} succeeded` : 'Render succeeded');
+                    } catch (error) {
+                        // @ts-expect-error Don't need to know the error type
+                        if (error.name === 'RenderingCancelledException') {
+                            console.log(`Rendering cancelled at attempt ${currentRetry + 1}`);
+                            // If we haven't exceeded max retries, try again
+                            if (currentRetry < MAX_RENDER_RETRIES) {
+                                return attemptRender(currentRetry + 1);
+                            } else {
+                                console.log(`Maximum retries (${MAX_RENDER_RETRIES}) exceeded. Giving up.`);
+                            }
+                        } else {
+                            console.error('Render error:', error);
+                        }
                     }
                 }
+
+                // Start the render process with retries
+                await attemptRender();
 
                 if (!isCancelled) {
                     await pdf.destroy();
