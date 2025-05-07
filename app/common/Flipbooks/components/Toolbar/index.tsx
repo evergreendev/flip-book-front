@@ -27,7 +27,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
                                              currentZoom,
                                              setAnimationDirection
                                          }) => {
-    const handlePreviousPage = () => {
+    const handlePreviousPage = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+        e.preventDefault();
         setAnimationDirection("right")
         setPage(prev => {
             // If we're at page 3 or higher, generally flip 2 pages back
@@ -47,7 +48,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
         });
     };
 
-    const handleNextPage = () => {
+    const handleNextPage = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+        e.preventDefault();
         setAnimationDirection("left");
         setPage(prev => {
             // If we're at the second-to-last page of an odd-numbered total, move to the last page
@@ -80,12 +82,12 @@ const Toolbar: React.FC<ToolbarProps> = ({
     };
 
     return (
-        <div className="flex items-center justify-between w-full border-b border-b-[#75b543] bg-slate-400 dark:bg-slate-800 p-2 rounded-md shadow-md">
+        <div className="flex items-center justify-between w-full border-b-2 border-b-[#75b543] bg-slate-400 dark:bg-slate-800 p-2 rounded-md shadow-md">
             <div className="flex items-center space-x-2">
                 <Button
                     variant="outline"
                     size="icon"
-                    onClick={handlePreviousPage}
+                    onClick={(e)=>handlePreviousPage(e)}
                     disabled={currentPage <= 1}
                     title="Previous page"
                 >
@@ -100,7 +102,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                 <Button
                     variant="outline"
                     size="icon"
-                    onClick={handleNextPage}
+                    onClick={(e)=>handleNextPage(e)}
                     disabled={currentPage >= totalPages}
                     title="Next page"
                 >
