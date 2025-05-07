@@ -315,17 +315,6 @@ const EditForm = ({flipBook, pdfPath, initialOverlays}: {
             {
                 state.error && <div className="text-red-900 bg-red-100 p-4">{state.error}</div>
             }
-            <div className="flex justify-end gap-2 items-center">
-                <button type="submit" onClick={(e) => handleSubmit(e, true)}
-                        className="bg-gray-100 my-2 text-black rounded px-4 block">Save Draft
-                </button>
-                <button type="submit" onClick={(e) => handleSubmit(e, false)}
-                        className="bg-green-700 text-white rounded px-4 block">Publish
-                </button>
-            </div>
-            <div className="flex justify-end">
-                <p className={`my-2 py-1 px-8 rounded-full ${statusStyles[status]}`}>{status}</p>
-            </div>
             <div>
                 <label htmlFor="title">Title</label>
                 <input value={currTitle} onChange={handleUpdateTitle} type="text" name="title"
@@ -364,23 +353,27 @@ const EditForm = ({flipBook, pdfPath, initialOverlays}: {
             </ModeContext.Provider>
 
             <input ref={draftFieldRef} aria-hidden={true} className="hidden" type="checkbox" name="isDraft"/>
-            <div className="flex justify-end">
-                <p className={`my-2 py-1 px-8 rounded-full ${statusStyles[status]}`}>{status}</p>
-                {
-                    status === "published" &&
-                    <Link href={`${process.env.NEXT_PUBLIC_BASE_URL}/${currPath}`} target="_blank" className={`my-2 mx-4 py-1 px-8 rounded-full bg-slate-700 text-white`}>
-                        View Flipbook
-                    </Link>
-                }
+            <div className="bg-slate-300 p-4">
+                <div className="flex justify-end gap-2 items-center">
+                    {
+                        status === "published" &&
+                        <Link href={`${process.env.NEXT_PUBLIC_BASE_URL}/${currPath}`} target="_blank" className={`my-2 mx-4 px-4 rounded bg-slate-700 text-white`}>
+                            View Flipbook
+                        </Link>
+                    }
+                    <button type="submit" onClick={(e) => handleSubmit(e, true)}
+                            className="bg-gray-100 my-2 text-black rounded px-4 block">Save Draft
+                    </button>
+                    <button type="submit" onClick={(e) => handleSubmit(e, false)}
+                            className="bg-green-700 text-white rounded px-4 block">Publish
+                    </button>
+                </div>
+                <div className="flex justify-end">
+                    <p className="flex items-center"><strong>Status:</strong> <div className={`ml-4 mr-1 size-2 rounded-full ${statusStyles[status]}`} />{status}</p>
+                </div>
             </div>
-            <div className="flex justify-end gap-2 items-center">
-                <button type="submit" onClick={(e) => handleSubmit(e, true)}
-                        className="bg-gray-100 my-2 text-black rounded px-4 block">Save Draft
-                </button>
-                <button type="submit" onClick={(e) => handleSubmit(e, false)}
-                        className="bg-green-700 text-white rounded px-4 block">Publish
-                </button>
-            </div>
+
+
         </form>
     </div>
 }
