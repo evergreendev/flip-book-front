@@ -47,6 +47,8 @@ export default function Flipbook({
     const [flipbookWidth, setFlipbookWidth] = useState<number>(0);
     const [flipbookHeight, setFlipbookHeight] = useState<number>(0);
     const [zoomLevel, setZoomLevel] = useState<number>(1.0);
+    const [panPosition, setPanPosition] = useState<{ x: number, y: number }>({ x: 0, y: 0 });
+    const [isPanning, setIsPanning] = useState<boolean>(false);
     const mode = useContext(ModeContext);
 
     const [gradientSpring, gradientApi] = useSpring(() => ({
@@ -104,6 +106,57 @@ export default function Flipbook({
         };
     }, [pdfUrl, initialOverlays, mode, setFormOverlays, loadPdf, prefetchPdf]);
 
+
+    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+        // Only enable panning if:
+        // 1. Zoom level is greater than 1.0
+        // 2. The target is not an overlay canvas (which needs its own interactions)
+        if (zoomLevel > 1.0) {
+            setIsPanning(true);
+        }
+    };
+
+    // Function to constrain pan position within reasonable bounds
+    const constrainPanPosition = useCallback((x: number, y: number): { x: number, y: number } => {
+        // Calculate the maximum pan distance based on zoom level and flipbook dimensions
+        const maxPanX = Math.max(0, flipbookWidth * (zoomLevel - 1) / 2);
+        const maxPanY = Math.max(0, flipbookHeight * (zoomLevel - 1) / 2);
+
+        return {
+            x: Math.max(-maxPanX, Math.min(maxPanX, x)),
+            y: Math.max(-maxPanY, Math.min(maxPanY, y))
+        };
+    }, [flipbookWidth, flipbookHeight, zoomLevel]);
+
+    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+        // Only update pan position if actively panning
+        if (isPanning && zoomLevel > 1.0) {
+            setPanPosition(prev => {
+                const newPos = {
+                    x: prev.x + e.movementX,
+                    y: prev.y + e.movementY
+                };
+                return constrainPanPosition(newPos.x, newPos.y);
+            });
+            // Prevent default behavior to avoid text selection during panning
+            e.preventDefault();
+        }
+    };
+
+    const handleMouseUp = () => {
+        setIsPanning(false);
+    };
+
+    // Reset pan position when zoom level is reset to 1.0
+    // or constrain it when zoom level changes
+    useEffect(() => {
+        if (zoomLevel === 1.0) {
+            setPanPosition({ x: 0, y: 0 });
+        } else {
+            // Constrain the current pan position based on the new zoom level
+            setPanPosition(prev => constrainPanPosition(prev.x, prev.y));
+        }
+    }, [zoomLevel, flipbookWidth, flipbookHeight, constrainPanPosition]);
 
     const flipbookRef = useCallback((node: HTMLDivElement) => {
         if (node !== null) {
@@ -200,8 +253,23 @@ export default function Flipbook({
     if (!maxPage) return null;
 
     return <div className="flex justify-between items-center flex-wrap">
-        <div ref={flipbookRef} className={`overflow-hidden mx-auto my-4 h-[90vh] aspect-[28/19] flex justify-center`}>
-        <div className="relative flex h-full">
+        <div 
+            ref={flipbookRef} 
+            className={`overflow-hidden mx-auto my-4 h-[90vh] aspect-[28/19] flex justify-center`}
+            style={{ cursor: isPanning ? 'grabbing' : (zoomLevel > 1.0 ? 'grab' : 'default') }}
+            onMouseDown={handleMouseDown}
+            onMouseMove={handleMouseMove}
+            onMouseUp={handleMouseUp}
+            onMouseLeave={handleMouseUp}
+        >
+        <div 
+            className="relative flex h-full"
+            style={{
+                transform: zoomLevel > 1.0 ? `scale(${zoomLevel}) translate(${panPosition.x / zoomLevel}px, ${panPosition.y / zoomLevel}px)` : 'none',
+                transformOrigin: 'center center',
+                transition: isPanning ? 'none' : 'transform 0.2s ease-out'
+            }}
+        >
                 <animated.div
                     className="absolute inset-0 pointer-events-none"
                     style={{
@@ -228,7 +296,8 @@ export default function Flipbook({
                             setActiveOverlayId={setActiveOverlayId} overlays={overlays}
                             maxPage={maxPage}
                             key={index} thisPage={index + 1}
-                            pdfUrl={pdfUrl} shouldRender={renderedPages.has(index)}/>
+                            pdfUrl={pdfUrl} shouldRender={renderedPages.has(index)}
+                            zoomLevel={zoomLevel}/>
                     );
                 })}
             </div>

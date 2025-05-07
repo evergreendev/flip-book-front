@@ -16,7 +16,8 @@ interface OverlayRendererProps {
     pdfCanvasRef?: React.RefObject<HTMLCanvasElement | null>,
     canvasWidth: number,
     canvasHeight: number,
-    canvasScale: number
+    canvasScale: number,
+    zoomLevel: number
 }
 
 const OverlayRenderer: React.FC<OverlayRendererProps> = ({

@@ -11,6 +11,7 @@ interface PDFRendererProps {
     pagePosition: "left" | "right" | "center",
     canvasRef: React.RefObject<HTMLCanvasElement | null>,
     shouldRender?: boolean,
+    zoomLevel: number,
     setCanvasHeight: (value: (((prevState: number) => number) | number)) => void,
     setCanvasWidth: (value: (((prevState: number) => number) | number)) => void,
     setCanvasScale: (value: (((prevState: number) => number) | number)) => void,
@@ -47,7 +48,8 @@ const PDFRenderer = ({
                          pagePosition,
                          setCanvasHeight,
                          setCanvasWidth,
-                         setCanvasScale
+                         setCanvasScale,
+                         zoomLevel
                      }: PDFRendererProps) => {
     const pdfRef = useRef<PDFDocumentProxy>(null);
     const renderTaskRef = useRef<RenderTask>(null);
@@ -192,7 +194,7 @@ const PDFRenderer = ({
                 pdfRef.current.destroy().then(() => console.log("destroyed"));
             }
         };
-    }, [canvasRef, currPage, pdfRef, pdfUrl, renderTaskRef, shouldRender, flipbookWidth, flipbookHeight, pagePosition]);
+    }, [canvasRef, currPage, pdfRef, pdfUrl, renderTaskRef, shouldRender, flipbookWidth, flipbookHeight, pagePosition, zoomLevel, setCanvasWidth, setCanvasHeight, setCanvasScale]);
 
     let positionClasses = "";
 

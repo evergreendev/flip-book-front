@@ -57,6 +57,7 @@ interface PageProps {
     flipBookWidth: number
     flipBookHeight: number
     maxPage?: number | null
+    zoomLevel: number
     setOverlays?: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void
     setFormOverlays?: (value: Overlay[]) => void
     setActiveOverlayId?: (value: (((prevState: (string | null)) => (string | null)) | string | null)) => void
@@ -74,6 +75,7 @@ const Page = (({
                    activeOverlayId,
                    formOverlays,
                    maxPage,
+                   zoomLevel,
                    setOverlays,
                    setFormOverlays,
                    setActiveOverlayId,
@@ -84,7 +86,7 @@ const Page = (({
     const [canvasWidth, setCanvasWidth] = useState(0);
     const [canvasHeight, setCanvasHeight] = useState(0);
     const [canvasScale, setCanvasScale] = useState(1);
-    
+
     // Determine page position based on page number
     const pagePosition = isLeft ? "left" : "right";
 
@@ -129,7 +131,7 @@ const Page = (({
                 }
             })
         }
-    }, [api, canvasWidth, currentPage, isLeft, pageWidth, thisPage]);
+    }, [api, canvasWidth, currentPage, isLeft, maxPage, pageWidth, thisPage]);
 
     const pageRef = useRef<HTMLDivElement>(null);
     const pdfCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -162,6 +164,7 @@ const Page = (({
                 pdfUrl={pdfUrl} 
                 shouldRender={shouldRender}
                 pagePosition={pagePosition}
+                zoomLevel={zoomLevel}
             />
             <OverlayRenderer
                 thisPage={thisPage}
@@ -176,6 +179,7 @@ const Page = (({
                 setActiveOverlayId={setActiveOverlayId}
                 setOverlaysToDelete={setOverlaysToDelete}
                 pdfCanvasRef={pdfCanvasRef}
+                zoomLevel={zoomLevel}
             />
         </animated.div>
     );
