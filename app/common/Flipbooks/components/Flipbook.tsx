@@ -107,7 +107,7 @@ export default function Flipbook({
     }, [pdfUrl, initialOverlays, mode, setFormOverlays, loadPdf, prefetchPdf]);
 
 
-    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    const handleMouseDown = () => {
         // Only enable panning if:
         // 1. Zoom level is greater than 1.0
         // 2. The target is not an overlay canvas (which needs its own interactions)
@@ -252,7 +252,7 @@ export default function Flipbook({
 
     if (!maxPage) return null;
 
-    return <div className="flex justify-between items-center flex-wrap">
+    return <div className="flex justify-between items-center flex-wrap bg-white">
         <div 
             ref={flipbookRef} 
             className={`overflow-hidden mx-auto my-4 h-[90vh] aspect-[28/19] flex justify-center`}

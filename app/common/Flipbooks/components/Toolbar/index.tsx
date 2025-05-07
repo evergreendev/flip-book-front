@@ -69,15 +69,18 @@ const Toolbar: React.FC<ToolbarProps> = ({
         });
     };
 
-    const handleZoomIn = () => {
+    const handleZoomIn = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+        e.preventDefault();
         setZoomLevel(prev => Math.min(prev + 0.1, 2.0));
     };
 
-    const handleZoomOut = () => {
+    const handleZoomOut = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+        e.preventDefault();
         setZoomLevel(prev => Math.max(prev - 0.1, 0.5));
     };
 
-    const handleResetZoom = () => {
+    const handleResetZoom = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+        e.preventDefault();
         setZoomLevel(1.0);
     };
 
@@ -114,7 +117,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                 <Button
                     variant="outline"
                     size="icon"
-                    onClick={handleZoomOut}
+                    onClick={(e)=>handleZoomOut(e)}
                     disabled={currentZoom <= 0.5}
                     title="Zoom out"
                 >
@@ -128,7 +131,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                 <Button
                     variant="outline"
                     size="icon"
-                    onClick={handleZoomIn}
+                    onClick={e=>handleZoomIn(e)}
                     disabled={currentZoom >= 2.0}
                     title="Zoom in"
                 >
@@ -138,7 +141,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                 <Button
                     variant="outline"
                     size="icon"
-                    onClick={handleResetZoom}
+                    onClick={(e)=>handleResetZoom(e)}
                     disabled={currentZoom === 1.0}
                     title="Reset zoom"
                 >
