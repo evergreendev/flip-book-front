@@ -90,33 +90,6 @@ const Toolbar: React.FC<ToolbarProps> = ({
                 <Button
                     variant="outline"
                     size="icon"
-                    onClick={(e)=>handlePreviousPage(e)}
-                    disabled={currentPage <= 1}
-                    title="Previous page"
-                >
-                    <ChevronLeft className="h-4 w-4"/>
-                </Button>
-
-                <div className="text-sm">
-                    Page <span className="font-medium">{currentPage}</span> of <span
-                    className="font-medium">{totalPages}</span>
-                </div>
-
-                <Button
-                    variant="outline"
-                    size="icon"
-                    onClick={(e)=>handleNextPage(e)}
-                    disabled={currentPage >= totalPages}
-                    title="Next page"
-                >
-                    <ChevronRight className="h-4 w-4"/>
-                </Button>
-            </div>
-
-            <div className="flex items-center space-x-2">
-                <Button
-                    variant="outline"
-                    size="icon"
                     onClick={(e)=>handleZoomOut(e)}
                     disabled={currentZoom <= 0.5}
                     title="Zoom out"
@@ -148,6 +121,34 @@ const Toolbar: React.FC<ToolbarProps> = ({
                     <RotateCw className="h-4 w-4"/>
                 </Button>
             </div>
+            <div className="flex items-center space-x-2">
+                <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={(e)=>handlePreviousPage(e)}
+                    disabled={currentPage <= 1}
+                    title="Previous page"
+                >
+                    <ChevronLeft className="h-4 w-4"/>
+                </Button>
+
+                <div className="text-sm">
+                    Page <span className="font-medium">{currentPage}</span> of <span
+                    className="font-medium">{totalPages}</span>
+                </div>
+
+                <Button
+                    variant="outline"
+                    size="icon"
+                    onClick={(e)=>handleNextPage(e)}
+                    disabled={currentPage >= totalPages}
+                    title="Next page"
+                >
+                    <ChevronRight className="h-4 w-4"/>
+                </Button>
+            </div>
+
+
         </div>
     );
 };
