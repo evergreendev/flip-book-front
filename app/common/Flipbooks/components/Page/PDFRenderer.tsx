@@ -49,7 +49,6 @@ const PDFRenderer = ({
                          setCanvasHeight,
                          setCanvasWidth,
                          setCanvasScale,
-                         zoomLevel
                      }: PDFRendererProps) => {
     const pdfRef = useRef<PDFDocumentProxy>(null);
     const renderTaskRef = useRef<RenderTask>(null);
@@ -221,7 +220,7 @@ const PDFRenderer = ({
                 pdfRef.current.destroy().then(() => console.log("destroyed"));
             }
         };
-    }, [canvasRef, currPage, pdfRef, pdfUrl, renderTaskRef, shouldRender, flipbookWidth, flipbookHeight, pagePosition, zoomLevel, setCanvasWidth, setCanvasHeight, setCanvasScale]);
+    }, [canvasRef, currPage, pdfRef, pdfUrl, renderTaskRef, shouldRender, flipbookWidth, flipbookHeight, pagePosition, setCanvasWidth, setCanvasHeight, setCanvasScale]);
 
     let positionClasses = "";
 
