@@ -1,5 +1,5 @@
 "use client"
-import React, {HTMLAttributes, useCallback, useContext, useEffect, useState} from "react";
+import React, {HTMLAttributes, useCallback, useContext, useEffect, useState, useRef} from "react";
 import ModeContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/ModeContext";
 import {usePdfCache} from "@/app/common/Flipbooks/hooks/PdfCacheHook";
 import {Overlay} from "../types";
@@ -49,6 +49,8 @@ export default function Flipbook({
     const [zoomLevel, setZoomLevel] = useState<number>(1.0);
     const [panPosition, setPanPosition] = useState<{ x: number, y: number }>({ x: 0, y: 0 });
     const [isPanning, setIsPanning] = useState<boolean>(false);
+    const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
+    const flipbookContainerRef = useRef<HTMLDivElement>(null);
     const mode = useContext(ModeContext);
 
     const [gradientSpring, gradientApi] = useSpring(() => ({
@@ -147,6 +149,59 @@ export default function Flipbook({
         setIsPanning(false);
     };
 
+    const toggleFullScreen = () => {
+        if (!isFullScreen) {
+            if (flipbookContainerRef.current) {
+                // Try standard method first
+                if (flipbookContainerRef.current.requestFullscreen) {
+                    flipbookContainerRef.current.requestFullscreen()
+                        .catch(err => console.error(`Error attempting to enable full-screen mode: ${err.message}`));
+                }
+                // Fallbacks for various browsers
+                //@ts-expect-error document fallback
+                else if ((flipbookContainerRef.current).mozRequestFullScreen) {
+                    //@ts-expect-error document fallback
+                    (flipbookContainerRef.current).mozRequestFullScreen();
+                }
+                //@ts-expect-error document fallback
+                else if ((flipbookContainerRef.current).webkitRequestFullscreen) {
+                    //@ts-expect-error document fallback
+                    (flipbookContainerRef.current).webkitRequestFullscreen();
+                }
+                //@ts-expect-error document fallback
+                else if ((flipbookContainerRef.current).msRequestFullscreen) {
+                    //@ts-expect-error document fallback
+                    (flipbookContainerRef.current).msRequestFullscreen();
+                }
+                else {
+                    console.warn("Fullscreen API is not supported in this browser");
+                }
+            }
+        } else {
+            // Try standard method first
+            if (document.exitFullscreen) {
+                document.exitFullscreen()
+                    .catch(err => console.error(`Error attempting to exit full-screen mode: ${err.message}`));
+            }
+            // Fallbacks for various browsers
+            //@ts-expect-error document fallback
+            else if ((document).mozCancelFullScreen) {
+                //@ts-expect-error document fallback
+                (document).mozCancelFullScreen();
+            }
+            //@ts-expect-error document fallback
+            else if ((document).webkitExitFullscreen) {
+                //@ts-expect-error document fallback
+                (document).webkitExitFullscreen();
+            }
+            //@ts-expect-error document fallback
+            else if ((document).msExitFullscreen) {
+                //@ts-expect-error document fallback
+                (document).msExitFullscreen();
+            }
+        }
+    };
+
     // Reset pan position when zoom level is reset to 1.0
     // or constrain it when zoom level changes
     useEffect(() => {
@@ -213,6 +268,36 @@ export default function Flipbook({
             setOverlays(formattedOverlays);
         }
     }, [initialOverlays, maxPage]);
+    // Effect to listen for fullscreen change events
+    useEffect(() => {
+        const handleFullScreenChange = () => {
+            const isInFullScreen =
+                !!document.fullscreenElement ||
+                //@ts-expect-error Deprecated Mozilla fullscreen API
+                !!(document).mozFullScreenElement ||
+                //@ts-expect-error Webkit fullscreen API
+                !!(document).webkitFullscreenElement ||
+                //@ts-expect-error Microsoft fullscreen API
+                !!(document).msFullscreenElement;
+
+            setIsFullScreen(isInFullScreen);
+        };
+
+        // Add event listeners for all browser variants
+        document.addEventListener('fullscreenchange', handleFullScreenChange);
+        document.addEventListener('mozfullscreenchange', handleFullScreenChange);
+        document.addEventListener('webkitfullscreenchange', handleFullScreenChange);
+        document.addEventListener('MSFullscreenChange', handleFullScreenChange);
+
+        return () => {
+            // Remove all event listeners on cleanup
+            document.removeEventListener('fullscreenchange', handleFullScreenChange);
+            document.removeEventListener('mozfullscreenchange', handleFullScreenChange);
+            document.removeEventListener('webkitfullscreenchange', handleFullScreenChange);
+            document.removeEventListener('MSFullscreenChange', handleFullScreenChange);
+        };
+    }, []);
+
     // Effect to trigger gradient animation when current page changes
     useEffect(() => {
         if (animationDirection === "left") {
@@ -252,7 +337,7 @@ export default function Flipbook({
 
     if (!maxPage) return null;
 
-    return <div className="flex justify-between items-center flex-wrap bg-white">
+    return <div ref={flipbookContainerRef} className="flex justify-between items-center flex-wrap bg-white max-w-screen-2xl mx-auto">
         <div 
             ref={flipbookRef} 
             className={`overflow-hidden mx-auto my-4 h-[90vh] aspect-[28/19] flex justify-center`}
@@ -303,8 +388,16 @@ export default function Flipbook({
             </div>
         </div>
         <div className="w-full">
-            <Toolbar setAnimationDirection={setAnimationDirection} setPage={setCurrPage} setZoomLevel={setZoomLevel} currentPage={currPage} totalPages={maxPage}
-                     currentZoom={zoomLevel}/>
+            <Toolbar 
+                setAnimationDirection={setAnimationDirection} 
+                setPage={setCurrPage} 
+                setZoomLevel={setZoomLevel} 
+                currentPage={currPage} 
+                totalPages={maxPage}
+                currentZoom={zoomLevel}
+                isFullScreen={isFullScreen}
+                toggleFullScreen={toggleFullScreen}
+            />
         </div>
 
     </div>

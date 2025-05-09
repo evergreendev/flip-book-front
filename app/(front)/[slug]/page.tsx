@@ -1,7 +1,9 @@
 import {cookies} from "next/headers";
 import {FlipBook} from "@/app/(admin)/admin/(protected)/dashboard/flipbooks/columns";
-import Flipbook, {Overlay} from "@/app/common/Flipbooks/components/Flipbook";
+
 import {Metadata} from "next";
+import {Overlay} from "@/app/common/Flipbooks/types";
+import Flipbook from "@/app/common/Flipbooks/components/Flipbook";
 
 //todo move this somewhere better
 
@@ -50,8 +52,9 @@ export default async function Page({params: paramsPromise}: Args) {
     if (!data) return null;
 
     return (
-        <div className="mx-auto h-screen bg-slate-800 p-3">
-            <Flipbook pdfUrl={process.env.PDF_URL + "/" + data.pdf_path} initialOverlays={overlays}/>
+        <div
+            className="mx-auto h-screen p-3 bg-gradient-to-b from-neutral-50 to-neutral-200 dark:from-neutral-900 dark:to-neutral-800">
+        <Flipbook pdfUrl={process.env.PDF_URL + "/" + data.pdf_path} initialOverlays={overlays}/>
         </div>
     )
 }

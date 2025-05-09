@@ -1,7 +1,8 @@
 import {cookies} from "next/headers";
 import {FlipBook} from "@/app/(admin)/admin/(protected)/dashboard/flipbooks/columns";
 import EditForm from "@/app/(admin)/admin/(protected)/dashboard/edit/components/EditForm";
-import {Overlay} from "@/app/common/Flipbooks/components/Flipbook";
+import {Overlay} from "@/app/common/Flipbooks/types";
+
 
 //todo move this somewhere better
 

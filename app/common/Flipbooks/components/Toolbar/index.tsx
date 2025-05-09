@@ -7,7 +7,9 @@ import {
     ChevronRight,
     ZoomIn,
     ZoomOut,
-    RotateCw
+    RotateCw,
+    Maximize,
+    Minimize
 } from 'lucide-react';
 
 interface ToolbarProps {
@@ -16,7 +18,9 @@ interface ToolbarProps {
     currentPage: number,
     totalPages: number,
     currentZoom: number,
-    setAnimationDirection: (value: (((prevState: ("left" | "right")) => ("left" | "right")) | "left" | "right")) => void
+    setAnimationDirection: (value: (((prevState: ("left" | "right")) => ("left" | "right")) | "left" | "right")) => void,
+    isFullScreen?: boolean,
+    toggleFullScreen?: () => void
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({
@@ -25,7 +29,9 @@ const Toolbar: React.FC<ToolbarProps> = ({
                                              currentPage,
                                              totalPages,
                                              currentZoom,
-                                             setAnimationDirection
+                                             setAnimationDirection,
+                                             isFullScreen,
+                                             toggleFullScreen
                                          }) => {
     const handlePreviousPage = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
         e.preventDefault();
@@ -120,6 +126,17 @@ const Toolbar: React.FC<ToolbarProps> = ({
                 >
                     <RotateCw className="h-4 w-4"/>
                 </Button>
+
+                {toggleFullScreen && (
+                    <Button
+                        variant="outline"
+                        size="icon"
+                        onClick={toggleFullScreen}
+                        title={isFullScreen ? "Exit full screen" : "Enter full screen"}
+                    >
+                        {isFullScreen ? <Minimize className="h-4 w-4"/> : <Maximize className="h-4 w-4"/>}
+                    </Button>
+                )}
             </div>
             <div className="flex items-center space-x-2">
                 <Button
