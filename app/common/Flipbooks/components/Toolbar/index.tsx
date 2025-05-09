@@ -91,10 +91,10 @@ const Toolbar: React.FC<ToolbarProps> = ({
     };
 
     return (
-        <div className="flex items-center justify-between w-full border-b-2 border-b-[#75b543] bg-slate-400 dark:bg-slate-800 p-2 rounded-md shadow-md">
+        <div className="flex items-center justify-between w-full border-b-2 border-b-[#75b543] bg-neutral-900 text-white p-2 shadow-md">
             <div className="flex items-center space-x-2">
                 <Button
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
                     onClick={(e)=>handleZoomOut(e)}
                     disabled={currentZoom <= 0.5}
@@ -108,7 +108,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                 </div>
 
                 <Button
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
                     onClick={e=>handleZoomIn(e)}
                     disabled={currentZoom >= 2.0}
@@ -118,7 +118,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                 </Button>
 
                 <Button
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
                     onClick={(e)=>handleResetZoom(e)}
                     disabled={currentZoom === 1.0}
@@ -129,7 +129,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
 
                 {toggleFullScreen && (
                     <Button
-                        variant="outline"
+                        variant="ghost"
                         size="icon"
                         onClick={toggleFullScreen}
                         title={isFullScreen ? "Exit full screen" : "Enter full screen"}
@@ -140,7 +140,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
             </div>
             <div className="flex items-center space-x-2">
                 <Button
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
                     onClick={(e)=>handlePreviousPage(e)}
                     disabled={currentPage <= 1}
@@ -155,7 +155,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                 </div>
 
                 <Button
-                    variant="outline"
+                    variant="ghost"
                     size="icon"
                     onClick={(e)=>handleNextPage(e)}
                     disabled={currentPage >= totalPages}
@@ -164,8 +164,6 @@ const Toolbar: React.FC<ToolbarProps> = ({
                     <ChevronRight className="h-4 w-4"/>
                 </Button>
             </div>
-
-
         </div>
     );
 };

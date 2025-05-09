@@ -53,7 +53,7 @@ export default async function Page({params: paramsPromise}: Args) {
 
     return (
         <div
-            className="mx-auto h-screen p-3 bg-gradient-to-b from-neutral-50 to-neutral-200 dark:from-neutral-900 dark:to-neutral-800">
+            className="mx-auto h-screen p-3 bg-gradient-to-b from-neutral-900 to-neutral-800">
         <Flipbook pdfUrl={process.env.PDF_URL + "/" + data.pdf_path} initialOverlays={overlays}/>
         </div>
     )

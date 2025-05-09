@@ -337,7 +337,7 @@ export default function Flipbook({
 
     if (!maxPage) return null;
 
-    return <div ref={flipbookContainerRef} className="flex justify-between items-center flex-wrap bg-white max-w-screen-2xl mx-auto">
+    return <div ref={flipbookContainerRef} className="flex justify-between items-center flex-wrap mx-auto">
         <div 
             ref={flipbookRef} 
             className={`overflow-hidden mx-auto my-4 h-[90vh] aspect-[28/19] flex justify-center`}
