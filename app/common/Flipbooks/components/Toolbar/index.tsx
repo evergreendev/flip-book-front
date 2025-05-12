@@ -1,6 +1,6 @@
 "use client"
 
-import React from 'react';
+import React, {useEffect} from 'react';
 import {Button} from '@/components/ui/button';
 import {
     ChevronLeft,
@@ -8,8 +8,8 @@ import {
     ZoomIn,
     ZoomOut,
     RotateCw,
-    Maximize,
-    Minimize
+    Expand,
+    Minimize2
 } from 'lucide-react';
 
 interface ToolbarProps {
@@ -33,6 +33,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                                              isFullScreen,
                                              toggleFullScreen
                                          }) => {
+    const [isSinglePage, setIsSinglePage] = React.useState(true);
     const handlePreviousPage = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
         e.preventDefault();
         setAnimationDirection("right")
@@ -82,7 +83,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
 
     const handleZoomOut = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
         e.preventDefault();
-        setZoomLevel(prev => Math.max(prev - 0.1, 0.5));
+        setZoomLevel(prev => Math.max(prev - 0.1, 1));
     };
 
     const handleResetZoom = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
@@ -90,14 +91,23 @@ const Toolbar: React.FC<ToolbarProps> = ({
         setZoomLevel(1.0);
     };
 
+    useEffect(() => {
+        if (currentPage !== 1 && currentPage !== totalPages) {
+            setIsSinglePage(true);
+        } else {
+            setIsSinglePage(false);
+        }
+    }, [currentPage, totalPages]);
+
     return (
-        <div className="flex items-center justify-between w-full border-b-2 border-b-[#75b543] bg-neutral-900 text-white p-2 shadow-md">
+        <div
+            className="flex items-center justify-between w-full border-b-2 border-b-[#75b543] bg-neutral-900 text-white p-2 shadow-md">
             <div className="flex items-center space-x-2">
                 <Button
                     variant="ghost"
                     size="icon"
-                    onClick={(e)=>handleZoomOut(e)}
-                    disabled={currentZoom <= 0.5}
+                    onClick={(e) => handleZoomOut(e)}
+                    disabled={currentZoom <= 1}
                     title="Zoom out"
                 >
                     <ZoomOut className="h-4 w-4"/>
@@ -110,7 +120,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                 <Button
                     variant="ghost"
                     size="icon"
-                    onClick={e=>handleZoomIn(e)}
+                    onClick={e => handleZoomIn(e)}
                     disabled={currentZoom >= 2.0}
                     title="Zoom in"
                 >
@@ -120,7 +130,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                 <Button
                     variant="ghost"
                     size="icon"
-                    onClick={(e)=>handleResetZoom(e)}
+                    onClick={(e) => handleResetZoom(e)}
                     disabled={currentZoom === 1.0}
                     title="Reset zoom"
                 >
@@ -134,7 +144,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                         onClick={toggleFullScreen}
                         title={isFullScreen ? "Exit full screen" : "Enter full screen"}
                     >
-                        {isFullScreen ? <Minimize className="h-4 w-4"/> : <Maximize className="h-4 w-4"/>}
+                        {isFullScreen ? <Minimize2 className="h-4 w-4"/> : <Expand className="h-4 w-4"/>}
                     </Button>
                 )}
             </div>
@@ -142,7 +152,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                 <Button
                     variant="ghost"
                     size="icon"
-                    onClick={(e)=>handlePreviousPage(e)}
+                    onClick={(e) => handlePreviousPage(e)}
                     disabled={currentPage <= 1}
                     title="Previous page"
                 >
@@ -150,14 +160,14 @@ const Toolbar: React.FC<ToolbarProps> = ({
                 </Button>
 
                 <div className="text-sm">
-                    Page <span className="font-medium">{currentPage}</span> of <span
+                    <span className="font-medium">{isSinglePage ?  `${currentPage -1} - ${currentPage}` : currentPage}</span> of <span
                     className="font-medium">{totalPages}</span>
                 </div>
 
                 <Button
                     variant="ghost"
                     size="icon"
-                    onClick={(e)=>handleNextPage(e)}
+                    onClick={(e) => handleNextPage(e)}
                     disabled={currentPage >= totalPages}
                     title="Next page"
                 >
