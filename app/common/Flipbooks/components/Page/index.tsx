@@ -108,6 +108,7 @@ const Page = (({
                 api.start({
                     to: {
                         width: canvasWidth,
+                        transformOrigin: "right center"
                     }
                 })
             }
