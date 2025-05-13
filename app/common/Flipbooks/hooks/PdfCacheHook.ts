@@ -8,7 +8,7 @@ type PdfCache = Map<string, {
   loading: Promise<PDFDocumentProxy> | null;
 }>;
 
-export function usePdfCache(maxCacheSize = 5, expirationTime = 5 * 60 * 1000) {
+export function usePdfCache(maxCacheSize = 5, expirationTime = 10 * 60 * 1000) {
   // Create a ref to hold our cache
   const cacheRef = useRef<PdfCache>(new Map());
   
