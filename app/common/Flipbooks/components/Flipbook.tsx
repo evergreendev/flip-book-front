@@ -6,6 +6,10 @@ import {Overlay} from "../types";
 import Page from "@/app/common/Flipbooks/components/Page";
 import {animated, to, useSpring} from "@react-spring/web";
 import Toolbar from "@/app/common/Flipbooks/components/Toolbar";
+import {
+    ChevronLeft,
+    ChevronRight,
+} from 'lucide-react';
 
 export default function Flipbook({
                                      pdfUrl,
@@ -335,6 +339,52 @@ export default function Flipbook({
 
     }, [animationDirection, currPage, gradientApi]);
 
+    const handlePreviousPage = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+        e.preventDefault();
+        if (!maxPage) return;
+        
+        setAnimationDirection("right")
+        setCurrPage(prev => {
+            // If we're at page 3 or higher, generally flip 2 pages back
+            if (prev > 2) {
+                // If we're at the last page of an even-numbered total, move back just 1 page
+                if (maxPage % 2 !== 1 && prev === maxPage) {
+                    return prev - 1;
+                }
+                return prev - 2;
+            }
+            // If we're at page 2, go to page 1
+            else if (prev === 2) {
+                return 1;
+            }
+            // Otherwise stay at page 1
+            return 1;
+        });
+    };
+
+    const handleNextPage = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+        e.preventDefault();
+        if (!maxPage) return;
+
+        setAnimationDirection("left");
+        setCurrPage(prev => {
+            // If we're at the second-to-last page of an odd-numbered total, move to the last page
+            if (maxPage % 2 === 1 && prev === maxPage - 1) {
+                return maxPage;
+            }
+            // If we can flip 2 pages forward without exceeding total pages
+            else if (prev + 2 <= maxPage) {
+                return prev + 2;
+            }
+            // If we're one page away from the end, go to the last page
+            else if (prev + 1 <= maxPage) {
+                return maxPage;
+            }
+            // Otherwise stay at the current page
+            return prev;
+        });
+    };
+
     if (!maxPage) return null;
 
     return <div ref={flipbookContainerRef} className="flex justify-between items-center flex-wrap mx-auto">
@@ -347,7 +397,8 @@ export default function Flipbook({
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
         >
-        <div 
+            <button disabled={currPage <= 1} onClick={(e)=>{handlePreviousPage(e)}} className={`${currPage <= 1 ? "text-gray-400 opacity-40" : "text-white"} absolute left-12 top-1/2 -translate-y-1/2`}><ChevronLeft size="5rem"/></button>
+            <div
             className="relative flex h-full"
             style={{
                 transform: zoomLevel > 1.0 ? `scale(${zoomLevel}) translate(${panPosition.x / zoomLevel}px, ${panPosition.y / zoomLevel}px)` : 'none',
@@ -386,14 +437,16 @@ export default function Flipbook({
                     );
                 })}
             </div>
+            <button disabled={currPage >= maxPage} onClick={(e)=>{handleNextPage(e)}} className={`${currPage >= maxPage ? "text-gray-400 opacity-40" : "text-white"} absolute right-12 top-1/2 -translate-y-1/2`}><ChevronRight size="5rem"/></button>
         </div>
         <div className="w-full">
-            <Toolbar 
-                setAnimationDirection={setAnimationDirection} 
+            <Toolbar
                 setPage={setCurrPage} 
                 setZoomLevel={setZoomLevel} 
                 currentPage={currPage} 
                 totalPages={maxPage}
+                handleNextPage={handleNextPage}
+                handlePreviousPage={handlePreviousPage}
                 currentZoom={zoomLevel}
                 isFullScreen={isFullScreen}
                 toggleFullScreen={toggleFullScreen}

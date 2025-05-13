@@ -18,75 +18,35 @@ interface ToolbarProps {
     currentPage: number,
     totalPages: number,
     currentZoom: number,
-    setAnimationDirection: (value: (((prevState: ("left" | "right")) => ("left" | "right")) | "left" | "right")) => void,
     isFullScreen?: boolean,
-    toggleFullScreen?: () => void
+    toggleFullScreen?: () => void,
+    handleNextPage: (e: React.MouseEvent<HTMLButtonElement>) => void
+    handlePreviousPage: (e: React.MouseEvent<HTMLButtonElement>) => void
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({
-                                             setPage,
                                              setZoomLevel,
                                              currentPage,
                                              totalPages,
                                              currentZoom,
-                                             setAnimationDirection,
                                              isFullScreen,
-                                             toggleFullScreen
+                                             toggleFullScreen,
+                                             handleNextPage,
+                                             handlePreviousPage,
                                          }) => {
     const [isSinglePage, setIsSinglePage] = React.useState(true);
-    const handlePreviousPage = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-        e.preventDefault();
-        setAnimationDirection("right")
-        setPage(prev => {
-            // If we're at page 3 or higher, generally flip 2 pages back
-            if (prev > 2) {
-                // If we're at the last page of an even-numbered total, move back just 1 page
-                if (totalPages % 2 !== 1 && prev === totalPages) {
-                    return prev - 1;
-                }
-                return prev - 2;
-            }
-            // If we're at page 2, go to page 1
-            else if (prev === 2) {
-                return 1;
-            }
-            // Otherwise stay at page 1
-            return 1;
-        });
-    };
 
-    const handleNextPage = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-        e.preventDefault();
-        setAnimationDirection("left");
-        setPage(prev => {
-            // If we're at the second-to-last page of an odd-numbered total, move to the last page
-            if (totalPages % 2 === 1 && prev === totalPages - 1) {
-                return totalPages;
-            }
-            // If we can flip 2 pages forward without exceeding total pages
-            else if (prev + 2 <= totalPages) {
-                return prev + 2;
-            }
-            // If we're one page away from the end, go to the last page
-            else if (prev + 1 <= totalPages) {
-                return totalPages;
-            }
-            // Otherwise stay at the current page
-            return prev;
-        });
-    };
-
-    const handleZoomIn = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    const handleZoomIn = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
         setZoomLevel(prev => Math.min(prev + 0.1, 2.0));
     };
 
-    const handleZoomOut = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    const handleZoomOut = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
         setZoomLevel(prev => Math.max(prev - 0.1, 1));
     };
 
-    const handleResetZoom = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
+    const handleResetZoom = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
         setZoomLevel(1.0);
     };
@@ -159,8 +119,9 @@ const Toolbar: React.FC<ToolbarProps> = ({
                     <ChevronLeft className="h-4 w-4"/>
                 </Button>
 
-                <div className="text-sm">
-                    <span className="font-medium">{isSinglePage ?  `${currentPage -1} - ${currentPage}` : currentPage}</span> of <span
+                <div className="text-sm w-44 text-center">
+                    <span
+                        className="font-medium">{isSinglePage ? `${currentPage - 1} - ${currentPage}` : currentPage}</span> of <span
                     className="font-medium">{totalPages}</span>
                 </div>
 
