@@ -53,6 +53,10 @@ export default function Flipbook({
     const [zoomLevel, setZoomLevel] = useState<number>(1.0);
     const [panPosition, setPanPosition] = useState<{ x: number, y: number }>({ x: 0, y: 0 });
     const [isPanning, setIsPanning] = useState<boolean>(false);
+    const [isDragging, setIsDragging] = useState<boolean>(false);
+    const [dragStartX, setDragStartX] = useState<number>(0);
+    const [dragCurrentX, setDragCurrentX] = useState<number>(0);
+    const [dragProgress, setDragProgress] = useState<number>(0); // -1 to 1 value indicating drag progress
     const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
     const flipbookContainerRef = useRef<HTMLDivElement>(null);
     const mode = useContext(ModeContext);
@@ -113,12 +117,17 @@ export default function Flipbook({
     }, [pdfUrl, initialOverlays, mode, setFormOverlays, loadPdf, prefetchPdf]);
 
 
-    const handleMouseDown = () => {
+    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
         // Only enable panning if:
         // 1. Zoom level is greater than 1.0
         // 2. The target is not an overlay canvas (which needs its own interactions)
         if (zoomLevel > 1.0) {
             setIsPanning(true);
+        } else if (mode.mode !== "edit") {
+            // Start tracking drag for page turning (only if not in edit mode)
+            setIsDragging(true);
+            setDragStartX(e.clientX);
+            setDragCurrentX(e.clientX);
         }
     };
 
@@ -146,11 +155,112 @@ export default function Flipbook({
             });
             // Prevent default behavior to avoid text selection during panning
             e.preventDefault();
+        } else if (isDragging && mode.mode !== "edit") {
+            // Update current drag position for page turning (only if not in edit mode)
+            setDragCurrentX(e.clientX);
+
+            // Calculate drag progress (-1 to 1)
+            const dragDistance = e.clientX - dragStartX;
+            const dragThreshold = flipbookWidth * 0.1;
+            const progress = Math.max(-1, Math.min(1, dragDistance / dragThreshold));
+            setDragProgress(progress);
+
+            e.preventDefault();
         }
     };
 
-    const handleMouseUp = () => {
+    const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
         setIsPanning(false);
+
+        if (isDragging && mode.mode !== "edit") {
+            const dragDistance = dragCurrentX - dragStartX;
+            const dragThreshold = flipbookWidth * 0.1; // 10% of flipbook width as threshold
+
+            // If drag distance exceeds threshold, trigger page turn (only if not in edit mode)
+            if (Math.abs(dragDistance) > dragThreshold) {
+                if (dragDistance > 0) {
+                    // Dragged right (positive distance), go to previous page
+                    handlePreviousPage(e as unknown as React.MouseEvent<HTMLButtonElement>);
+                } else {
+                    // Dragged left (negative distance), go to next page
+                    handleNextPage(e as unknown as React.MouseEvent<HTMLButtonElement>);
+                }
+            }
+
+            // Reset drag state
+            setIsDragging(false);
+            setDragStartX(0);
+            setDragCurrentX(0);
+            setDragProgress(0);
+        } else if (isDragging) {
+            // Reset drag state even in edit mode
+            setIsDragging(false);
+            setDragStartX(0);
+            setDragCurrentX(0);
+            setDragProgress(0);
+        }
+    };
+
+    // Touch event handlers for mobile devices
+    const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+        if (zoomLevel > 1.0) {
+            setIsPanning(true);
+        } else if (mode.mode !== "edit") {
+            // Start tracking drag for page turning (only if not in edit mode)
+            setIsDragging(true);
+            setDragStartX(e.touches[0].clientX);
+            setDragCurrentX(e.touches[0].clientX);
+        }
+    };
+
+    const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+        if (isPanning && zoomLevel > 1.0) {
+            // Touch panning logic would go here
+            // For simplicity, we're not implementing full touch panning in this update
+        } else if (isDragging && mode.mode !== "edit") {
+            // Update current drag position for page turning (only if not in edit mode)
+            setDragCurrentX(e.touches[0].clientX);
+
+            // Calculate drag progress (-1 to 1)
+            const dragDistance = e.touches[0].clientX - dragStartX;
+            const dragThreshold = flipbookWidth * 0.1;
+            const progress = Math.max(-1, Math.min(1, dragDistance / dragThreshold));
+            setDragProgress(progress);
+
+            e.preventDefault(); // Prevent scrolling while dragging
+        }
+    };
+
+    const handleTouchEnd = () => {
+        setIsPanning(false);
+
+        if (isDragging && mode.mode !== "edit") {
+            const dragDistance = dragCurrentX - dragStartX;
+            const dragThreshold = flipbookWidth * 0.1; // 10% of flipbook width as threshold
+
+            // If drag distance exceeds threshold, trigger page turn (only if not in edit mode)
+            if (Math.abs(dragDistance) > dragThreshold) {
+                if (dragDistance > 0) {
+                    // Swiped right (positive distance), go to previous page
+                    handlePreviousPage({} as React.MouseEvent<HTMLButtonElement>);
+                } else {
+                    // Swiped left (negative distance), go to next page
+                    handleNextPage({} as React.MouseEvent<HTMLButtonElement>);
+                }
+            }
+
+            // Reset drag state
+            setIsDragging(false);
+            setDragStartX(0);
+            setDragCurrentX(0);
+            setDragProgress(0);
+        } else if (isDragging) {
+            // Reset drag state even in edit mode
+            setIsDragging(false);
+            setDragStartX(0);
+            setDragCurrentX(0);
+            setDragProgress(0);
+        }
     };
 
     const toggleFullScreen = () => {
@@ -342,7 +452,7 @@ export default function Flipbook({
     const handlePreviousPage = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
         e.preventDefault();
         if (!maxPage) return;
-        
+
         setAnimationDirection("right")
         setCurrPage(prev => {
             // If we're at page 3 or higher, generally flip 2 pages back
@@ -396,8 +506,43 @@ export default function Flipbook({
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
             onMouseLeave={handleMouseUp}
+            onTouchStart={handleTouchStart}
+            onTouchMove={handleTouchMove}
+            onTouchEnd={handleTouchEnd}
         >
             <button disabled={currPage <= 1} onClick={(e)=>{handlePreviousPage(e)}} className={`${currPage <= 1 ? "text-gray-400 opacity-40" : "text-white"} absolute left-12 top-1/2 -translate-y-1/2`}><ChevronLeft size="5rem"/></button>
+
+            {/* Page turn indicators */}
+            {isDragging && (
+                <>
+                    {/* Previous page indicator (right side) */}
+                    <div 
+                        className="absolute top-0 left-0 h-full flex items-center justify-start pointer-events-none"
+                        style={{ 
+                            opacity: Math.max(0, dragProgress),
+                            transition: 'opacity 0.1s ease-out'
+                        }}
+                    >
+                        <div className="bg-white bg-opacity-30 p-4 rounded-r-lg">
+                            <ChevronLeft size="3rem" className="text-white" />
+                        </div>
+                    </div>
+
+                    {/* Next page indicator (left side) */}
+                    <div 
+                        className="absolute top-0 right-0 h-full flex items-center justify-end pointer-events-none"
+                        style={{ 
+                            opacity: Math.max(0, -dragProgress),
+                            transition: 'opacity 0.1s ease-out'
+                        }}
+                    >
+                        <div className="bg-white bg-opacity-30 p-4 rounded-l-lg">
+                            <ChevronRight size="3rem" className="text-white" />
+                        </div>
+                    </div>
+                </>
+            )}
+
             <div
             className="relative flex h-full"
             style={{
