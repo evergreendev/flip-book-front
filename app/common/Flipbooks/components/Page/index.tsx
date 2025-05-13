@@ -92,7 +92,6 @@ const Page = (({
 
     const [springs, api] = useSpring(() => ({
         from: {width: 0, rotate: 0, transformOrigin: '0% 0%', zIndex: 1},
-        config: {tension: 120, friction: 700, mass: 150.0}
     }))
 
     const [pageWidth, setPageWidth] = useState(flipBookWidth/2);
