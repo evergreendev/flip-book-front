@@ -1,12 +1,11 @@
 "use server"
 
-import {cookies} from "next/headers";
+import {checkOrRefreshToken} from "@/app/common/Auth/actions";
 
 export async function handleUpload(prevState: { error: string | null, redirect: string | null }, formData: FormData) {
     if (!process.env.BACKEND_URL) return {...prevState, error: "Something went wrong. Please try again.", redirect: null};
 
-    const cookieStore = await cookies();
-    const userToken = cookieStore.get('user_token');
+    const userToken = await checkOrRefreshToken();
 
     const res = await fetch(process.env.BACKEND_URL + "/pdf/upload", {
         method: "POST",
@@ -15,9 +14,7 @@ export async function handleUpload(prevState: { error: string | null, redirect: 
             "Authorization": `Bearer ${userToken?.value}`
         }
     });
-    if (res.status === 401) {
-        cookieStore.delete('user_token');
-    }
+
     if (res.status !== 200) return {...prevState, error: "Invalid Credentials. Please Try again", redirect: null};
 
     const pdf = await res.json();
@@ -30,7 +27,7 @@ export async function handleUpload(prevState: { error: string | null, redirect: 
         }),
         headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${userToken?.value}`
+            "Authorization": `Bearer ${userToken}`
         }
     });
     if (res.status !== 200) return {...prevState, error: "Invalid Credentials. Please Try again", redirect: null};

@@ -1,7 +1,6 @@
 "use server"
-
-import {cookies} from "next/headers";
-import {Overlay} from "@/app/common/Flipbooks/components/Flipbook";
+import {Overlay} from "@/app/common/Flipbooks/types";
+import {checkOrRefreshToken} from "@/app/common/Auth/actions";
 
 export async function handleEdit(prevState: { flipBookId:string, error?: string | null, redirect?: string | null | boolean }, formData: FormData) {
     if (!process.env.BACKEND_URL) return {...prevState, error: "Something went wrong. Please try again."};
@@ -9,9 +8,7 @@ export async function handleEdit(prevState: { flipBookId:string, error?: string 
     const overlays = formData.get("overlays");
     const overlaysToDelete = formData.get("overlaysToDelete");
 
-
-    const cookieStore = await cookies();
-    const userToken = cookieStore.get('user_token');
+    const userToken = await checkOrRefreshToken();
     const res = await fetch(`${process.env.BACKEND_URL}/flipbooks/${prevState.flipBookId}`, {
         method: "PUT",
         body: formData,
@@ -20,9 +17,6 @@ export async function handleEdit(prevState: { flipBookId:string, error?: string 
         }
     });
 
-    if (res.status === 401) {
-        cookieStore.delete('user_token');
-    }
     if (res.status !== 200) return {...prevState, error: "Invalid Credentials. Please Try again"};
 
     const pdf = await res.json();

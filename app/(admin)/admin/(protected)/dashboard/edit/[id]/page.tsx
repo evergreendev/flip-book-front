@@ -1,14 +1,13 @@
-import {cookies} from "next/headers";
 import {FlipBook} from "@/app/(admin)/admin/(protected)/dashboard/flipbooks/columns";
 import EditForm from "@/app/(admin)/admin/(protected)/dashboard/edit/components/EditForm";
 import {Overlay} from "@/app/common/Flipbooks/types";
+import {checkOrRefreshToken} from "@/app/common/Auth/actions";
 
 
 //todo move this somewhere better
 
 async function getData(id:string): Promise<FlipBook|null> {
-    const cookieStore = await cookies();
-    const userToken = cookieStore.get('user_token');
+    const userToken = await checkOrRefreshToken();
     const flipbookRes = await fetch(`${process.env.BACKEND_URL}/flipbooks/${id}`, {
         headers: {
             "Content-Type": "application/json",
