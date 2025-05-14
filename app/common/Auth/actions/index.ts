@@ -55,11 +55,11 @@ export async function handleRegister(prevState: {
     redirect?: boolean | null
 }, formData: FormData) {
     const cookieStore = await cookies();
-    const token = cookieStore.get(userTokenKey);
     const newUser = {
         email: formData.get("email"),
         password: formData.get("password"),
     }
+    const token = await checkOrRefreshToken();
 
     const res = await fetch(process.env.BACKEND_URL + usersResourceName, {
         method: "POST",

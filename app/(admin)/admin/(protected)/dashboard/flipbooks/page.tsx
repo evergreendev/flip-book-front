@@ -1,18 +1,15 @@
 import { FlipBook, columns } from "./columns"
 import { DataTable } from "./data-table"
-import {checkOrRefreshToken} from "@/app/common/Auth/actions";
+import {headers} from "next/headers";
 
 async function getData(): Promise<FlipBook[]> {
-    const userToken = await checkOrRefreshToken();
-    const flipbookRes = await fetch(process.env.BACKEND_URL + "/flipbooks?showDrafts=true", {
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${userToken?.value}`
-        },
-        next: {
-            tags: ["flipbooks"]
-        }
+    const flipbookRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/flipbooks/?showDrafts=true`, {
+        credentials: 'include',
+        headers: await headers()
     });
+
+    if (!flipbookRes.ok) return [];
+
     const data = await flipbookRes.json();
 
     return (data as FlipBook[]).map((row) => {

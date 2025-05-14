@@ -12,7 +12,7 @@ export async function GET() {
 
     const userToken = await checkOrRefreshToken(userTokenFromCookies, refreshTokenFromCookies);
 
-    if (!userToken) {
+    if (!userToken?.value) {
         return NextResponse.json({userToken}, {status: 401});
     } else {
         return NextResponse.json({userToken});

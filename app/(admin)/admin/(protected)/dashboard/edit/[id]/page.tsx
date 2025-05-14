@@ -1,19 +1,15 @@
 import {FlipBook} from "@/app/(admin)/admin/(protected)/dashboard/flipbooks/columns";
 import EditForm from "@/app/(admin)/admin/(protected)/dashboard/edit/components/EditForm";
 import {Overlay} from "@/app/common/Flipbooks/types";
-import {checkOrRefreshToken} from "@/app/common/Auth/actions";
-
-
-//todo move this somewhere better
+import {headers} from "next/headers";
 
 async function getData(id:string): Promise<FlipBook|null> {
-    const userToken = await checkOrRefreshToken();
-    const flipbookRes = await fetch(`${process.env.BACKEND_URL}/flipbooks/${id}`, {
-        headers: {
-            "Content-Type": "application/json",
-            "Authorization": `Bearer ${userToken?.value}`
-        }
+    const flipbookRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/flipbooks/${id}`, {
+        credentials: 'include',
+        headers: await headers()
     });
+
+
     if (!flipbookRes.ok) return null;
     return await flipbookRes.json()
 }
