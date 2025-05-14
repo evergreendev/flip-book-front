@@ -9,6 +9,7 @@ import Toolbar from "@/app/common/Flipbooks/components/Toolbar";
 import {ChevronLeft, ChevronRight,} from 'lucide-react';
 import {PDFDocumentProxy} from "pdfjs-dist";
 import {v4 as uuidv4} from "uuid";
+import { useRouter, useSearchParams } from "next/navigation";
 
 async function generateOverlays(
     currPage: number,
@@ -139,6 +140,8 @@ export default function Flipbook({
     const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
     const flipbookContainerRef = useRef<HTMLDivElement>(null);
     const mode = useContext(ModeContext);
+    const router = useRouter();
+    const searchParams = useSearchParams();
 
     const [gradientSpring, gradientApi] = useSpring(() => ({
         from: {
@@ -164,7 +167,7 @@ export default function Flipbook({
         setIsGenerating(true);
         async function generate() {
             if (!maxPage) return;
-            
+
             const pdf = await loadPdf(pdfUrl);
 
             for (let i = 1; i <= maxPage; i++) {
@@ -210,6 +213,18 @@ export default function Flipbook({
             isMounted = false;
         };
     }, [pdfUrl, initialOverlays, mode, setFormOverlays, loadPdf, prefetchPdf]);
+
+    // Check for page parameter in URL when component loads
+    useEffect(() => {
+        const pageParam = searchParams.get('page');
+        if (pageParam && maxPage) {
+            const pageNumber = parseInt(pageParam, 10);
+            // Ensure the page number is valid
+            if (!isNaN(pageNumber) && pageNumber >= 1 && pageNumber <= maxPage) {
+                setCurrPage(pageNumber);
+            }
+        }
+    }, [searchParams, maxPage]);
 
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -545,26 +560,44 @@ export default function Flipbook({
 
     }, [animationDirection, currPage, gradientApi]);
 
+    // Helper function to update URL with page parameter
+    const updateUrlWithPage = (pageNumber: number) => {
+        // Create a new URLSearchParams object with the current query parameters
+        const params = new URLSearchParams(searchParams.toString());
+        // Set the page parameter
+        params.set('page', pageNumber.toString());
+        // Update the URL without refreshing the page
+        router.push(`?${params.toString()}`, { scroll: false });
+    };
+
     const handlePreviousPage = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
         e.preventDefault();
         if (!maxPage) return;
 
         setAnimationDirection("right")
         setCurrPage(prev => {
+            let newPage;
             // If we're at page 3 or higher, generally flip 2 pages back
             if (prev > 2) {
                 // If we're at the last page of an even-numbered total, move back just 1 page
                 if (maxPage % 2 !== 1 && prev === maxPage) {
-                    return prev - 1;
+                    newPage = prev - 1;
+                } else {
+                    newPage = prev - 2;
                 }
-                return prev - 2;
             }
             // If we're at page 2, go to page 1
             else if (prev === 2) {
-                return 1;
+                newPage = 1;
             }
             // Otherwise stay at page 1
-            return 1;
+            else {
+                newPage = 1;
+            }
+
+            // Update URL with the new page number
+            updateUrlWithPage(newPage);
+            return newPage;
         });
     };
 
@@ -574,20 +607,27 @@ export default function Flipbook({
 
         setAnimationDirection("left");
         setCurrPage(prev => {
+            let newPage;
             // If we're at the second-to-last page of an odd-numbered total, move to the last page
             if (maxPage % 2 === 1 && prev === maxPage - 1) {
-                return maxPage;
+                newPage = maxPage;
             }
             // If we can flip 2 pages forward without exceeding total pages
             else if (prev + 2 <= maxPage) {
-                return prev + 2;
+                newPage = prev + 2;
             }
             // If we're one page away from the end, go to the last page
             else if (prev + 1 <= maxPage) {
-                return maxPage;
+                newPage = maxPage;
             }
             // Otherwise stay at the current page
-            return prev;
+            else {
+                newPage = prev;
+            }
+
+            // Update URL with the new page number
+            updateUrlWithPage(newPage);
+            return newPage;
         });
     };
 
