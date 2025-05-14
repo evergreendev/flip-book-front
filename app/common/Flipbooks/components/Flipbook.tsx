@@ -1,15 +1,90 @@
 "use client"
-import React, {HTMLAttributes, useCallback, useContext, useEffect, useState, useRef} from "react";
+import React, {HTMLAttributes, useCallback, useContext, useEffect, useRef, useState} from "react";
 import ModeContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/ModeContext";
 import {usePdfCache} from "@/app/common/Flipbooks/hooks/PdfCacheHook";
 import {Overlay} from "../types";
 import Page from "@/app/common/Flipbooks/components/Page";
 import {animated, to, useSpring} from "@react-spring/web";
 import Toolbar from "@/app/common/Flipbooks/components/Toolbar";
-import {
-    ChevronLeft,
-    ChevronRight,
-} from 'lucide-react';
+import {ChevronLeft, ChevronRight,} from 'lucide-react';
+import {PDFDocumentProxy} from "pdfjs-dist";
+import {v4 as uuidv4} from "uuid";
+
+async function generateOverlays(
+    currPage: number,
+    pdf: PDFDocumentProxy,
+    mode: { flipBookId: string; }) {
+    const page = await pdf.getPage(currPage);
+    const structureTree = await page.getTextContent();
+
+    const newOverlays: Overlay[] = [];
+
+    function extractEmails(text:string) {
+        const emailRegex = /[\w.+-]+@[\w-]+\.[\w.-]+/gi;
+        return text.match(emailRegex) || null;
+    }
+
+    // Function to extract URL from text
+    const extractUrl = (text: string): string | null => {
+        // Regular expression to match URLs
+        // This will match URLs with or without http/https prefix
+        const urlRegex = /[-a-zA-Z0-9@:%._+~#=]{1,256}\.[a-zA-Z0-9()]{1,6}\b([-a-zA-Z0-9()@:%_+.~#?&\/=]*)/gi;
+        const matches = text.match(urlRegex);
+
+        function hasTopLevelDomain(url: string) {
+            const tlds = [
+                "com", "org", "net", "edu", "gov", "mil", "int",
+                "co", "io", "ai", "app", "dev", "me", "info", "biz", "xyz", "online", "site", "top", "tech", "store", "club", "blog", "cloud",
+                "us", "uk", "de", "ca", "au", "jp", "cn", "fr", "in", "it", "es", "nl", "br", "ru", "ch", "se", "no", "fi", "mx", "pl", "kr", "tr",
+                "be", "at", "dk", "cz", "gr", "nz", "za", "pt", "hu", "ar", "sg", "hk", "il", "ie", "my", "ph", "th", "vn", "id", "ro", "sk", "bg",
+                "lt", "lv", "ee", "si", "hr", "ua", "by", "is", "lu", "rs", "ba"
+            ];
+
+            return tlds.find(tld => url.includes(tld));
+        }
+
+
+        if (matches && matches.length > 0) {
+            // Clean up the extracted URL to remove any trailing punctuation or unwanted characters
+            let url = matches[0];
+            // Remove trailing punctuation that might have been captured
+            url = url.replace(/[.,;:!?)]$/, '');
+            if (hasTopLevelDomain(url)){
+                return extractEmails(url) ? "mailto:"+url: "https://"+url;
+            }
+        }
+
+        return null;
+    };
+    console.log("generating page ", currPage);
+
+    structureTree.items.forEach((item) => {
+        if (!("str" in item)) return;
+
+        const extractedUrl = extractUrl(item.str);
+
+        if (extractedUrl) {
+            const transform = item.transform;
+            const x = transform[4];
+            const y = transform[5];
+            const width = item.width;
+            const height = item.height;
+
+            newOverlays.push({
+                id: uuidv4(),
+                flipbook_id: mode.flipBookId,
+                h: height,
+                page: currPage,
+                url: extractedUrl,
+                w: width,
+                x: x,
+                y: y
+            })
+        }
+    })
+
+    return newOverlays;
+}
 
 export default function Flipbook({
                                      pdfUrl,
@@ -18,13 +93,17 @@ export default function Flipbook({
                                      overlaysToDelete,
                                      activeOverlayId,
                                      setFormOverlays,
+                                     setShouldGenerateOverlays,
+                                     shouldGenerateOverlays,
                                      setActiveOverlayId,
                                      setOverlaysToDelete,
                                      setOverlaysToRender
                                  }: {
     pdfUrl: string,
     initialOverlays: Overlay[] | null,
-    setFormOverlays?: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void,
+    setFormOverlays?: React.Dispatch<React.SetStateAction<Overlay[] | null>>
+    setShouldGenerateOverlays?: React.Dispatch<React.SetStateAction<boolean>>
+    shouldGenerateOverlays?: boolean
     formOverlays?: Overlay[] | null,
     overlaysToDelete?: string[],
     activeOverlayId?: string | null,
@@ -42,8 +121,8 @@ export default function Flipbook({
             }
         })
     }
-
     const [maxPage, setMaxPage] = useState<number | null>(null);
+    const [isGenerating, setIsGenerating] = useState<boolean>(false);
     const [currPage, setCurrPage] = useState(1);
     const [renderedPages, setRenderedPages] = useState(new Set<number>());
     const [overlays, setOverlays] = useState<Overlay[][]>(formattedInitialOverlays);
@@ -51,7 +130,7 @@ export default function Flipbook({
     const [flipbookWidth, setFlipbookWidth] = useState<number>(0);
     const [flipbookHeight, setFlipbookHeight] = useState<number>(0);
     const [zoomLevel, setZoomLevel] = useState<number>(1.0);
-    const [panPosition, setPanPosition] = useState<{ x: number, y: number }>({ x: 0, y: 0 });
+    const [panPosition, setPanPosition] = useState<{ x: number, y: number }>({x: 0, y: 0});
     const [isPanning, setIsPanning] = useState<boolean>(false);
     const [isDragging, setIsDragging] = useState<boolean>(false);
     const [dragStartX, setDragStartX] = useState<number>(0);
@@ -78,6 +157,37 @@ export default function Flipbook({
 
     const {loadPdf, prefetchPdf} = usePdfCache();
 
+    //The effect for generating new overlays
+    useEffect(() => {
+        if (!maxPage || !shouldGenerateOverlays || isGenerating) return;
+
+        setIsGenerating(true);
+        async function generate() {
+            if (!maxPage) return;
+            
+            const pdf = await loadPdf(pdfUrl);
+
+            for (let i = 1; i <= maxPage; i++) {
+                const newOverlays = await generateOverlays(i, pdf, mode)
+
+                if (setFormOverlays){
+                    setFormOverlays(prevState => prevState ? [...prevState, ...newOverlays] : newOverlays);
+                }
+                if (setOverlaysToRender){
+                    setOverlaysToRender(prevState => prevState ? [...prevState, ...newOverlays] : newOverlays);
+                }
+            }
+        }
+
+        generate().then(()=>{
+            if (setShouldGenerateOverlays){
+                setShouldGenerateOverlays(false);
+            }
+            setIsGenerating(false);
+        });
+
+    }, [shouldGenerateOverlays, maxPage, loadPdf, pdfUrl, mode, setShouldGenerateOverlays, setFormOverlays, isGenerating, setOverlaysToRender]);
+
     useEffect(() => {
         let isMounted = true;
 
@@ -87,25 +197,10 @@ export default function Flipbook({
                 const pdf = await loadPdf(pdfUrl);
 
                 if (!isMounted) return;
-
-                /*                if (initialOverlays?.length === 0 && mode.mode === "edit" && setFormOverlays) {
-                                    const initialOverlayArray: React.SetStateAction<Overlay[][]> = [];
-
-                                    for (let i = 0; i < pdf.numPages; i++) {
-                                        const overlays = await processOverlays(i + 1, pdf, mode);
-                                        initialOverlayArray.push(overlays);
-                                    }
-
-                                    setOverlays(initialOverlayArray);
-                                    setFormOverlays(initialOverlayArray.flatMap(x => x));
-                                }*/
-
                 setMaxPage(pdf.numPages);
 
-                // Prefetch the next few pages
-                for (let i = 1; i <= Math.min(5, pdf.numPages); i++) {
-                    prefetchPdf(pdfUrl);
-                }
+                prefetchPdf(pdfUrl);
+
             } catch (error) {
                 console.error("Error loading PDF:", error);
             }
@@ -271,7 +366,7 @@ export default function Flipbook({
                     flipbookContainerRef.current.requestFullscreen()
                         .catch(err => console.error(`Error attempting to enable full-screen mode: ${err.message}`));
                 }
-                // Fallbacks for various browsers
+                    // Fallbacks for various browsers
                 //@ts-expect-error document fallback
                 else if ((flipbookContainerRef.current).mozRequestFullScreen) {
                     //@ts-expect-error document fallback
@@ -286,8 +381,7 @@ export default function Flipbook({
                 else if ((flipbookContainerRef.current).msRequestFullscreen) {
                     //@ts-expect-error document fallback
                     (flipbookContainerRef.current).msRequestFullscreen();
-                }
-                else {
+                } else {
                     console.warn("Fullscreen API is not supported in this browser");
                 }
             }
@@ -297,7 +391,7 @@ export default function Flipbook({
                 document.exitFullscreen()
                     .catch(err => console.error(`Error attempting to exit full-screen mode: ${err.message}`));
             }
-            // Fallbacks for various browsers
+                // Fallbacks for various browsers
             //@ts-expect-error document fallback
             else if ((document).mozCancelFullScreen) {
                 //@ts-expect-error document fallback
@@ -320,7 +414,7 @@ export default function Flipbook({
     // or constrain it when zoom level changes
     useEffect(() => {
         if (zoomLevel === 1.0) {
-            setPanPosition({ x: 0, y: 0 });
+            setPanPosition({x: 0, y: 0});
         } else {
             // Constrain the current pan position based on the new zoom level
             setPanPosition(prev => constrainPanPosition(prev.x, prev.y));
@@ -352,18 +446,20 @@ export default function Flipbook({
     useEffect(() => {
         if (!maxPage) return;
 
-        const updatedRenderedPages = new Set(renderedPages);
-        updatedRenderedPages.add(currPage);
-        updatedRenderedPages.add(currPage + 1);
-        updatedRenderedPages.add(currPage + 2);
-        updatedRenderedPages.add(currPage + 3);
-        updatedRenderedPages.add(currPage + 4);
-        updatedRenderedPages.add(currPage - 1);
-        updatedRenderedPages.add(currPage - 2);
-        updatedRenderedPages.add(currPage - 3);
-        updatedRenderedPages.add(currPage - 4);
+        setRenderedPages((renderedPages) => {
+            const updatedRenderedPages = new Set(renderedPages);
+            updatedRenderedPages.add(currPage);
+            updatedRenderedPages.add(currPage + 1);
+            updatedRenderedPages.add(currPage + 2);
+            updatedRenderedPages.add(currPage + 3);
+            updatedRenderedPages.add(currPage + 4);
+            updatedRenderedPages.add(currPage - 1);
+            updatedRenderedPages.add(currPage - 2);
+            updatedRenderedPages.add(currPage - 3);
+            updatedRenderedPages.add(currPage - 4);
 
-        setRenderedPages(updatedRenderedPages);
+            return updatedRenderedPages
+        });
     }, [maxPage, currPage]);
 
     useEffect(() => {
@@ -498,10 +594,10 @@ export default function Flipbook({
     if (!maxPage) return null;
 
     return <div ref={flipbookContainerRef} className="flex justify-between items-center flex-wrap mx-auto">
-        <div 
-            ref={flipbookRef} 
+        <div
+            ref={flipbookRef}
             className={`overflow-hidden mx-auto my-4 h-[90vh] aspect-[28/19] flex justify-center`}
-            style={{ cursor: isPanning ? 'grabbing' : (zoomLevel > 1.0 ? 'grab' : 'default') }}
+            style={{cursor: isPanning ? 'grabbing' : (zoomLevel > 1.0 ? 'grab' : 'default')}}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
             onMouseUp={handleMouseUp}
@@ -510,47 +606,51 @@ export default function Flipbook({
             onTouchMove={handleTouchMove}
             onTouchEnd={handleTouchEnd}
         >
-            <button disabled={currPage <= 1} onClick={(e)=>{handlePreviousPage(e)}} className={`${currPage <= 1 ? "text-gray-400 opacity-40" : "text-white"} absolute left-12 top-1/2 -translate-y-1/2`}><ChevronLeft size="5rem"/></button>
+            <button disabled={currPage <= 1} onClick={(e) => {
+                handlePreviousPage(e)
+            }}
+                    className={`${currPage <= 1 ? "text-gray-400 opacity-40" : "text-white"} absolute left-12 top-1/2 -translate-y-1/2`}>
+                <ChevronLeft size="5rem"/></button>
 
             {/* Page turn indicators */}
             {isDragging && (
                 <>
                     {/* Previous page indicator (right side) */}
-                    <div 
+                    <div
                         className="absolute top-0 left-0 h-full flex items-center justify-start pointer-events-none"
-                        style={{ 
+                        style={{
                             opacity: Math.max(0, dragProgress),
                             transition: 'opacity 0.1s ease-out'
                         }}
                     >
                         <div className="bg-white bg-opacity-30 p-4 rounded-r-lg">
-                            <ChevronLeft size="3rem" className="text-white" />
+                            <ChevronLeft size="3rem" className="text-white"/>
                         </div>
                     </div>
 
                     {/* Next page indicator (left side) */}
-                    <div 
+                    <div
                         className="absolute top-0 right-0 h-full flex items-center justify-end pointer-events-none"
-                        style={{ 
+                        style={{
                             opacity: Math.max(0, -dragProgress),
                             transition: 'opacity 0.1s ease-out'
                         }}
                     >
                         <div className="bg-white bg-opacity-30 p-4 rounded-l-lg">
-                            <ChevronRight size="3rem" className="text-white" />
+                            <ChevronRight size="3rem" className="text-white"/>
                         </div>
                     </div>
                 </>
             )}
 
             <div
-            className="relative flex h-full"
-            style={{
-                transform: zoomLevel > 1.0 ? `scale(${zoomLevel}) translate(${panPosition.x / zoomLevel}px, ${panPosition.y / zoomLevel}px)` : 'none',
-                transformOrigin: 'center center',
-                transition: isPanning ? 'none' : 'transform 0.2s ease-out'
-            }}
-        >
+                className="relative flex h-full"
+                style={{
+                    transform: zoomLevel > 1.0 ? `scale(${zoomLevel}) translate(${panPosition.x / zoomLevel}px, ${panPosition.y / zoomLevel}px)` : 'none',
+                    transformOrigin: 'center center',
+                    transition: isPanning ? 'none' : 'transform 0.2s ease-out'
+                }}
+            >
                 <animated.div
                     className="absolute inset-0 pointer-events-none"
                     style={{
@@ -582,13 +682,17 @@ export default function Flipbook({
                     );
                 })}
             </div>
-            <button disabled={currPage >= maxPage} onClick={(e)=>{handleNextPage(e)}} className={`${currPage >= maxPage ? "text-gray-400 opacity-40" : "text-white"} absolute right-12 top-1/2 -translate-y-1/2`}><ChevronRight size="5rem"/></button>
+            <button disabled={currPage >= maxPage} onClick={(e) => {
+                handleNextPage(e)
+            }}
+                    className={`${currPage >= maxPage ? "text-gray-400 opacity-40" : "text-white"} absolute right-12 top-1/2 -translate-y-1/2`}>
+                <ChevronRight size="5rem"/></button>
         </div>
         <div className="w-full">
             <Toolbar
-                setPage={setCurrPage} 
-                setZoomLevel={setZoomLevel} 
-                currentPage={currPage} 
+                setPage={setCurrPage}
+                setZoomLevel={setZoomLevel}
+                currentPage={currPage}
                 totalPages={maxPage}
                 handleNextPage={handleNextPage}
                 handlePreviousPage={handlePreviousPage}

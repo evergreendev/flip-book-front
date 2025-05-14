@@ -4,47 +4,6 @@ import React, {useEffect, useRef, useState} from "react";
 import PDFRenderer from "@/app/common/Flipbooks/components/Page/PDFRenderer";
 import OverlayRenderer from "@/app/common/Flipbooks/components/Page/OverlayRenderer";
 
-
-/*async function processOverlays(
-    currPage: number,
-    pdf: PDFDocumentProxy,
-    mode: { flipBookId: string; }) {
-    const page = await pdf.getPage(currPage);
-    const structureTree = await page.getTextContent();
-
-    const newOverlays: Overlay[] = [];
-
-    structureTree.items.forEach((item) => {
-
-        if (!("str" in item)) return;
-
-        if (item.str.toLowerCase().includes(".com")
-            || item.str.toLowerCase().includes(".fun")
-            || item.str.toLowerCase().includes(".edu")
-            || item.str.toLowerCase().includes(".net")
-            || item.str.toLowerCase().includes(".org")) {
-            const transform = item.transform;
-            const x = transform[4];
-            const y = transform[5];
-            const width = item.width;
-            const height = item.height;
-
-            newOverlays.push({
-                flipbook_id: mode.flipBookId,
-                h: height,
-                id: null,
-                page: currPage,
-                url: item.str.startsWith('http') ? item.str : `https://${item.str}`,
-                w: width,
-                x: x,
-                y: y
-            })
-        }
-    })
-
-    return newOverlays;
-}*/
-
 interface PageProps {
     thisPage: number
     currentPage: number
@@ -94,10 +53,10 @@ const Page = (({
         from: {width: 0, rotate: 0, transformOrigin: '0% 0%', zIndex: 1},
     }))
 
-    const [pageWidth, setPageWidth] = useState(flipBookWidth/2);
+    const [pageWidth, setPageWidth] = useState(flipBookWidth / 2);
 
     useEffect(() => {
-        setPageWidth(flipBookWidth/2);
+        setPageWidth(flipBookWidth / 2);
     }, [pageWidth, flipBookWidth]);
 
 
@@ -153,15 +112,15 @@ const Page = (({
                 )
             }}
         >
-            <PDFRenderer 
-                flipbookHeight={flipBookHeight} 
+            <PDFRenderer
+                flipbookHeight={flipBookHeight}
                 flipbookWidth={flipBookWidth}
                 setCanvasHeight={setCanvasHeight}
                 setCanvasWidth={setCanvasWidth}
                 setCanvasScale={setCanvasScale}
                 canvasRef={pdfCanvasRef}
-                currPage={thisPage} 
-                pdfUrl={pdfUrl} 
+                currPage={thisPage}
+                pdfUrl={pdfUrl}
                 shouldRender={shouldRender}
                 pagePosition={pagePosition}
                 zoomLevel={zoomLevel}

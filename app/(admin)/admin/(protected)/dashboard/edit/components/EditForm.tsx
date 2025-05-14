@@ -12,43 +12,43 @@ import Link from "next/link";
 import {Overlay} from "@/app/common/Flipbooks/types";
 
 interface NotificationProps {
-  message: string;
-  type: 'success' | 'error';
-  isVisible: boolean;
-  onClose: () => void;
+    message: string;
+    type: 'success' | 'error';
+    isVisible: boolean;
+    onClose: () => void;
 }
 
-const Notification = ({ message, type, isVisible, onClose }: NotificationProps) => {
-  useEffect(() => {
-    if (isVisible) {
-      const timer = setTimeout(() => {
-        onClose();
-      }, 5000);
-      
-      return () => clearTimeout(timer);
-    }
-  }, [isVisible, onClose]);
+const Notification = ({message, type, isVisible, onClose}: NotificationProps) => {
+    useEffect(() => {
+        if (isVisible) {
+            const timer = setTimeout(() => {
+                onClose();
+            }, 5000);
 
-  if (!isVisible) return null;
+            return () => clearTimeout(timer);
+        }
+    }, [isVisible, onClose]);
 
-  return (
-    <div className="fixed top-5 right-5 z-50 animate-in fade-in slide-in-from-top-5 duration-300">
-      <div className={`
+    if (!isVisible) return null;
+
+    return (
+        <div className="fixed top-5 right-5 z-50 animate-in fade-in slide-in-from-top-5 duration-300">
+            <div className={`
         flex items-center gap-2 rounded-lg shadow-lg p-4 pl-3 pr-6
         ${type === 'success' ? 'bg-green-100 border-l-4 border-green-500' : 'bg-red-100 border-l-4 border-red-500'}
       `}>
-        <div className={`
+                <div className={`
           rounded-full p-1
           ${type === 'success' ? 'bg-green-500 text-white' : 'bg-red-500 text-white'}
         `}>
-          <Check size={16} />
+                    <Check size={16}/>
+                </div>
+                <p className={`text-sm font-medium ${type === 'success' ? 'text-green-800' : 'text-red-800'}`}>
+                    {message}
+                </p>
+            </div>
         </div>
-        <p className={`text-sm font-medium ${type === 'success' ? 'text-green-800' : 'text-red-800'}`}>
-          {message}
-        </p>
-      </div>
-    </div>
-  );
+    );
 };
 
 const OverlayForm = ({hideForm, activeOverlayId, setOverlays, overlays, overlaysToUpdate, setOverlaysToUpdate}: {
@@ -173,6 +173,7 @@ const EditForm = ({flipBook, pdfPath, initialOverlays}: {
     const [overlaysToRender, setOverlaysToRender] = useState<Overlay[] | null>(initialOverlays);
     const [activeOverlayId, setActiveOverlayId] = useState<string | null>(null);
     const [activeTool, setActiveTool] = useState<string>('edit');
+    const [shouldGenerateOverlays, setShouldGenerateOverlays] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [notification, setNotification] = useState<{
         message: string;
@@ -205,8 +206,8 @@ const EditForm = ({flipBook, pdfPath, initialOverlays}: {
             // Show success notification
             const wasDraft = draftFieldRef.current?.checked;
             setNotification({
-                message: wasDraft 
-                    ? 'Successfully saved as draft' 
+                message: wasDraft
+                    ? 'Successfully saved as draft'
                     : 'Successfully published',
                 type: 'success',
                 isVisible: true
@@ -230,7 +231,7 @@ const EditForm = ({flipBook, pdfPath, initialOverlays}: {
         if (formRef.current) {
             formRef.current.requestSubmit();
         }
-        if (!state.error){
+        if (!state.error) {
             setOverLaysToDelete([]);
             setOverlaysToUpdate(null);
         }
@@ -239,7 +240,7 @@ const EditForm = ({flipBook, pdfPath, initialOverlays}: {
     useEffect(() => {
         if (state.redirect || state.error) {
             setIsSubmitting(false);
-            
+
             if (state.error) {
                 setNotification({
                     message: state.error,
@@ -247,7 +248,7 @@ const EditForm = ({flipBook, pdfPath, initialOverlays}: {
                     isVisible: true
                 });
             }
-            
+
             if (state.error) {
                 setNotification({
                     message: state.error,
@@ -288,30 +289,36 @@ const EditForm = ({flipBook, pdfPath, initialOverlays}: {
         setCurrPath(path_name || slugify(currTitle, {lower: true}));
     }
 
+    function handleGenerate(e: { preventDefault: () => void; }) {
+        e.preventDefault();
+
+        setShouldGenerateOverlays(true);
+    }
+
     return <div className="flex items-center justify-center min-h-screen p-4 w-full">
-        {isSubmitting && (
+        {isSubmitting || shouldGenerateOverlays && (
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                 <div className="bg-white p-4 rounded-md flex items-center gap-2">
-                    <Loader2 className="animate-spin h-6 w-6" />
-                    <span>Saving changes...</span>
+                    <Loader2 className="animate-spin h-6 w-6"/>
+                    <span>{shouldGenerateOverlays ? "Generating Ad Links":"Saving changes..."}</span>
                 </div>
             </div>
         )}
 
-        <Notification 
+        <Notification
             message={notification.message}
             type={notification.type}
             isVisible={notification.isVisible}
-            onClose={() => setNotification(prev => ({ ...prev, isVisible: false }))}
+            onClose={() => setNotification(prev => ({...prev, isVisible: false}))}
         />
-    
-        <form     onKeyDown={(e) => {
+
+        <form onKeyDown={(e) => {
             if (e.key === 'Enter') {
                 e.preventDefault();
             }
         }}
 
-                  ref={formRef} action={formAction} className="w-full">
+              ref={formRef} action={formAction} className="w-full">
             {
                 state.error && <div className="text-red-900 bg-red-100 p-4">{state.error}</div>
             }
@@ -339,17 +346,27 @@ const EditForm = ({flipBook, pdfPath, initialOverlays}: {
             </div>
             <input readOnly className="hidden" aria-hidden={true} name="overlays"
                    value={JSON.stringify(overlaysToUpdate || [])}/>
-            <input readOnly className="hidden" aria-hidden={true} name="overlaysToDelete" value={overLaysToDelete || []}/>
+            <input readOnly className="hidden" aria-hidden={true} name="overlaysToDelete"
+                   value={overLaysToDelete || []}/>
             <ToolBar setActiveTool={setActiveTool} activeTool={activeTool}/>
+            <button onClick={(e) => {
+                handleGenerate(e)
+            }}
+                    className={`bg-green-700 hover:bg-green-500 transition-colors rounded p-2 text-white mx-auto block`}>
+                Generate Ad Links from Text
+            </button>
             <OverlayForm hideForm={activeTool === "delete"} overlaysToUpdate={overlaysToUpdate}
                          overlays={overlaysToRender} setOverlays={setOverlaysToRender} activeOverlayId={activeOverlayId}
                          setOverlaysToUpdate={setOverlaysToUpdate}/>
             <ModeContext.Provider value={{status: status, mode: "edit", flipBookId: id, activeTool: activeTool}}>
-                <Flipbook setOverlaysToRender={setOverlaysToRender} overlaysToDelete={overLaysToDelete}
+                <Flipbook setShouldGenerateOverlays={setShouldGenerateOverlays}
+                          shouldGenerateOverlays={shouldGenerateOverlays} setOverlaysToRender={setOverlaysToRender}
+                          overlaysToDelete={overLaysToDelete}
                           activeOverlayId={activeOverlayId} setOverlaysToDelete={setOverLaysToDelete}
                           formOverlays={overlaysToUpdate} pdfUrl={pdfPath} initialOverlays={overlaysToRender}
                           setFormOverlays={setOverlaysToUpdate}
-                          setActiveOverlayId={setActiveOverlayId}/>
+                          setActiveOverlayId={setActiveOverlayId}
+                />
             </ModeContext.Provider>
 
             <input ref={draftFieldRef} aria-hidden={true} className="hidden" type="checkbox" name="isDraft"/>
@@ -357,7 +374,8 @@ const EditForm = ({flipBook, pdfPath, initialOverlays}: {
                 <div className="flex justify-end gap-2 items-center">
                     {
                         status === "published" &&
-                        <Link href={`${process.env.NEXT_PUBLIC_BASE_URL}/${currPath}`} target="_blank" className={`my-2 mx-4 px-4 rounded bg-slate-700 text-white`}>
+                        <Link href={`${process.env.NEXT_PUBLIC_BASE_URL}/${currPath}`} target="_blank"
+                              className={`my-2 mx-4 px-4 rounded bg-slate-700 text-white`}>
                             View Flipbook
                         </Link>
                     }
@@ -369,7 +387,9 @@ const EditForm = ({flipBook, pdfPath, initialOverlays}: {
                     </button>
                 </div>
                 <div className="flex justify-end">
-                    <p className="flex items-center"><strong>Status:</strong> <div className={`ml-4 mr-1 size-2 rounded-full ${statusStyles[status]}`} />{status}</p>
+                    <p className="flex items-center"><strong>Status:</strong>
+                        <div className={`ml-4 mr-1 size-2 rounded-full ${statusStyles[status]}`}/>
+                        {status}</p>
                 </div>
             </div>
 
