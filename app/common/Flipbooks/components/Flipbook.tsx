@@ -9,7 +9,7 @@ import Toolbar from "@/app/common/Flipbooks/components/Toolbar";
 import {ChevronLeft, ChevronRight,} from 'lucide-react';
 import {PDFDocumentProxy} from "pdfjs-dist";
 import {v4 as uuidv4} from "uuid";
-import { useRouter, useSearchParams } from "next/navigation";
+import {useRouter, useSearchParams} from "next/navigation";
 import useRenderQueue from "@/app/common/Flipbooks/hooks/useRenderQueue";
 
 async function generateOverlays(
@@ -21,7 +21,7 @@ async function generateOverlays(
 
     const newOverlays: Overlay[] = [];
 
-    function extractEmails(text:string) {
+    function extractEmails(text: string) {
         const emailRegex = /[\w.+-]+@[\w-]+\.[\w.-]+/gi;
         return text.match(emailRegex) || null;
     }
@@ -51,8 +51,8 @@ async function generateOverlays(
             let url = matches[0];
             // Remove trailing punctuation that might have been captured
             url = url.replace(/[.,;:!?)]$/, '');
-            if (hasTopLevelDomain(url)){
-                return extractEmails(url) ? "mailto:"+url: "https://"+url;
+            if (hasTopLevelDomain(url)) {
+                return extractEmails(url) ? "mailto:" + url : "https://" + url;
             }
         }
 
@@ -123,9 +123,11 @@ export default function Flipbook({
             }
         })
     }
+    const searchParams = useSearchParams();
+    const pageParam = searchParams.get('page');
     const [maxPage, setMaxPage] = useState<number | null>(null);
     const [isGenerating, setIsGenerating] = useState<boolean>(false);
-    const [currPage, setCurrPage] = useState(1);
+    const [currPage, setCurrPage] = useState(pageParam ? parseInt(pageParam) : 1);
     const [overlays, setOverlays] = useState<Overlay[][]>(formattedInitialOverlays);
     const [animationDirection, setAnimationDirection] = useState<"left" | "right">("left");
     const [flipbookWidth, setFlipbookWidth] = useState<number>(0);
@@ -141,7 +143,7 @@ export default function Flipbook({
     const flipbookContainerRef = useRef<HTMLDivElement>(null);
     const mode = useContext(ModeContext);
     const router = useRouter();
-    const searchParams = useSearchParams();
+
 
     const [gradientSpring, gradientApi] = useSpring(() => ({
         from: {
@@ -165,6 +167,7 @@ export default function Flipbook({
         if (!maxPage || !shouldGenerateOverlays || isGenerating) return;
 
         setIsGenerating(true);
+
         async function generate() {
             if (!maxPage) return;
 
@@ -173,17 +176,17 @@ export default function Flipbook({
             for (let i = 1; i <= maxPage; i++) {
                 const newOverlays = await generateOverlays(i, pdf, mode)
 
-                if (setFormOverlays){
+                if (setFormOverlays) {
                     setFormOverlays(prevState => prevState ? [...prevState, ...newOverlays] : newOverlays);
                 }
-                if (setOverlaysToRender){
+                if (setOverlaysToRender) {
                     setOverlaysToRender(prevState => prevState ? [...prevState, ...newOverlays] : newOverlays);
                 }
             }
         }
 
-        generate().then(()=>{
-            if (setShouldGenerateOverlays){
+        generate().then(() => {
+            if (setShouldGenerateOverlays) {
                 setShouldGenerateOverlays(false);
             }
             setIsGenerating(false);
@@ -216,7 +219,6 @@ export default function Flipbook({
 
     // Check for page parameter in URL when component loads
     useEffect(() => {
-        const pageParam = searchParams.get('page');
         if (pageParam && maxPage) {
             const pageNumber = parseInt(pageParam, 10);
             // Ensure the page number is valid
@@ -224,7 +226,7 @@ export default function Flipbook({
                 setCurrPage(pageNumber);
             }
         }
-    }, [searchParams, maxPage]);
+    }, [maxPage, pageParam]);
 
 
     const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
@@ -458,7 +460,7 @@ export default function Flipbook({
         }
     }, []);
 
-    const {shouldRenderList, setRenderedPages} = useRenderQueue(currPage, maxPage||0, false,);
+    const {shouldRenderList, setRenderedPages} = useRenderQueue(currPage, maxPage || 0, false,);
 
 
     useEffect(() => {
@@ -551,7 +553,7 @@ export default function Flipbook({
         // Set the page parameter
         params.set('page', pageNumber.toString());
         // Update the URL without refreshing the page
-        router.push(`?${params.toString()}`, { scroll: false });
+        router.push(`?${params.toString()}`, {scroll: false});
     };
 
     const handlePreviousPage = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
@@ -615,12 +617,7 @@ export default function Flipbook({
         });
     };
 
-    useEffect(() => {
-        console.log(shouldRenderList)
-    }, [shouldRenderList]);
-
     if (!maxPage) return null;
-
 
 
     return <div ref={flipbookContainerRef} className="flex justify-between items-center flex-wrap mx-auto">
