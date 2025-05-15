@@ -19,6 +19,7 @@ interface PageProps {
     zoomLevel: number
     setOverlays?: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void
     setFormOverlays?: (value: Overlay[]) => void
+    setRenderedPages?: React.Dispatch<React.SetStateAction<Set<number>>>
     setActiveOverlayId?: (value: (((prevState: (string | null)) => (string | null)) | string | null)) => void
     setOverlaysToDelete?: (value: (((prevState: string[]) => string[]) | string[])) => void
 }
@@ -38,6 +39,7 @@ const Page = (({
                    setOverlays,
                    setFormOverlays,
                    setActiveOverlayId,
+                   setRenderedPages,
                    setOverlaysToDelete
                }: PageProps) => {
     // Determine if the page is on the left side of the spread
@@ -121,6 +123,7 @@ const Page = (({
                 canvasRef={pdfCanvasRef}
                 currPage={thisPage}
                 pdfUrl={pdfUrl}
+                setRenderedPages={setRenderedPages}
                 shouldRender={shouldRender}
                 pagePosition={pagePosition}
                 zoomLevel={zoomLevel}

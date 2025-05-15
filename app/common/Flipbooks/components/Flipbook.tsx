@@ -10,6 +10,7 @@ import {ChevronLeft, ChevronRight,} from 'lucide-react';
 import {PDFDocumentProxy} from "pdfjs-dist";
 import {v4 as uuidv4} from "uuid";
 import { useRouter, useSearchParams } from "next/navigation";
+import useRenderQueue from "@/app/common/Flipbooks/hooks/useRenderQueue";
 
 async function generateOverlays(
     currPage: number,
@@ -125,7 +126,6 @@ export default function Flipbook({
     const [maxPage, setMaxPage] = useState<number | null>(null);
     const [isGenerating, setIsGenerating] = useState<boolean>(false);
     const [currPage, setCurrPage] = useState(1);
-    const [renderedPages, setRenderedPages] = useState(new Set<number>());
     const [overlays, setOverlays] = useState<Overlay[][]>(formattedInitialOverlays);
     const [animationDirection, setAnimationDirection] = useState<"left" | "right">("left");
     const [flipbookWidth, setFlipbookWidth] = useState<number>(0);
@@ -458,24 +458,8 @@ export default function Flipbook({
         }
     }, []);
 
-    useEffect(() => {
-        if (!maxPage) return;
+    const {shouldRenderList, setRenderedPages} = useRenderQueue(currPage, maxPage||0, false,);
 
-        setRenderedPages((renderedPages) => {
-            const updatedRenderedPages = new Set(renderedPages);
-            updatedRenderedPages.add(currPage);
-            updatedRenderedPages.add(currPage + 1);
-            updatedRenderedPages.add(currPage + 2);
-            updatedRenderedPages.add(currPage + 3);
-            updatedRenderedPages.add(currPage + 4);
-            updatedRenderedPages.add(currPage - 1);
-            updatedRenderedPages.add(currPage - 2);
-            updatedRenderedPages.add(currPage - 3);
-            updatedRenderedPages.add(currPage - 4);
-
-            return updatedRenderedPages
-        });
-    }, [maxPage, currPage]);
 
     useEffect(() => {
         if (initialOverlays && maxPage) {
@@ -631,7 +615,13 @@ export default function Flipbook({
         });
     };
 
+    useEffect(() => {
+        console.log(shouldRenderList)
+    }, [shouldRenderList]);
+
     if (!maxPage) return null;
+
+
 
     return <div ref={flipbookContainerRef} className="flex justify-between items-center flex-wrap mx-auto">
         <div
@@ -717,7 +707,8 @@ export default function Flipbook({
                             setActiveOverlayId={setActiveOverlayId} overlays={overlays}
                             maxPage={maxPage}
                             key={index} thisPage={index + 1}
-                            pdfUrl={pdfUrl} shouldRender={renderedPages.has(index)}
+                            pdfUrl={pdfUrl} shouldRender={shouldRenderList.has(index + 1)}
+                            setRenderedPages={setRenderedPages}
                             zoomLevel={zoomLevel}/>
                     );
                 })}

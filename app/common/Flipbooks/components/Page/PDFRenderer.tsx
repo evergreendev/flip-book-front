@@ -15,6 +15,7 @@ interface PDFRendererProps {
     setCanvasHeight: (value: (((prevState: number) => number) | number)) => void,
     setCanvasWidth: (value: (((prevState: number) => number) | number)) => void,
     setCanvasScale: (value: (((prevState: number) => number) | number)) => void,
+    setRenderedPages: React.Dispatch<React.SetStateAction<Set<number>>>
 }
 
 const getSizedCanvasDims = (flipbookWidth: number, flipbookHeight: number) => {
@@ -49,6 +50,7 @@ const PDFRenderer = ({
                          setCanvasHeight,
                          setCanvasWidth,
                          setCanvasScale,
+                         setRenderedPages
                      }: PDFRendererProps) => {
     const pdfRef = useRef<PDFDocumentProxy>(null);
     const renderTaskRef = useRef<RenderTask>(null);
@@ -177,6 +179,12 @@ const PDFRenderer = ({
                         }
                         // If we get here, rendering succeeded
                         console.log(currentRetry > 0 ? `Render retry ${currentRetry} succeeded` : 'Render succeeded');
+                        setRenderedPages(prevState => {
+                            const newSet = new Set(prevState);
+                            newSet.add(currPage)
+
+                            return newSet;
+                        });
                     } catch (error) {
                         // @ts-expect-error Don't need to know the error type
                         if (error.name === 'RenderingCancelledException') {
@@ -220,7 +228,7 @@ const PDFRenderer = ({
                 pdfRef.current.destroy().then(() => console.log("destroyed"));
             }
         };
-    }, [canvasRef, currPage, pdfRef, pdfUrl, renderTaskRef, shouldRender, flipbookWidth, flipbookHeight, pagePosition, setCanvasWidth, setCanvasHeight, setCanvasScale]);
+    }, [canvasRef, currPage, pdfRef, pdfUrl, renderTaskRef, shouldRender, flipbookWidth, flipbookHeight, pagePosition, setCanvasWidth, setCanvasHeight, setCanvasScale, setRenderedPages]);
 
     let positionClasses = "";
 
