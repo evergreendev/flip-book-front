@@ -438,6 +438,8 @@ export default function Flipbook({
         }
     }, [zoomLevel, flipbookWidth, flipbookHeight, constrainPanPosition]);
 
+    const {shouldRenderList, setRenderedPages, setShouldClearQueue} = useRenderQueue(currPage, maxPage || 0);
+    
     const flipbookRef = useCallback((node: HTMLDivElement) => {
         if (node !== null) {
             // This runs when the DOM node is available
@@ -446,6 +448,7 @@ export default function Flipbook({
             setFlipbookHeight(rect.height);
 
             const resizeObserver = new ResizeObserver(entries => {
+                setShouldClearQueue(true);
                 for (const entry of entries) {
                     setFlipbookWidth(entry.contentRect.width);
                     setFlipbookHeight(entry.contentRect.height);
@@ -458,9 +461,7 @@ export default function Flipbook({
             const currentObserver = resizeObserver;
             return () => currentObserver.disconnect();
         }
-    }, []);
-
-    const {shouldRenderList, setRenderedPages} = useRenderQueue(currPage, maxPage || 0, false,);
+    }, [setShouldClearQueue]);
 
 
     useEffect(() => {

@@ -3,10 +3,10 @@ import React, {useCallback, useEffect} from "react";
 function useRenderQueue(
     currentPage: number,
     maxPages: number,
-    shouldClearQueue: boolean
 ) {
     const maxPagesToRender = 1;
     const maxQueueLookAhead = 5;
+    const [shouldClearQueue, setShouldClearQueue] = React.useState(false);
     const [renderedPages, setRenderedPages] = React.useState<Set<number>>(new Set());
     const [queue, setQueue] = React.useState<number[]>([]);
     const [shouldRenderList, setShouldRenderList] = React.useState(new Set<number>());
@@ -25,6 +25,15 @@ function useRenderQueue(
         });
         return wasFound;
     }, [renderedPages]);
+
+    useEffect(() => {
+        if (shouldClearQueue) {
+            setQueue([]);
+            setRenderedPages(new Set());
+            setShouldRenderList(new Set());
+            setShouldClearQueue(false);
+        }
+    }, [shouldClearQueue]);
 
 
     useEffect(() => {
@@ -55,6 +64,7 @@ function useRenderQueue(
                     pagesAddedLeft++;
                 }
             }
+
         };
         addPages();
     }, [addPageToQueue, currentPage, maxPages])
@@ -95,6 +105,7 @@ function useRenderQueue(
     return {
         shouldRenderList,
         setRenderedPages,
+        setShouldClearQueue,
     }
 }
 
