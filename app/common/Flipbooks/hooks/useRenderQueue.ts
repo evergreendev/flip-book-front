@@ -10,21 +10,31 @@ function useRenderQueue(
     const [renderedPages, setRenderedPages] = React.useState<Set<number>>(new Set());
     const [queue, setQueue] = React.useState<number[]>([]);
     const [shouldRenderList, setShouldRenderList] = React.useState(new Set<number>());
-    const addPageToQueue = useCallback(async (page: number) => {
-        if (renderedPages.has(page)) return false;
+    const addPageToQueue = useCallback(async (page: number, isPriority?: boolean) => {
+        if (renderedPages.has(page)||page>maxPages||page<1) return false;
         let wasFound = false;
 
         await new Promise(resolve => setTimeout(resolve, 1000));
 
         setQueue(prev => {
-            const isAlreadyInQueue = prev.includes(page);
-            wasFound = isAlreadyInQueue;
-            if (isAlreadyInQueue) return prev;
+            const foundIndex = prev.includes(page);
+            wasFound = foundIndex;
 
-            return [...prev, page]
+            if (isPriority) {
+                if (foundIndex){
+                    const queueWithTargetRemoved = prev.filter(x => x !== page);
+                    return [page, ...queueWithTargetRemoved];
+                }
+
+                return [page, ...prev]
+            } else{
+                if (foundIndex) return prev;
+
+                return [...prev, page]
+            }
         });
         return wasFound;
-    }, [renderedPages]);
+    }, [maxPages, renderedPages]);
 
     useEffect(() => {
         if (shouldClearQueue) {
@@ -39,14 +49,14 @@ function useRenderQueue(
     useEffect(() => {
         const addPages = async () => {
             let i = currentPage;
-            await addPageToQueue(i);
+            await addPageToQueue(i, true);
 
             let pagesAddedLeft = 0;
             let pagesAddedRight = 0;
 
             //first we add the page directly to the left and directly to the right to make sure page pairs render first
-            await addPageToQueue(i - 1);
-            await addPageToQueue(i + 1);
+            await addPageToQueue(i - 1, true);
+            await addPageToQueue(i + 1, true);
 
             //First we add the pages to the right
             while (i < maxPages && pagesAddedRight < maxQueueLookAhead) {
@@ -65,6 +75,12 @@ function useRenderQueue(
                 }
             }
 
+            i = 1;
+            //Then we add the rest
+            while (i < maxPages) {
+                i++;
+                await addPageToQueue(i);
+            }
         };
         addPages();
     }, [addPageToQueue, currentPage, maxPages])

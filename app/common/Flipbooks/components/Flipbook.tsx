@@ -58,7 +58,6 @@ async function generateOverlays(
 
         return null;
     };
-    console.log("generating page ", currPage);
 
     structureTree.items.forEach((item) => {
         if (!("str" in item)) return;
@@ -215,7 +214,7 @@ export default function Flipbook({
         return () => {
             isMounted = false;
         };
-    }, [pdfUrl, initialOverlays, mode, setFormOverlays, loadPdf, prefetchPdf]);
+    }, [loadPdf, pdfUrl, prefetchPdf]);
 
     // Check for page parameter in URL when component loads
     useEffect(() => {
