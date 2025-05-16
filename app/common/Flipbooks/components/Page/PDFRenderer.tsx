@@ -125,31 +125,51 @@ const PDFRenderer = ({
                 const availableWidth = isBelow1000px ? flipbookWidth : flipbookWidth / 2;
                 const availableHeight = flipbookHeight;
 
+                // Ensure we have valid dimensions to work with
+                const safeAvailableWidth = Math.max(availableWidth, 100);
+                const safeAvailableHeight = Math.max(availableHeight, 100);
+                
                 // Calculate the canvas dimensions to fit inside the flipbook
                 let canvasWidth, canvasHeight;
                 let scale: number;
-                if (availableWidth / pageAspectRatio <= availableHeight) {
+                if (safeAvailableWidth / pageAspectRatio <= safeAvailableHeight) {
                     // Width is the constraint
-                    scale = availableWidth / originalViewport.width;
-                    canvasWidth = availableWidth;
-                    canvasHeight = availableWidth / pageAspectRatio;
+                    scale = safeAvailableWidth / originalViewport.width;
+                    canvasWidth = safeAvailableWidth;
+                    canvasHeight = safeAvailableWidth / pageAspectRatio;
                 } else {
                     // Height is the constraint
-                    canvasHeight = availableHeight;
-                    canvasWidth = availableHeight * pageAspectRatio;
-                    scale = availableHeight / originalViewport.height;
+                    canvasHeight = safeAvailableHeight;
+                    canvasWidth = safeAvailableHeight * pageAspectRatio;
+                    scale = safeAvailableHeight / originalViewport.height;
                 }
-
+                
+                // Ensure dimensions are reasonable (prevent tiny or zero dimensions)
+                canvasWidth = Math.max(canvasWidth, 100);
+                canvasHeight = Math.max(canvasHeight, 100);
+                
                 // Create viewport with calculated scale
                 const viewport = page.getViewport({scale: scale});
-
+                
                 // Prepare the canvas with calculated dimensions
                 const canvasContext = canvas.getContext('2d');
-                canvas.height = canvasHeight;
-                canvas.width = canvasWidth;
-                setCanvasWidth(canvas.width)
-                setCanvasHeight(canvas.height)
-                setCanvasScale(scale)
+                
+                // Use a single setState batch if possible to reduce renders
+                const oldWidth = canvas.width;
+                const oldHeight = canvas.height;
+                
+                // Only update dimensions if they've changed significantly (>1%)
+                const hasSignificantChange = 
+                    Math.abs(oldWidth - canvasWidth) > oldWidth * 0.01 || 
+                    Math.abs(oldHeight - canvasHeight) > oldHeight * 0.01;
+                
+                if (hasSignificantChange || oldWidth === 0 || oldHeight === 0) {
+                    canvas.width = canvasWidth;
+                    canvas.height = canvasHeight;
+                    setCanvasWidth(canvasWidth);
+                    setCanvasHeight(canvasHeight);
+                    setCanvasScale(scale);
+                }
 
                 // Ensure no other render tasks are running.
                 if (renderTaskRef.current) {

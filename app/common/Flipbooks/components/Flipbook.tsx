@@ -88,6 +88,20 @@ async function generateOverlays(
     return newOverlays;
 }
 
+// Utility function to debounce calls
+function debounce<T extends (...args: never[]) => never>(
+    func: (width: number, height: number) => void,
+    wait: number
+): (...args: Parameters<T>) => void {
+    let timeout: ReturnType<typeof setTimeout> | null = null;
+
+    return function(...args: Parameters<T>) {
+        if (timeout) clearTimeout(timeout);
+        // @ts-ignore
+        timeout = setTimeout(() => func(...args), wait);
+    };
+}
+
 export default function Flipbook({
                                      pdfUrl,
                                      initialOverlays,
@@ -435,28 +449,78 @@ export default function Flipbook({
 
     const {shouldRenderList, setRenderedPages, setShouldClearQueue} = useRenderQueue(currPage, maxPage || 0);
 
+    // Create a stable reference for dimensions to avoid unnecessary re-renders
+    const dimensionsRef = useRef({
+        width: flipbookWidth,
+        height: flipbookHeight,
+        isInitialized: false
+    });
+    
+    // Create a debounced dimension setter function
+    const debouncedSetDimensions = useCallback(
+        debounce((width: number, height: number) => {
+            // Only update if there's a significant change (greater than threshold)
+            const CHANGE_THRESHOLD = 5; // 5px threshold to avoid tiny fluctuations
+
+            const hasSignificantChange =
+                Math.abs(width - flipbookWidth) > CHANGE_THRESHOLD ||
+                Math.abs(height - flipbookHeight) > CHANGE_THRESHOLD;
+
+            // Update if there's a significant change or if dimensions aren't initialized
+            if (hasSignificantChange || flipbookWidth === 0 || flipbookHeight === 0) {
+                // Store the new dimensions
+                dimensionsRef.current = {
+                    width,
+                    height,
+                    isInitialized: true
+                };
+
+                // Update state
+                setFlipbookWidth(width);
+                setFlipbookHeight(height);
+
+                // Only clear render queue if dimensions actually changed significantly
+                setShouldClearQueue(true);
+            }
+        }, 100) as (width: number, height: number) => void, // 100ms debounce delay
+        [flipbookWidth, flipbookHeight, setShouldClearQueue]
+    );
+    
     const flipbookRef = useCallback((node: HTMLDivElement) => {
         if (node !== null) {
-            // This runs when the DOM node is available
+            // Get initial dimensions
             const rect = node.getBoundingClientRect();
-            setFlipbookWidth(rect.width);
-            setFlipbookHeight(rect.height);
-
+            
+            // Set a safe minimum size to prevent zero height issues
+            const minSize = 100;
+            const initialWidth = Math.max(rect.width, minSize);
+            const initialHeight = Math.max(rect.height, minSize);
+            
+            // Set initial dimensions immediately if not set
+            if (!dimensionsRef.current.isInitialized) {
+                setFlipbookWidth(initialWidth);
+                setFlipbookHeight(initialHeight);
+                dimensionsRef.current.isInitialized = true;
+            }
+            
+            // Create resize observer with debounced updates
             const resizeObserver = new ResizeObserver(entries => {
-                setShouldClearQueue(true);
                 for (const entry of entries) {
-                    setFlipbookWidth(entry.contentRect.width);
-                    setFlipbookHeight(entry.contentRect.height);
+                    // Use debounced function to handle dimension updates
+                    debouncedSetDimensions(
+                        Math.max(entry.contentRect.width, minSize),
+                        Math.max(entry.contentRect.height, minSize)
+                    );
                 }
             });
-
+    
             resizeObserver.observe(node);
-
+    
             // Store the observer to disconnect it later
             const currentObserver = resizeObserver;
             return () => currentObserver.disconnect();
         }
-    }, [setShouldClearQueue]);
+    }, [debouncedSetDimensions]);
 
 
     useEffect(() => {
