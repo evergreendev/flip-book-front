@@ -40,6 +40,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                                          }) => {
     const [isSinglePage, setIsSinglePage] = React.useState(true);
     const [showTooltip, setShowTooltip] = React.useState(false);
+    const [rangeInternalPage, setRangeInternalPage] = React.useState(currentPage);//This is so we can set the current page to this only when the range is released
     const rangeRef = React.useRef<HTMLInputElement>(null);
 
     const handleZoomIn = (e: React.MouseEvent<HTMLButtonElement>) => {
@@ -64,6 +65,15 @@ const Toolbar: React.FC<ToolbarProps> = ({
             setIsSinglePage(false);
         }
     }, [currentPage, totalPages]);
+
+    function handlePageRangeRelease(){
+        setShowTooltip(false);
+        setPage(rangeInternalPage);
+    }
+
+    useEffect(() => {
+        setRangeInternalPage(currentPage);
+    }, [currentPage]);
 
     return (
         <div
@@ -148,30 +158,30 @@ const Toolbar: React.FC<ToolbarProps> = ({
                 <input
                     className="w-full appearance-none bg-gray-200 h-2 rounded-lg cursor-pointer"
                     ref={rangeRef}
-                    value={currentPage}
+                    value={rangeInternalPage}
                     type="range"
                     min={1}
                     max={totalPages}
                     step={currentPage + 1 === totalPages || currentPage === totalPages ? 1: 2}
                     onChange={(e) => {
-                        setPage(e.target.valueAsNumber);
+                        setRangeInternalPage(e.target.valueAsNumber);
                     }}
                     onMouseDown={() => setShowTooltip(true)}
-                    onMouseUp={() => setShowTooltip(false)}
+                    onMouseUp={handlePageRangeRelease}
                     onTouchStart={() => setShowTooltip(true)}
-                    onTouchEnd={() => setShowTooltip(false)}
+                    onTouchEnd={handlePageRangeRelease}
                 />
                 {showTooltip && rangeRef.current && (
                     <div
                         className="absolute bg-black text-white px-2 py-1 rounded text-sm"
                         style={{
-                            left: `${((currentPage - 1) / (totalPages - 1)) * 100}%`,
+                            left: `${((rangeInternalPage - 1) / (totalPages - 1)) * 100}%`,
                             transform: 'translateX(-50%)',
                             bottom: '100%',
                             marginBottom: '8px'
                         }}
                     >
-                        {currentPage}
+                        {rangeInternalPage}
                     </div>
                 )}
             </div>
