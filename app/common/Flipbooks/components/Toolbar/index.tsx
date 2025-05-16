@@ -59,12 +59,12 @@ const Toolbar: React.FC<ToolbarProps> = ({
     };
 
     useEffect(() => {
-        if (currentPage !== 1 && currentPage !== totalPages) {
+        if ((currentPage !== 1 && currentPage !== totalPages)||(rangeInternalPage !== 1 && rangeInternalPage !== totalPages)) {
             setIsSinglePage(true);
         } else {
             setIsSinglePage(false);
         }
-    }, [currentPage, totalPages]);
+    }, [currentPage, rangeInternalPage, totalPages]);
 
     function handlePageRangeRelease(){
         setShowTooltip(false);
@@ -77,10 +77,10 @@ const Toolbar: React.FC<ToolbarProps> = ({
 
     return (
         <div
-            className="flex items-center justify-between flex-wrap w-full border-b-2 bg-neutral-900 text-white p-2 pb-0 shadow-md">
+            className="flex items-center justify-between flex-wrap w-full border-b-2 border-b-[#75b543] bg-neutral-900 text-white p-2 pb-0 shadow-md">
             <div className="flex items-center space-x-2">
                 <Link href="https://egmrc.com" passHref={true} className="w-24">
-                    <Image src={logo} alt="Evergreen Media"/>
+                    <Image className="grayscale" src={logo} alt="Evergreen Media"/>
                 </Link>
                 <Button
                     variant="ghost"
@@ -181,7 +181,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                             marginBottom: '8px'
                         }}
                     >
-                        {rangeInternalPage}
+                        {isSinglePage ? `${rangeInternalPage - 1} - ${rangeInternalPage}` : rangeInternalPage}
                     </div>
                 )}
             </div>
