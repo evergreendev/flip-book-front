@@ -4,7 +4,7 @@ function useRenderQueue(
     currentPage: number,
     maxPages: number,
 ) {
-    const maxPagesToRender = 1;
+    const maxPagesToRender = 3;
     const maxQueueLookAhead = 5;
     const [shouldClearQueue, setShouldClearQueue] = React.useState(false);
     const [renderedPages, setRenderedPages] = React.useState<Set<number>>(new Set());
