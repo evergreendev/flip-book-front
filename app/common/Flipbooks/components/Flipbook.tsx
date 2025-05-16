@@ -618,117 +618,118 @@ export default function Flipbook({
 
 
     return <div ref={flipbookContainerRef} className="flex flex-col sm:flex-row justify-between items-center flex-wrap mx-auto max-h-screen">
-        <div
-            ref={flipbookRef}
-            className={`overflow-hidden mx-auto my-4 w-full flex-grow sm:h-[90vh] sm:aspect-[28/19] flex justify-center`}
-            style={{cursor: isPanning ? 'grabbing' : (zoomLevel > 1.0 ? 'grab' : 'default')}}
-            onMouseDown={handleMouseDown}
-            onMouseMove={handleMouseMove}
-            onMouseUp={handleMouseUp}
-            onMouseLeave={handleMouseUp}
-            onTouchStart={handleTouchStart}
-            onTouchMove={handleTouchMove}
-            onTouchEnd={handleTouchEnd}
-        >
-            <button disabled={currPage <= 1} onClick={(e) => {
-                e.preventDefault();
-                handlePreviousPage();
-            }}
-                    className={`${isBelow1000px ? "hidden":""} ${currPage <= 1 ? "text-gray-400 opacity-40" : "text-white"} absolute left-12 top-1/2 -translate-y-1/2`}>
-                <ChevronLeft size="5rem"/></button>
-
-            {/* Page turn indicators */}
-            {isDragging && (
-                <>
-                    {/* Previous page indicator (right side) */}
-                    <div
-                        className="absolute top-0 left-0 h-full flex items-center justify-start pointer-events-none"
-                        style={{
-                            opacity: Math.max(0, dragProgress),
-                            transition: 'opacity 0.1s ease-out'
-                        }}
-                    >
-                        <div className="bg-white bg-opacity-30 p-4 rounded-r-lg">
-                            <ChevronLeft size="3rem" className="text-white"/>
-                        </div>
-                    </div>
-
-                    {/* Next page indicator (left side) */}
-                    <div
-                        className="absolute top-0 right-0 h-full flex items-center justify-end pointer-events-none"
-                        style={{
-                            opacity: Math.max(0, -dragProgress),
-                            transition: 'opacity 0.1s ease-out'
-                        }}
-                    >
-                        <div className="bg-white bg-opacity-30 p-4 rounded-l-lg">
-                            <ChevronRight size="3rem" className="text-white"/>
-                        </div>
-                    </div>
-                </>
-            )}
-
+        <div className="h-full flex flex-col w-full">
             <div
-                className="relative flex h-full"
-                style={{
-                    transform: zoomLevel > 1.0 ? `scale(${zoomLevel}) translate(${panPosition.x / zoomLevel}px, ${panPosition.y / zoomLevel}px)` : 'none',
-                    transformOrigin: 'center center',
-                    transition: isPanning ? 'none' : 'transform 0.2s ease-out'
-                }}
+                ref={flipbookRef}
+                className={`overflow-hidden mx-auto my-4 w-full h-full flex-grow sm:h-[90vh] sm:aspect-[28/19] flex justify-center`}
+                style={{cursor: isPanning ? 'grabbing' : (zoomLevel > 1.0 ? 'grab' : 'default')}}
+                onMouseDown={handleMouseDown}
+                onMouseMove={handleMouseMove}
+                onMouseUp={handleMouseUp}
+                onMouseLeave={handleMouseUp}
+                onTouchStart={handleTouchStart}
+                onTouchMove={handleTouchMove}
+                onTouchEnd={handleTouchEnd}
             >
-                <animated.div
-                    className="absolute inset-0 pointer-events-none"
-                    style={{
-                        zIndex: 3,
-                        position: "absolute",
-                        background: to(
-                            [gradientSpring.rotation, gradientSpring.g1, gradientSpring.g2, gradientSpring.g3],
-                            (rotation, g1, g2, g3) => `linear-gradient(${rotation}deg,rgba(2, 0, 36, 0) ${g1}%, rgba(255,255,255, 1) ${g2}%, rgba(0, 212, 255, 0) ${g3}%)`
-                        )
-                    }}
-                    {...({} as HTMLAttributes<HTMLDivElement>)}
-                />
-                {Array.from({length: maxPage}).map((_, index) => {
-                    return (
-                        <Page
-                            flipBookWidth={flipbookWidth}
-                            flipBookHeight={flipbookHeight}
-                            currentPage={currPage}
-                            overlaysToDelete={overlaysToDelete}
-                            activeOverlayId={activeOverlayId}
-                            setOverlaysToDelete={setOverlaysToDelete}
-                            formOverlays={formOverlays} setOverlays={setOverlaysToRender}
-                            setFormOverlays={setFormOverlays}
-                            setActiveOverlayId={setActiveOverlayId} overlays={overlays}
-                            maxPage={maxPage}
-                            key={index} thisPage={index + 1}
-                            pdfUrl={pdfUrl} shouldRender={shouldRenderList.has(index + 1)}
-                            setRenderedPages={setRenderedPages}
-                            zoomLevel={zoomLevel}/>
-                    );
-                })}
-            </div>
-            <button disabled={currPage >= maxPage} onClick={(e) => {
-                e.preventDefault();
-                handleNextPage()
-            }}
-                    className={`${isBelow1000px ? "hidden":""} ${currPage >= maxPage ? "text-gray-400 opacity-40" : "text-white"} absolute right-12 top-1/2 -translate-y-1/2`}>
-                <ChevronRight size="5rem"/></button>
-        </div>
-        <div className="w-full">
-            <Toolbar
-                setPage={setCurrPage}
-                setZoomLevel={setZoomLevel}
-                currentPage={currPage}
-                totalPages={maxPage}
-                handleNextPage={handleNextPage}
-                handlePreviousPage={handlePreviousPage}
-                currentZoom={zoomLevel}
-                isFullScreen={isFullScreen}
-                toggleFullScreen={toggleFullScreen}
-            />
-        </div>
+                <button disabled={currPage <= 1} onClick={(e) => {
+                    e.preventDefault();
+                    handlePreviousPage();
+                }}
+                        className={`${isBelow1000px ? "hidden" : ""} ${currPage <= 1 ? "text-gray-400 opacity-40" : "text-white"} absolute left-12 top-1/2 -translate-y-1/2`}>
+                    <ChevronLeft size="5rem"/></button>
 
+                {/* Page turn indicators */}
+                {isDragging && (
+                    <>
+                        {/* Previous page indicator (right side) */}
+                        <div
+                            className="absolute top-0 left-0 h-full flex items-center justify-start pointer-events-none"
+                            style={{
+                                opacity: Math.max(0, dragProgress),
+                                transition: 'opacity 0.1s ease-out'
+                            }}
+                        >
+                            <div className="bg-white bg-opacity-30 p-4 rounded-r-lg">
+                                <ChevronLeft size="3rem" className="text-white"/>
+                            </div>
+                        </div>
+
+                        {/* Next page indicator (left side) */}
+                        <div
+                            className="absolute top-0 right-0 h-full flex items-center justify-end pointer-events-none"
+                            style={{
+                                opacity: Math.max(0, -dragProgress),
+                                transition: 'opacity 0.1s ease-out'
+                            }}
+                        >
+                            <div className="bg-white bg-opacity-30 p-4 rounded-l-lg">
+                                <ChevronRight size="3rem" className="text-white"/>
+                            </div>
+                        </div>
+                    </>
+                )}
+
+                <div
+                    className="relative flex h-full"
+                    style={{
+                        transform: zoomLevel > 1.0 ? `scale(${zoomLevel}) translate(${panPosition.x / zoomLevel}px, ${panPosition.y / zoomLevel}px)` : 'none',
+                        transformOrigin: 'center center',
+                        transition: isPanning ? 'none' : 'transform 0.2s ease-out'
+                    }}
+                >
+                    <animated.div
+                        className="absolute inset-0 pointer-events-none"
+                        style={{
+                            zIndex: 3,
+                            position: "absolute",
+                            background: to(
+                                [gradientSpring.rotation, gradientSpring.g1, gradientSpring.g2, gradientSpring.g3],
+                                (rotation, g1, g2, g3) => `linear-gradient(${rotation}deg,rgba(2, 0, 36, 0) ${g1}%, rgba(255,255,255, 1) ${g2}%, rgba(0, 212, 255, 0) ${g3}%)`
+                            )
+                        }}
+                        {...({} as HTMLAttributes<HTMLDivElement>)}
+                    />
+                    {Array.from({length: maxPage}).map((_, index) => {
+                        return (
+                            <Page
+                                flipBookWidth={flipbookWidth}
+                                flipBookHeight={flipbookHeight}
+                                currentPage={currPage}
+                                overlaysToDelete={overlaysToDelete}
+                                activeOverlayId={activeOverlayId}
+                                setOverlaysToDelete={setOverlaysToDelete}
+                                formOverlays={formOverlays} setOverlays={setOverlaysToRender}
+                                setFormOverlays={setFormOverlays}
+                                setActiveOverlayId={setActiveOverlayId} overlays={overlays}
+                                maxPage={maxPage}
+                                key={index} thisPage={index + 1}
+                                pdfUrl={pdfUrl} shouldRender={shouldRenderList.has(index + 1)}
+                                setRenderedPages={setRenderedPages}
+                                zoomLevel={zoomLevel}/>
+                        );
+                    })}
+                </div>
+                <button disabled={currPage >= maxPage} onClick={(e) => {
+                    e.preventDefault();
+                    handleNextPage()
+                }}
+                        className={`${isBelow1000px ? "hidden" : ""} ${currPage >= maxPage ? "text-gray-400 opacity-40" : "text-white"} absolute right-12 top-1/2 -translate-y-1/2`}>
+                    <ChevronRight size="5rem"/></button>
+            </div>
+            <div className="w-full">
+                <Toolbar
+                    setPage={setCurrPage}
+                    setZoomLevel={setZoomLevel}
+                    currentPage={currPage}
+                    totalPages={maxPage}
+                    handleNextPage={handleNextPage}
+                    handlePreviousPage={handlePreviousPage}
+                    currentZoom={zoomLevel}
+                    isFullScreen={isFullScreen}
+                    toggleFullScreen={toggleFullScreen}
+                />
+            </div>
+        </div>
     </div>
 
 }
