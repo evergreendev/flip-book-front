@@ -335,8 +335,6 @@ export default function Flipbook({
             const dragThreshold = flipbookWidth * 0.1;
             const progress = Math.max(-1, Math.min(1, dragDistance / dragThreshold));
             setDragProgress(progress);
-
-            e.preventDefault(); // Prevent scrolling while dragging
         }
     };
 
@@ -622,7 +620,7 @@ export default function Flipbook({
     return <div ref={flipbookContainerRef} className="flex flex-col sm:flex-row justify-between items-center flex-wrap mx-auto max-h-screen">
         <div
             ref={flipbookRef}
-            className={`overflow-hidden mx-auto my-4 w-full sm:h-[90vh] sm:aspect-[28/19] flex justify-center`}
+            className={`overflow-hidden mx-auto my-4 w-full flex-grow sm:h-[90vh] sm:aspect-[28/19] flex justify-center`}
             style={{cursor: isPanning ? 'grabbing' : (zoomLevel > 1.0 ? 'grab' : 'default')}}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
