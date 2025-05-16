@@ -11,6 +11,9 @@ import {
     Expand,
     Minimize2
 } from 'lucide-react';
+import Image from "next/image";
+import logo from "@/public/logo.png"
+import Link from "next/link";
 
 interface ToolbarProps {
     setPage: (value: number | ((prevPage: number) => number)) => void,
@@ -28,6 +31,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                                              setZoomLevel,
                                              currentPage,
                                              totalPages,
+                                             setPage,
                                              currentZoom,
                                              isFullScreen,
                                              toggleFullScreen,
@@ -35,6 +39,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
                                              handlePreviousPage,
                                          }) => {
     const [isSinglePage, setIsSinglePage] = React.useState(true);
+    const [showTooltip, setShowTooltip] = React.useState(false);
+    const rangeRef = React.useRef<HTMLInputElement>(null);
 
     const handleZoomIn = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
@@ -61,8 +67,11 @@ const Toolbar: React.FC<ToolbarProps> = ({
 
     return (
         <div
-            className="flex items-center justify-between w-full border-b-2 border-b-[#75b543] bg-neutral-900 text-white p-2 shadow-md">
+            className="flex items-center justify-between flex-wrap w-full border-b-2 bg-neutral-900 text-white p-2 pb-0 shadow-md">
             <div className="flex items-center space-x-2">
+                <Link href="https://egmrc.com" passHref={true} className="w-24">
+                    <Image src={logo} alt="Evergreen Media"/>
+                </Link>
                 <Button
                     variant="ghost"
                     size="icon"
@@ -134,6 +143,37 @@ const Toolbar: React.FC<ToolbarProps> = ({
                 >
                     <ChevronRight className="h-4 w-4"/>
                 </Button>
+            </div>
+            <div className="relative w-full">
+                <input
+                    className="w-full appearance-none bg-gray-200 h-2 rounded-lg cursor-pointer"
+                    ref={rangeRef}
+                    value={currentPage}
+                    type="range"
+                    min={1}
+                    max={totalPages}
+                    step={currentPage + 1 === totalPages || currentPage === totalPages ? 1: 2}
+                    onChange={(e) => {
+                        setPage(e.target.valueAsNumber);
+                    }}
+                    onMouseDown={() => setShowTooltip(true)}
+                    onMouseUp={() => setShowTooltip(false)}
+                    onTouchStart={() => setShowTooltip(true)}
+                    onTouchEnd={() => setShowTooltip(false)}
+                />
+                {showTooltip && rangeRef.current && (
+                    <div
+                        className="absolute bg-black text-white px-2 py-1 rounded text-sm"
+                        style={{
+                            left: `${((currentPage - 1) / (totalPages - 1)) * 100}%`,
+                            transform: 'translateX(-50%)',
+                            bottom: '100%',
+                            marginBottom: '8px'
+                        }}
+                    >
+                        {currentPage}
+                    </div>
+                )}
             </div>
         </div>
     );

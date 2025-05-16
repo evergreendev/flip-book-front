@@ -38,6 +38,7 @@ function useRenderQueue(
 
     useEffect(() => {
         if (shouldClearQueue) {
+            console.log("clearing queue");
             setQueue([]);
             setRenderedPages(new Set());
             setShouldRenderList(new Set());

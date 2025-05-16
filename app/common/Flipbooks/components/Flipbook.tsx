@@ -193,28 +193,20 @@ export default function Flipbook({
 
     }, [shouldGenerateOverlays, maxPage, loadPdf, pdfUrl, mode, setShouldGenerateOverlays, setFormOverlays, isGenerating, setOverlaysToRender]);
 
-    useEffect(() => {
-        let isMounted = true;
+    //Get the max pages
+    (async function () {
+        try {
+            // Use the cached PDF loader
+            const pdf = await loadPdf(pdfUrl);
 
-        (async function () {
-            try {
-                // Use the cached PDF loader
-                const pdf = await loadPdf(pdfUrl);
+            setMaxPage(pdf.numPages);
 
-                if (!isMounted) return;
-                setMaxPage(pdf.numPages);
+            prefetchPdf(pdfUrl);
 
-                prefetchPdf(pdfUrl);
-
-            } catch (error) {
-                console.error("Error loading PDF:", error);
-            }
-        })();
-
-        return () => {
-            isMounted = false;
-        };
-    }, [loadPdf, pdfUrl, prefetchPdf]);
+        } catch (error) {
+            console.error("Error loading PDF:", error);
+        }
+    })();
 
     // Check for page parameter in URL when component loads
     useEffect(() => {

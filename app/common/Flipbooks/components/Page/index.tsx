@@ -19,7 +19,7 @@ interface PageProps {
     zoomLevel: number
     setOverlays?: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void
     setFormOverlays?: (value: Overlay[]) => void
-    setRenderedPages?: React.Dispatch<React.SetStateAction<Set<number>>>
+    setRenderedPages: React.Dispatch<React.SetStateAction<Set<number>>>
     setActiveOverlayId?: (value: (((prevState: (string | null)) => (string | null)) | string | null)) => void
     setOverlaysToDelete?: (value: (((prevState: string[]) => string[]) | string[])) => void
 }
