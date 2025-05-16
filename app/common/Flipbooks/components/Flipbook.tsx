@@ -430,7 +430,7 @@ export default function Flipbook({
     }, [zoomLevel, flipbookWidth, flipbookHeight, constrainPanPosition]);
 
     const {shouldRenderList, setRenderedPages, setShouldClearQueue} = useRenderQueue(currPage, maxPage || 0);
-    
+
     const flipbookRef = useCallback((node: HTMLDivElement) => {
         if (node !== null) {
             // This runs when the DOM node is available
@@ -538,15 +538,17 @@ export default function Flipbook({
 
     }, [animationDirection, currPage, gradientApi]);
 
-    // Helper function to update URL with page parameter
-    const updateUrlWithPage = (pageNumber: number) => {
-        // Create a new URLSearchParams object with the current query parameters
-        const params = new URLSearchParams(searchParams.toString());
-        // Set the page parameter
-        params.set('page', pageNumber.toString());
-        // Update the URL without refreshing the page
-        router.push(`?${params.toString()}`, {scroll: false});
-    };
+    useEffect(() => {    // Helper function to update URL with page parameter
+        const updateUrlWithPage = (pageNumber: number) => {
+            // Create a new URLSearchParams object with the current query parameters
+            const params = new URLSearchParams(searchParams.toString());
+            // Set the page parameter
+            params.set('page', pageNumber.toString());
+            // Update the URL without refreshing the page
+            router.push(`?${params.toString()}`, {scroll: false});
+        };
+        updateUrlWithPage(currPage);
+    }, [currPage, router, searchParams]);
 
     const handlePreviousPage = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
         e.preventDefault();
@@ -573,8 +575,6 @@ export default function Flipbook({
                 newPage = 1;
             }
 
-            // Update URL with the new page number
-            updateUrlWithPage(newPage);
             return newPage;
         });
     };
@@ -603,8 +603,6 @@ export default function Flipbook({
                 newPage = prev;
             }
 
-            // Update URL with the new page number
-            updateUrlWithPage(newPage);
             return newPage;
         });
     };
