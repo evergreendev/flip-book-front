@@ -27,7 +27,7 @@ export async function handleUpload(prevState: { error: string | null, redirect: 
         }),
         headers: {
             "Content-Type": "application/json",
-            "Authorization": `Bearer ${userToken}`
+            "Authorization": `Bearer ${userToken?.value}`
         }
     });
     if (res.status !== 200) return {...prevState, error: "Invalid Credentials. Please Try again", redirect: null};
