@@ -3,6 +3,7 @@ import {animated, to, useSpring} from "@react-spring/web";
 import React, {useEffect, useRef, useState} from "react";
 import PDFRenderer from "@/app/common/Flipbooks/components/Page/PDFRenderer";
 import OverlayRenderer from "@/app/common/Flipbooks/components/Page/OverlayRenderer";
+import {useScreenSize} from "@/app/common/Flipbooks/hooks/useScreenSize";
 
 interface PageProps {
     thisPage: number
@@ -55,15 +56,18 @@ const Page = (({
         from: {width: 0, rotate: 0, transformOrigin: '0% 0%', zIndex: 1},
     }))
 
-    const [pageWidth, setPageWidth] = useState(flipBookWidth / 2);
+
+    const {isBelow1000px} = useScreenSize();
+
+    const [pageWidth, setPageWidth] = useState(isBelow1000px ? flipBookWidth : flipBookWidth / 2);
 
     useEffect(() => {
-        setPageWidth(flipBookWidth / 2);
-    }, [pageWidth, flipBookWidth]);
+        setPageWidth(isBelow1000px ? flipBookWidth : flipBookWidth / 2);
+    }, [pageWidth, flipBookWidth, isBelow1000px]);
 
 
     useEffect(() => {
-        if (currentPage === thisPage || (currentPage === thisPage + 1 && currentPage !== 2 && currentPage !== maxPage)) {
+        if (currentPage === thisPage || (!isBelow1000px && (currentPage === thisPage + 1 && currentPage !== 2 && currentPage !== maxPage))) {
             if (isLeft) {
                 api.start({
                     to: {
@@ -92,7 +96,7 @@ const Page = (({
                 }
             })
         }
-    }, [api, canvasWidth, currentPage, isLeft, maxPage, pageWidth, thisPage]);
+    }, [api, canvasWidth, currentPage, isBelow1000px, isLeft, maxPage, pageWidth, thisPage]);
 
     const pageRef = useRef<HTMLDivElement>(null);
     const pdfCanvasRef = useRef<HTMLCanvasElement>(null);

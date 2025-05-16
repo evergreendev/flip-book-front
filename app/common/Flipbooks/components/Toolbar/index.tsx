@@ -14,6 +14,7 @@ import {
 import Image from "next/image";
 import logo from "@/public/logo.png"
 import Link from "next/link";
+import {useScreenSize} from "@/app/common/Flipbooks/hooks/useScreenSize";
 
 interface ToolbarProps {
     setPage: (value: number | ((prevPage: number) => number)) => void,
@@ -58,15 +59,17 @@ const Toolbar: React.FC<ToolbarProps> = ({
         setZoomLevel(1.0);
     };
 
+    const {isBelow1000px} = useScreenSize();
+
     useEffect(() => {
-        if ((currentPage !== 1 && currentPage !== totalPages)||(rangeInternalPage !== 1 && rangeInternalPage !== totalPages)) {
+        if (isBelow1000px || (currentPage === 1 && currentPage === totalPages) || (rangeInternalPage === 1 && rangeInternalPage === totalPages)) {
             setIsSinglePage(true);
         } else {
             setIsSinglePage(false);
         }
-    }, [currentPage, rangeInternalPage, totalPages]);
+    }, [currentPage, isBelow1000px, rangeInternalPage, totalPages]);
 
-    function handlePageRangeRelease(){
+    function handlePageRangeRelease() {
         setShowTooltip(false);
         setPage(rangeInternalPage);
     }
@@ -140,7 +143,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
 
                 <div className="text-sm w-44 text-center">
                     <span
-                        className="font-medium">{isSinglePage ? `${currentPage - 1} - ${currentPage}` : currentPage}</span> of <span
+                        className="font-medium">{isSinglePage ? currentPage : `${currentPage - 1} - ${currentPage}`}</span> of <span
                     className="font-medium">{totalPages}</span>
                 </div>
 
@@ -162,7 +165,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                     type="range"
                     min={1}
                     max={totalPages}
-                    step={currentPage + 1 === totalPages || currentPage === totalPages ? 1: 2}
+                    step={isBelow1000px || currentPage + 1 === totalPages || currentPage === totalPages ? 1 : 2}
                     onChange={(e) => {
                         setRangeInternalPage(e.target.valueAsNumber);
                     }}
@@ -181,7 +184,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                             marginBottom: '8px'
                         }}
                     >
-                        {isSinglePage ? `${rangeInternalPage - 1} - ${rangeInternalPage}` : rangeInternalPage}
+                        {isSinglePage ? rangeInternalPage : `${rangeInternalPage - 1} - ${rangeInternalPage}`}
                     </div>
                 )}
             </div>

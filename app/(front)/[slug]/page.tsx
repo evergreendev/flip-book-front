@@ -3,6 +3,7 @@ import {FlipBook} from "@/app/(admin)/admin/(protected)/dashboard/flipbooks/colu
 import {Metadata} from "next";
 import {Overlay} from "@/app/common/Flipbooks/types";
 import Flipbook from "@/app/common/Flipbooks/components/Flipbook";
+import { ScreenSizeProvider } from "@/app/common/Flipbooks/hooks/useScreenSize";
 
 //todo move this somewhere better
 
@@ -50,7 +51,9 @@ export default async function Page({params: paramsPromise}: Args) {
     return (
         <div
             className="mx-auto h-screen p-3 bg-gradient-to-b from-neutral-900 to-neutral-800">
-        <Flipbook pdfUrl={process.env.PDF_URL + "/" + data.pdf_path} initialOverlays={overlays}/>
+            <ScreenSizeProvider>
+                <Flipbook pdfUrl={process.env.PDF_URL + "/" + data.pdf_path} initialOverlays={overlays}/>
+            </ScreenSizeProvider>
         </div>
     )
 }

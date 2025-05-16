@@ -2,6 +2,7 @@
 import React, {useEffect, useRef} from "react";
 import {PDFDocumentProxy, RenderTask} from "pdfjs-dist";
 import {RenderParameters} from "pdfjs-dist/types/src/display/api";
+import {useScreenSize} from "@/app/common/Flipbooks/hooks/useScreenSize";
 
 interface PDFRendererProps {
     currPage: number,
@@ -18,9 +19,9 @@ interface PDFRendererProps {
     setRenderedPages: React.Dispatch<React.SetStateAction<Set<number>>>
 }
 
-const getSizedCanvasDims = (flipbookWidth: number, flipbookHeight: number) => {
+const getSizedCanvasDims = (flipbookWidth: number, flipbookHeight: number, isBelow1000px:boolean) => {
     // Use the available space (half of flipbook width) for placeholder
-    const availableWidth = flipbookWidth / 2;
+    const availableWidth = isBelow1000px ? flipbookWidth : flipbookWidth / 2;
     const availableHeight = flipbookHeight;
 
     // Use a standard aspect ratio if dimensions aren't available yet
@@ -55,6 +56,8 @@ const PDFRenderer = ({
     const pdfRef = useRef<PDFDocumentProxy>(null);
     const renderTaskRef = useRef<RenderTask>(null);
 
+    const {isBelow1000px} = useScreenSize();
+
     useEffect(() => {
         const isCancelled = false;
         let pdf: PDFDocumentProxy;
@@ -70,7 +73,7 @@ const PDFRenderer = ({
 
             if (!canvas || !ctx) return;
 
-            const sizedCanvasDims = getSizedCanvasDims(flipbookWidth, flipbookHeight);
+            const sizedCanvasDims = getSizedCanvasDims(flipbookWidth, flipbookHeight, isBelow1000px);
             const placeholderHeight = sizedCanvasDims.placeholderHeight;
             const placeholderWidth = sizedCanvasDims.placeholderWidth;
 
@@ -119,7 +122,7 @@ const PDFRenderer = ({
                 const pageAspectRatio = originalViewport.width / originalViewport.height;
 
                 // Calculate the available space (half of flipbook width)
-                const availableWidth = flipbookWidth / 2;
+                const availableWidth = isBelow1000px ? flipbookWidth : flipbookWidth / 2;
                 const availableHeight = flipbookHeight;
 
                 // Calculate the canvas dimensions to fit inside the flipbook
@@ -228,7 +231,7 @@ const PDFRenderer = ({
                 pdfRef.current.destroy().then(() => console.log("destroyed"));
             }
         };
-    }, [canvasRef, currPage, pdfRef, pdfUrl, renderTaskRef, shouldRender, flipbookWidth, flipbookHeight, pagePosition, setCanvasWidth, setCanvasHeight, setCanvasScale, setRenderedPages]);
+    }, [canvasRef, currPage, pdfRef, pdfUrl, renderTaskRef, shouldRender, flipbookWidth, flipbookHeight, pagePosition, setCanvasWidth, setCanvasHeight, setCanvasScale, setRenderedPages, isBelow1000px]);
 
     let positionClasses = "";
 

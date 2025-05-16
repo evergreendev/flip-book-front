@@ -11,6 +11,7 @@ import {PDFDocumentProxy} from "pdfjs-dist";
 import {v4 as uuidv4} from "uuid";
 import {useRouter, useSearchParams} from "next/navigation";
 import useRenderQueue from "@/app/common/Flipbooks/hooks/useRenderQueue";
+import {useScreenSize} from "@/app/common/Flipbooks/hooks/useScreenSize";
 
 async function generateOverlays(
     currPage: number,
@@ -550,6 +551,8 @@ export default function Flipbook({
         updateUrlWithPage(currPage);
     }, [currPage, router, searchParams]);
 
+    const {isBelow1000px} = useScreenSize();
+
     const handlePreviousPage = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
         e.preventDefault();
         if (!maxPage) return;
@@ -560,7 +563,7 @@ export default function Flipbook({
             // If we're at page 3 or higher, generally flip 2 pages back
             if (prev > 2) {
                 // If we're at the last page of an even-numbered total, move back just 1 page
-                if (maxPage % 2 !== 1 && prev === maxPage) {
+                if (maxPage % 2 !== 1 && prev === maxPage || isBelow1000px) {
                     newPage = prev - 1;
                 } else {
                     newPage = prev - 2;
@@ -589,6 +592,9 @@ export default function Flipbook({
             // If we're at the second-to-last page of an odd-numbered total, move to the last page
             if (maxPage % 2 === 1 && prev === maxPage - 1) {
                 newPage = maxPage;
+            }
+            else if(isBelow1000px){
+                newPage = prev + 1;
             }
             // If we can flip 2 pages forward without exceeding total pages
             else if (prev + 2 <= maxPage) {
@@ -626,7 +632,7 @@ export default function Flipbook({
             <button disabled={currPage <= 1} onClick={(e) => {
                 handlePreviousPage(e)
             }}
-                    className={`${currPage <= 1 ? "text-gray-400 opacity-40" : "text-white"} absolute left-12 top-1/2 -translate-y-1/2`}>
+                    className={`${isBelow1000px ? "hidden":""} ${currPage <= 1 ? "text-gray-400 opacity-40" : "text-white"} absolute left-12 top-1/2 -translate-y-1/2`}>
                 <ChevronLeft size="5rem"/></button>
 
             {/* Page turn indicators */}
@@ -703,7 +709,7 @@ export default function Flipbook({
             <button disabled={currPage >= maxPage} onClick={(e) => {
                 handleNextPage(e)
             }}
-                    className={`${currPage >= maxPage ? "text-gray-400 opacity-40" : "text-white"} absolute right-12 top-1/2 -translate-y-1/2`}>
+                    className={`${isBelow1000px ? "hidden":""} ${currPage >= maxPage ? "text-gray-400 opacity-40" : "text-white"} absolute right-12 top-1/2 -translate-y-1/2`}>
                 <ChevronRight size="5rem"/></button>
         </div>
         <div className="w-full">
