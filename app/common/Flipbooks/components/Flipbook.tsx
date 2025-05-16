@@ -619,10 +619,10 @@ export default function Flipbook({
     if (!maxPage) return null;
 
 
-    return <div ref={flipbookContainerRef} className="flex justify-between items-center flex-wrap mx-auto max-h-screen">
+    return <div ref={flipbookContainerRef} className="flex flex-col sm:flex-row justify-between items-center flex-wrap mx-auto max-h-screen">
         <div
             ref={flipbookRef}
-            className={`overflow-hidden mx-auto my-4 h-full w-full sm:h-[90vh] sm:aspect-[28/19] flex justify-center`}
+            className={`overflow-hidden mx-auto my-4 w-full sm:h-[90vh] sm:aspect-[28/19] flex justify-center`}
             style={{cursor: isPanning ? 'grabbing' : (zoomLevel > 1.0 ? 'grab' : 'default')}}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
