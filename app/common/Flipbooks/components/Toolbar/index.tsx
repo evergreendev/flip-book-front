@@ -81,56 +81,58 @@ const Toolbar: React.FC<ToolbarProps> = ({
     return (
         <div
             className="flex items-center justify-between flex-wrap w-full border-b-2 border-b-[#75b543] bg-neutral-900 text-white p-2 pb-0 shadow-md">
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 mx-auto">
                 <Link href="https://egmrc.com" passHref={true} className="w-24">
                     <Image className="grayscale" src={logo} alt="Evergreen Media"/>
                 </Link>
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => handleZoomOut(e)}
-                    disabled={currentZoom <= 1}
-                    title="Zoom out"
-                >
-                    <ZoomOut className="h-4 w-4"/>
-                </Button>
-
-                <div className="text-sm w-16 text-center">
-                    {Math.round(currentZoom * 100)}%
-                </div>
-
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={e => handleZoomIn(e)}
-                    disabled={currentZoom >= 2.0}
-                    title="Zoom in"
-                >
-                    <ZoomIn className="h-4 w-4"/>
-                </Button>
-
-                <Button
-                    variant="ghost"
-                    size="icon"
-                    onClick={(e) => handleResetZoom(e)}
-                    disabled={currentZoom === 1.0}
-                    title="Reset zoom"
-                >
-                    <RotateCw className="h-4 w-4"/>
-                </Button>
-
-                {toggleFullScreen && (
-                    <Button
+                {!isBelow1000px
+                    && <><Button
                         variant="ghost"
                         size="icon"
-                        onClick={toggleFullScreen}
-                        title={isFullScreen ? "Exit full screen" : "Enter full screen"}
+                        onClick={(e) => handleZoomOut(e)}
+                        disabled={currentZoom <= 1}
+                        title="Zoom out"
                     >
-                        {isFullScreen ? <Minimize2 className="h-4 w-4"/> : <Expand className="h-4 w-4"/>}
+                        <ZoomOut className="h-4 w-4"/>
                     </Button>
-                )}
+
+                        <div className="text-sm w-16 text-center">
+                            {Math.round(currentZoom * 100)}%
+                        </div>
+
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={e => handleZoomIn(e)}
+                            disabled={currentZoom >= 2.0}
+                            title="Zoom in"
+                        >
+                            <ZoomIn className="h-4 w-4"/>
+                        </Button>
+
+                        <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={(e) => handleResetZoom(e)}
+                            disabled={currentZoom === 1.0}
+                            title="Reset zoom"
+                        >
+                            <RotateCw className="h-4 w-4"/>
+                        </Button>
+
+                        {toggleFullScreen && (
+                            <Button
+                                variant="ghost"
+                                size="icon"
+                                onClick={toggleFullScreen}
+                                title={isFullScreen ? "Exit full screen" : "Enter full screen"}
+                            >
+                                {isFullScreen ? <Minimize2 className="h-4 w-4"/> : <Expand className="h-4 w-4"/>}
+                            </Button>
+                        )}</>}
+
             </div>
-            <div className="flex items-center space-x-2">
+            <div className="flex items-center space-x-2 sm:w-auto mx-auto">
                 <Button
                     variant="ghost"
                     size="icon"

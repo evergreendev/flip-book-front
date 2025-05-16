@@ -278,7 +278,7 @@ export default function Flipbook({
         }
     };
 
-    const handleMouseUp = (e: React.MouseEvent<HTMLDivElement>) => {
+    const handleMouseUp = () => {
         setIsPanning(false);
 
         if (isDragging && mode.mode !== "edit") {
@@ -289,10 +289,10 @@ export default function Flipbook({
             if (Math.abs(dragDistance) > dragThreshold) {
                 if (dragDistance > 0) {
                     // Dragged right (positive distance), go to previous page
-                    handlePreviousPage(e as unknown as React.MouseEvent<HTMLButtonElement>);
+                    handlePreviousPage();
                 } else {
                     // Dragged left (negative distance), go to next page
-                    handleNextPage(e as unknown as React.MouseEvent<HTMLButtonElement>);
+                    handleNextPage();
                 }
             }
 
@@ -351,10 +351,10 @@ export default function Flipbook({
             if (Math.abs(dragDistance) > dragThreshold) {
                 if (dragDistance > 0) {
                     // Swiped right (positive distance), go to previous page
-                    handlePreviousPage({} as React.MouseEvent<HTMLButtonElement>);
+                    handlePreviousPage();
                 } else {
                     // Swiped left (negative distance), go to next page
-                    handleNextPage({} as React.MouseEvent<HTMLButtonElement>);
+                    handleNextPage();
                 }
             }
 
@@ -558,8 +558,7 @@ export default function Flipbook({
 
     const {isBelow1000px} = useScreenSize();
 
-    const handlePreviousPage = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-        e.preventDefault();
+    const handlePreviousPage = () => {
         if (!maxPage) return;
 
         setAnimationDirection("right")
@@ -587,8 +586,7 @@ export default function Flipbook({
         });
     };
 
-    const handleNextPage = (e: React.MouseEvent<HTMLButtonElement, MouseEvent>) => {
-        e.preventDefault();
+    const handleNextPage = () => {
         if (!maxPage) return;
 
         setAnimationDirection("left");
@@ -621,10 +619,10 @@ export default function Flipbook({
     if (!maxPage) return null;
 
 
-    return <div ref={flipbookContainerRef} className="flex justify-between items-center flex-wrap mx-auto">
+    return <div ref={flipbookContainerRef} className="flex justify-between items-center flex-wrap mx-auto max-h-screen">
         <div
             ref={flipbookRef}
-            className={`overflow-hidden mx-auto my-4 h-[90vh] aspect-[28/19] flex justify-center`}
+            className={`overflow-hidden mx-auto my-4 h-full w-full sm:h-[90vh] sm:aspect-[28/19] flex justify-center`}
             style={{cursor: isPanning ? 'grabbing' : (zoomLevel > 1.0 ? 'grab' : 'default')}}
             onMouseDown={handleMouseDown}
             onMouseMove={handleMouseMove}
@@ -635,7 +633,8 @@ export default function Flipbook({
             onTouchEnd={handleTouchEnd}
         >
             <button disabled={currPage <= 1} onClick={(e) => {
-                handlePreviousPage(e)
+                e.preventDefault();
+                handlePreviousPage();
             }}
                     className={`${isBelow1000px ? "hidden":""} ${currPage <= 1 ? "text-gray-400 opacity-40" : "text-white"} absolute left-12 top-1/2 -translate-y-1/2`}>
                 <ChevronLeft size="5rem"/></button>
@@ -712,7 +711,8 @@ export default function Flipbook({
                 })}
             </div>
             <button disabled={currPage >= maxPage} onClick={(e) => {
-                handleNextPage(e)
+                e.preventDefault();
+                handleNextPage()
             }}
                     className={`${isBelow1000px ? "hidden":""} ${currPage >= maxPage ? "text-gray-400 opacity-40" : "text-white"} absolute right-12 top-1/2 -translate-y-1/2`}>
                 <ChevronRight size="5rem"/></button>
