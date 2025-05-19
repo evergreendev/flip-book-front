@@ -38,7 +38,6 @@ function useRenderQueue(
 
     useEffect(() => {
         if (shouldClearQueue) {
-            console.log("clearing queue");
             setQueue([]);
             setRenderedPages(new Set());
             setShouldRenderList(new Set());
@@ -83,8 +82,10 @@ function useRenderQueue(
                 await addPageToQueue(i);
             }
         };
-        addPages();
-    }, [addPageToQueue, currentPage, maxPages])
+        if (!shouldClearQueue){
+            addPages();
+        }
+    }, [addPageToQueue, currentPage, maxPages, shouldClearQueue])
 
     const dequeuePage = useCallback(() => {
         if (queue.length === 0) return null;
@@ -123,6 +124,7 @@ function useRenderQueue(
         shouldRenderList,
         setRenderedPages,
         setShouldClearQueue,
+        shouldClearQueue
     }
 }
 

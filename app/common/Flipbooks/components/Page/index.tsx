@@ -23,6 +23,7 @@ interface PageProps {
     setRenderedPages: React.Dispatch<React.SetStateAction<Set<number>>>
     setActiveOverlayId?: (value: (((prevState: (string | null)) => (string | null)) | string | null)) => void
     setOverlaysToDelete?: (value: (((prevState: string[]) => string[]) | string[])) => void
+    shouldClearQueue: boolean
 }
 
 const Page = (({
@@ -41,7 +42,8 @@ const Page = (({
                    setFormOverlays,
                    setActiveOverlayId,
                    setRenderedPages,
-                   setOverlaysToDelete
+                   setOverlaysToDelete,
+    shouldClearQueue
                }: PageProps) => {
     // Determine if the page is on the left side of the spread
     const isLeft = thisPage === 1 || thisPage % 2 === 0;
@@ -121,6 +123,7 @@ const Page = (({
             <PDFRenderer
                 flipbookHeight={flipBookHeight}
                 flipbookWidth={flipBookWidth}
+                shouldClearQueue={shouldClearQueue}
                 setCanvasHeight={setCanvasHeight}
                 setCanvasWidth={setCanvasWidth}
                 setCanvasScale={setCanvasScale}

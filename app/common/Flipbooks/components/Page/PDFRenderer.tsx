@@ -16,10 +16,11 @@ interface PDFRendererProps {
     setCanvasHeight: (value: (((prevState: number) => number) | number)) => void,
     setCanvasWidth: (value: (((prevState: number) => number) | number)) => void,
     setCanvasScale: (value: (((prevState: number) => number) | number)) => void,
-    setRenderedPages: React.Dispatch<React.SetStateAction<Set<number>>>
+    setRenderedPages: React.Dispatch<React.SetStateAction<Set<number>>>,
+    shouldClearQueue: boolean
 }
 
-const getSizedCanvasDims = (flipbookWidth: number, flipbookHeight: number, isBelow1000px:boolean) => {
+const getSizedCanvasDims = (flipbookWidth: number, flipbookHeight: number, isBelow1000px: boolean) => {
     // Use the available space (half of flipbook width) for placeholder
     const availableWidth = isBelow1000px ? flipbookWidth : flipbookWidth / 2;
     const availableHeight = flipbookHeight;
@@ -51,7 +52,8 @@ const PDFRenderer = ({
                          setCanvasHeight,
                          setCanvasWidth,
                          setCanvasScale,
-                         setRenderedPages
+                         setRenderedPages,
+                         shouldClearQueue
                      }: PDFRendererProps) => {
     const pdfRef = useRef<PDFDocumentProxy>(null);
     const renderTaskRef = useRef<RenderTask>(null);
@@ -256,6 +258,13 @@ const PDFRenderer = ({
             }
         };
     }, [canvasRef, currPage, pdfRef, pdfUrl, renderTaskRef, shouldRender, flipbookWidth, flipbookHeight, pagePosition, setCanvasWidth, setCanvasHeight, setCanvasScale, setRenderedPages, isBelow1000px]);
+
+    useEffect(() => {
+        if (shouldClearQueue){
+            console.log("Render Task Cancelled by renderQueue: ")
+            renderTaskRef.current?.cancel();
+        }
+    }, [shouldClearQueue]);
 
     let positionClasses = "";
 

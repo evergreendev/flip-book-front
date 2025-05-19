@@ -433,7 +433,7 @@ export default function Flipbook({
         }
     }, [zoomLevel, flipbookWidth, flipbookHeight, constrainPanPosition]);
 
-    const {shouldRenderList, setRenderedPages, setShouldClearQueue} = useRenderQueue(currPage, maxPage || 0);
+    const {shouldRenderList, setRenderedPages, setShouldClearQueue, shouldClearQueue} = useRenderQueue(currPage, maxPage || 0);
 
     const flipbookRef = useCallback((node: HTMLDivElement) => {
         if (node !== null) {
@@ -554,7 +554,7 @@ export default function Flipbook({
         updateUrlWithPage(currPage);
     }, [currPage, router, searchParams]);
 
-    const {isBelow1000px} = useScreenSize();
+    const {isBelow1000px, width} = useScreenSize();
 
     const handlePreviousPage = () => {
         if (!maxPage) return;
@@ -613,11 +613,12 @@ export default function Flipbook({
             return newPage;
         });
     };
+    const sizeKey = Math.floor(width/100);
 
     if (!maxPage) return null;
 
 
-    return <div ref={flipbookContainerRef} className="flex flex-col sm:flex-row justify-between items-center flex-wrap mx-auto max-h-screen">
+    return <div key={sizeKey} ref={flipbookContainerRef} className="flex flex-col sm:flex-row justify-between items-center flex-wrap mx-auto max-h-screen">
         <div className="h-full flex flex-col w-full">
             <div
                 ref={flipbookRef}
@@ -694,6 +695,7 @@ export default function Flipbook({
                             <Page
                                 flipBookWidth={flipbookWidth}
                                 flipBookHeight={flipbookHeight}
+                                shouldClearQueue={shouldClearQueue}
                                 currentPage={currPage}
                                 overlaysToDelete={overlaysToDelete}
                                 activeOverlayId={activeOverlayId}
