@@ -618,7 +618,7 @@ export default function Flipbook({
     if (!maxPage) return null;
 
 
-    return <div key={sizeKey} ref={flipbookContainerRef} className="flex flex-col sm:flex-row justify-between items-center flex-wrap mx-auto max-h-screen">
+    return <div key={sizeKey} ref={flipbookContainerRef} className="flex flex-col sm:flex-row justify-between items-center flex-wrap mx-auto max-h-screen h-screen">
         <div className="h-full flex flex-col w-full">
             <div
                 ref={flipbookRef}

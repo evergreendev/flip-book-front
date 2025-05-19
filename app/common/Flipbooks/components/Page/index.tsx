@@ -107,7 +107,7 @@ const Page = (({
         /*@ts-expect-error Type problems*/
         <animated.div
             ref={pageRef}
-            className={`relative w-full h-full`}
+            className={`relative w-full h-full flex flex-col justify-center items-center`}
             style={{
                 height: "100%",
                 overflow: "hidden",
