@@ -82,7 +82,7 @@ const PDFRenderer = ({
             canvas.height = placeholderHeight || 1024;
             canvas.width = placeholderWidth || 768;
 
-            ctx.fillStyle = "#58ca70";
+            ctx.fillStyle = "rgba(230,255,226,0.31)";
 
             // Calculate the position based on page position
             let x = 0;
@@ -99,7 +99,7 @@ const PDFRenderer = ({
 
             // Draw the placeholder at the calculated position
             ctx.fillRect(x, 0, placeholderWidth, placeholderHeight); // todo add loading
-            ctx.fillStyle = "#75b543";
+            ctx.fillStyle = "#f2fbe9";
         }
 
         async function renderPage(canvas: HTMLCanvasElement) {
