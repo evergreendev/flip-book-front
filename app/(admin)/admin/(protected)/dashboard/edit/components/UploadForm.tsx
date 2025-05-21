@@ -98,11 +98,13 @@ function Dropzone(props: { required: boolean, name: string }) {
 
 type UploadFormState = {
     error: string | null,
-    redirect: string | null
+    redirect: string | null,
+    isLoading: boolean
 }
 const initialState:UploadFormState = {
     error: null,
-    redirect: null
+    redirect: null,
+    isLoading: false
 }
 
 const UploadForm = () => {
@@ -113,7 +115,16 @@ const UploadForm = () => {
         router.push(state.redirect);
     }
 
-    return <div className="flex items-center justify-center min-h-screen p-4">
+    return <div className="flex items-center justify-center min-h-screen p-4 relative">
+        {state.isLoading && (
+            <div className="absolute inset-0 bg-black bg-opacity-50 flex items-center justify-center z-10">
+                <div className="bg-white p-6 rounded-lg shadow-lg text-center">
+                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-gray-900 mx-auto mb-4"></div>
+                    <p className="text-lg font-semibold">Uploading...</p>
+                    <p className="text-sm text-gray-600 mt-2">Please wait while your file is being processed.</p>
+                </div>
+            </div>
+        )}
         <form action={formAction}>
             {
                 state.error && <div className="text-red-900 bg-red-100 p-4">{state.error}</div>
@@ -122,7 +133,12 @@ const UploadForm = () => {
                 <Dropzone required={true} name="file"/>
             </div>
 
-            <button className="bg-white text-black rounded px-4 mx-auto block">Submit</button>
+            <button 
+                className={`bg-white text-black rounded px-4 mx-auto block ${state.isLoading ? 'opacity-50 cursor-not-allowed' : ''}`}
+                disabled={state.isLoading}
+            >
+                {state.isLoading ? 'Uploading...' : 'Submit'}
+            </button>
         </form>
     </div>
 }

@@ -2,8 +2,11 @@
 
 import {checkOrRefreshToken} from "@/app/common/Auth/actions";
 
-export async function handleUpload(prevState: { error: string | null, redirect: string | null }, formData: FormData) {
-    if (!process.env.BACKEND_URL) return {...prevState, error: "Something went wrong. Please try again.", redirect: null};
+export async function handleUpload(prevState: { error: string | null, redirect: string | null, isLoading: boolean }, formData: FormData) {
+    // Set loading state to true at the beginning
+    const loadingState = { ...prevState, isLoading: true };
+
+    if (!process.env.BACKEND_URL) return {...loadingState, error: "Something went wrong. Please try again.", redirect: null, isLoading: false};
 
     const userToken = await checkOrRefreshToken();
 
@@ -15,7 +18,7 @@ export async function handleUpload(prevState: { error: string | null, redirect: 
         }
     });
 
-    if (res.status !== 200) return {...prevState, error: "Invalid Credentials. Please Try again", redirect: null};
+    if (res.status !== 200) return {...loadingState, error: "Invalid Credentials. Please Try again", redirect: null, isLoading: false};
 
     const pdf = await res.json();
 
@@ -30,8 +33,8 @@ export async function handleUpload(prevState: { error: string | null, redirect: 
             "Authorization": `Bearer ${userToken?.value}`
         }
     });
-    if (res.status !== 200) return {...prevState, error: "Invalid Credentials. Please Try again", redirect: null};
+    if (res.status !== 200) return {...loadingState, error: "Invalid Credentials. Please Try again", redirect: null, isLoading: false};
     const flipbookBody = await flipbookRes.json();
 
-    return {error: null, redirect: "edit/"+flipbookBody.flipbook.id}
+    return {error: null, redirect: "edit/"+flipbookBody.flipbook.id, isLoading: false}
 }

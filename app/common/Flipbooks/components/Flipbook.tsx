@@ -565,7 +565,10 @@ export default function Flipbook({
 
     const {isBelow1000px, width} = useScreenSize();
 
-    const handlePreviousPage = () => {
+    const handlePreviousPage = (e?: { preventDefault: () => void; }) => {
+        if (e){
+            e.preventDefault();
+        }
         if (!maxPage) return;
 
         setAnimationDirection("right")
@@ -593,7 +596,10 @@ export default function Flipbook({
         });
     };
 
-    const handleNextPage = () => {
+    const handleNextPage = (e?: { preventDefault: () => void; }) => {
+        if (e){
+            e.preventDefault();
+        }
         if (!maxPage) return;
 
         setAnimationDirection("left");

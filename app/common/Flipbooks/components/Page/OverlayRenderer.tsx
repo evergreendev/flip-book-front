@@ -1,4 +1,4 @@
-import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
+import React, {useCallback, useContext, useEffect, useRef} from "react";
 import {useRouter} from 'next/navigation';
 import ModeContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/ModeContext";
 import {v4 as uuidv4} from 'uuid';
@@ -39,7 +39,6 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
     const [draggingMode, setDraggingMode] = React.useState<"none" | "move" | "resize">("none");
     const [activeGrip, setActiveGrip] = React.useState<{ overlay: Overlay, grip: string | null } | null>(null);
     const [movingOverlay, setMovingOverlay] = React.useState<Overlay | null>(null);
-    const [canvasTopPosition, setCanvasTopPosition] = useState(0);
     const router = useRouter();
 
     const renderOverlay = useCallback((canvas: HTMLCanvasElement, hideOverlays: boolean) => {
@@ -100,40 +99,6 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
         // Re-render the overlay after resizing
         renderOverlay(overlayRef.current, mode.mode !== "edit");
     }, [canvasHeight, canvasWidth, mode.mode, pdfCanvasRef, renderOverlay]);
-
-    // Effect to sync overlay canvas position with PDF canvas position
-    useEffect(() => {
-        if (!pdfCanvasRef || !pdfCanvasRef.current) return;
-        const currRef = pdfCanvasRef.current;
-
-        // Function to update the top position
-        const updatePosition = () => {
-            const pdfCanvas = pdfCanvasRef.current;
-            if (pdfCanvas) {
-                const rect = pdfCanvas.getBoundingClientRect();
-                setCanvasTopPosition(rect.top - 16); // Adjust by 16px to fix positioning
-            }
-        };
-
-        // Update position initially
-        updatePosition();
-
-        // Set up a resize observer to update position when the canvas size changes
-        const resizeObserver = new ResizeObserver(() => {
-            updatePosition();
-        });
-
-        if (pdfCanvasRef.current) {
-            resizeObserver.observe(pdfCanvasRef.current);
-        }
-
-        // Clean up the observer when the component unmounts
-        return () => {
-            if (currRef) {
-                resizeObserver.disconnect();
-            }
-        };
-    }, [pdfCanvasRef, canvasWidth, canvasHeight]);
 
     //overlay render effect
     useEffect(() => {
@@ -418,8 +383,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
     return (
         <canvas
             ref={overlayRef}
-            className="absolute left-0 right-0"
-            style={{ top: `${canvasTopPosition}px` }}
+            className="absolute left-0 right-0 top-auto"
             onMouseLeave={handleMouseExit}
             onClick={handleMouse}
             onMouseMove={handleMouse}
