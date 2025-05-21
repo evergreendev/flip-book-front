@@ -50,7 +50,6 @@ const Page = (({
     const [canvasWidth, setCanvasWidth] = useState(0);
     const [canvasHeight, setCanvasHeight] = useState(0);
     const [canvasScale, setCanvasScale] = useState(1);
-    const [isInRenderQueue, setIsInRenderQueue] = useState(false);
 
     // Determine page position based on page number
     const pagePosition = isLeft ? "left" : "right";
@@ -67,48 +66,6 @@ const Page = (({
     useEffect(() => {
         setPageWidth(isBelow1000px ? flipBookWidth : flipBookWidth / 2);
     }, [pageWidth, flipBookWidth, isBelow1000px]);
-
-    // Effect to track if the page is in the render queue
-    useEffect(() => {
-        // If the page should be rendered, it's in the render queue
-        if (shouldRender) {
-            setIsInRenderQueue(true);
-        } else {
-            // If the page shouldn't be rendered, it's not in the render queue
-            setIsInRenderQueue(false);
-        }
-    }, [shouldRender]);
-
-    // Create a ref to store the rendered pages set
-    const renderedPagesRef = useRef<Set<number>>(new Set());
-
-    // Effect to update isInRenderQueue when the page is rendered
-    useEffect(() => {
-        // Function to check if the page is rendered
-        const checkIfRendered = () => {
-            setRenderedPages(prevRenderedPages => {
-                // Update the ref with the current rendered pages
-                renderedPagesRef.current = prevRenderedPages;
-
-                // If the page is in the rendered pages set, it's not in the render queue
-                if (prevRenderedPages.has(thisPage)) {
-                    setIsInRenderQueue(false);
-                }
-
-                return prevRenderedPages;
-            });
-        };
-
-        // Check if the page is rendered
-        checkIfRendered();
-
-        // Create a timer to periodically check if the page is rendered
-        const timer = setInterval(checkIfRendered, 500);
-
-        // Clean up the timer when the component unmounts
-        return () => clearInterval(timer);
-    }, [thisPage, setRenderedPages]);
-
 
     useEffect(() => {
         if (currentPage === thisPage || (!isBelow1000px && (currentPage === thisPage + 1 && currentPage !== 2 && currentPage !== maxPage))) {
@@ -192,13 +149,6 @@ const Page = (({
                 pdfCanvasRef={pdfCanvasRef}
                 zoomLevel={zoomLevel}
             />
-
-            {/* Loading Spinner */}
-            {isInRenderQueue && (
-                <div className="absolute min-w-20 inset-0 flex items-center justify-center bg-black bg-opacity-30 z-10">
-                    <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
-                </div>
-            )}
         </animated.div>
     );
 });

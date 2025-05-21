@@ -49,14 +49,15 @@ function useRenderQueue(
     useEffect(() => {
         const addPages = async () => {
             let i = currentPage;
-            await addPageToQueue(i, true);
+            await addPageToQueue(currentPage, true);
+
+
+            //we add the page directly to the left and directly to the right to make sure page pairs render first
+            await addPageToQueue(currentPage - 1, true);
+            await addPageToQueue(currentPage + 1, true);
 
             let pagesAddedLeft = 0;
             let pagesAddedRight = 0;
-
-            //first we add the page directly to the left and directly to the right to make sure page pairs render first
-            await addPageToQueue(i - 1, true);
-            await addPageToQueue(i + 1, true);
 
             //First we add the pages to the right
             while (i < maxPages && pagesAddedRight < maxQueueLookAhead) {
@@ -70,7 +71,7 @@ function useRenderQueue(
             //Then we look left
             while (i >= 1 && pagesAddedLeft < maxQueueLookAhead) {
                 i--;
-                if (await addPageToQueue(i)) {
+                if (await addPageToQueue(i, pagesAddedLeft < 2)) {
                     pagesAddedLeft++;
                 }
             }
@@ -82,6 +83,7 @@ function useRenderQueue(
                 await addPageToQueue(i);
             }
         };
+
         if (!shouldClearQueue){
             addPages();
         }
@@ -124,6 +126,7 @@ function useRenderQueue(
         shouldRenderList,
         setRenderedPages,
         setShouldClearQueue,
+        renderedPages,
         shouldClearQueue
     }
 }

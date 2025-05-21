@@ -12,6 +12,7 @@ import {v4 as uuidv4} from "uuid";
 import {useRouter, useSearchParams} from "next/navigation";
 import useRenderQueue from "@/app/common/Flipbooks/hooks/useRenderQueue";
 import {useScreenSize} from "@/app/common/Flipbooks/hooks/useScreenSize";
+import {useToggleDiagnostics} from "@/app/common/Flipbooks/hooks/useToggleDiagnostics";
 
 async function generateOverlays(
     currPage: number,
@@ -433,7 +434,13 @@ export default function Flipbook({
         }
     }, [zoomLevel, flipbookWidth, flipbookHeight, constrainPanPosition]);
 
-    const {shouldRenderList, setRenderedPages, setShouldClearQueue, shouldClearQueue} = useRenderQueue(currPage, maxPage || 0);
+    const {
+        shouldRenderList,
+        renderedPages,
+        setRenderedPages,
+        setShouldClearQueue,
+        shouldClearQueue
+    } = useRenderQueue(currPage, maxPage || 0);
 
     const flipbookRef = useCallback((node: HTMLDivElement) => {
         if (node !== null) {
@@ -504,6 +511,8 @@ export default function Flipbook({
             document.removeEventListener('MSFullscreenChange', handleFullScreenChange);
         };
     }, []);
+
+    const devToolsAreOpen = useToggleDiagnostics();
 
     // Effect to trigger gradient animation when current page changes
     useEffect(() => {
@@ -593,8 +602,7 @@ export default function Flipbook({
             // If we're at the second-to-last page of an odd-numbered total, move to the last page
             if (maxPage % 2 === 1 && prev === maxPage - 1) {
                 newPage = maxPage;
-            }
-            else if(isBelow1000px){
+            } else if (isBelow1000px) {
                 newPage = prev + 1;
             }
             // If we can flip 2 pages forward without exceeding total pages
@@ -613,12 +621,13 @@ export default function Flipbook({
             return newPage;
         });
     };
-    const sizeKey = Math.floor(width/100);
+    const sizeKey = Math.floor(width / 100);
 
     if (!maxPage) return null;
 
 
-    return <div key={sizeKey} ref={flipbookContainerRef} className="flex flex-col sm:flex-row justify-between items-center flex-wrap mx-auto max-h-screen h-screen">
+    return <div key={sizeKey} ref={flipbookContainerRef}
+                className="flex flex-col sm:flex-row justify-between items-center flex-wrap mx-auto max-h-screen h-screen">
         <div className="h-full flex flex-col w-full">
             <div
                 ref={flipbookRef}
@@ -692,22 +701,32 @@ export default function Flipbook({
                     />
                     {Array.from({length: maxPage}).map((_, index) => {
                         return (
-                            <Page
-                                flipBookWidth={flipbookWidth}
-                                flipBookHeight={flipbookHeight}
-                                shouldClearQueue={shouldClearQueue}
-                                currentPage={currPage}
-                                overlaysToDelete={overlaysToDelete}
-                                activeOverlayId={activeOverlayId}
-                                setOverlaysToDelete={setOverlaysToDelete}
-                                formOverlays={formOverlays} setOverlays={setOverlaysToRender}
-                                setFormOverlays={setFormOverlays}
-                                setActiveOverlayId={setActiveOverlayId} overlays={overlays}
-                                maxPage={maxPage}
-                                key={index} thisPage={index + 1}
-                                pdfUrl={pdfUrl} shouldRender={shouldRenderList.has(index + 1)}
-                                setRenderedPages={setRenderedPages}
-                                zoomLevel={zoomLevel}/>
+                            <React.Fragment key={index}>
+                                {
+                                    !renderedPages.has(index + 1) && (currPage === index + 1 || currPage === index + 2) &&
+                                    <div
+                                        className={`absolute ${isBelow1000px ? "": "min-w-96"} inset-0 flex items-center justify-center bg-black bg-opacity-30 z-10`}>
+                                        <div
+                                            className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
+                                    </div>
+                                }
+                                <Page
+                                    flipBookWidth={flipbookWidth}
+                                    flipBookHeight={flipbookHeight}
+                                    shouldClearQueue={shouldClearQueue}
+                                    currentPage={currPage}
+                                    overlaysToDelete={overlaysToDelete}
+                                    activeOverlayId={activeOverlayId}
+                                    setOverlaysToDelete={setOverlaysToDelete}
+                                    formOverlays={formOverlays} setOverlays={setOverlaysToRender}
+                                    setFormOverlays={setFormOverlays}
+                                    setActiveOverlayId={setActiveOverlayId} overlays={overlays}
+                                    maxPage={maxPage}
+                                    thisPage={index + 1}
+                                    pdfUrl={pdfUrl} shouldRender={shouldRenderList.has(index + 1)}
+                                    setRenderedPages={setRenderedPages}
+                                    zoomLevel={zoomLevel}/>
+                            </React.Fragment>
                         );
                     })}
                 </div>
@@ -717,6 +736,17 @@ export default function Flipbook({
                 }}
                         className={`${isBelow1000px ? "hidden" : ""} ${currPage >= maxPage ? "text-gray-400 opacity-40" : "text-white"} absolute right-12 top-1/2 -translate-y-1/2`}>
                     <ChevronRight size="5rem"/></button>
+                {
+                    devToolsAreOpen &&
+                    <div className="bg-red-400 absolute top-0 right-0 p-2 text-white">
+                        <div>Should Render:</div>
+                        {Array.from(shouldRenderList).map(pageNum => (
+                            <div key={pageNum} className="text-sm">
+                                Page {pageNum}
+                            </div>
+                        ))}
+                    </div>
+                }
             </div>
             <div className="w-full">
                 <Toolbar
