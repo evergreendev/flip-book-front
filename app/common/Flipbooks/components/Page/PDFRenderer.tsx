@@ -193,16 +193,27 @@ const PDFRenderer = ({
                     await renderTaskRef.current.promise;
                 }
 
+                
                 // Render the page into the canvas with the positioned viewport
                 const renderContext = {
                     canvasContext,
                     viewport: viewport,
                     transform: isBelow1000px ? [resolutionMultiplier, 0, 0, resolutionMultiplier, 0, 0] : undefined,
+                    // For Safari, we use specific rendering options to handle transparency correctly
                     useSvg: isSafari ? false : true,
-                    // Safari-specific rendering options to fix transparency issues
-                    transparent: true,
-                    background: 'rgba(255,255,255,0)'
+                    // Only set transparency handling for Safari
+                    ...(isSafari ? {
+                        // Enable blend modes for proper transparency rendering in Safari
+                        enableWebGL: true,
+                        renderInteractiveForms: true
+                    } : {})
                 };
+                // For Safari, we need to ensure proper transparency handling
+                if (isSafari) {
+                    // Set global composite operation to ensure transparency works correctly
+                    canvasContext.globalCompositeOperation = 'source-over';
+                }
+                
                 const renderTask = page.render(renderContext as RenderParameters);
 
                 // Store the render task.
