@@ -71,7 +71,7 @@ const PDFRenderer = ({
             if (renderTaskRef.current) {
                 renderTaskRef.current.cancel();
             }
-            const ctx = canvas?.getContext("2d");
+            const ctx = canvas?.getContext("2d",{alpha:true, preserveDrawingBuffer: true}) as  CanvasRenderingContext2D;
 
             if (!canvas || !ctx) return;
 
@@ -160,7 +160,7 @@ const PDFRenderer = ({
                 const viewport = page.getViewport({scale: scale});
 
                 // Prepare the canvas with calculated dimensions
-                const canvasContext = canvas.getContext('2d');
+                const canvasContext = canvas?.getContext("2d",{alpha:true, preserveDrawingBuffer: true}) as  CanvasRenderingContext2D;
                 canvas.height = canvasHeight;
                 canvas.width = canvasWidth;
 
@@ -181,7 +181,8 @@ const PDFRenderer = ({
                 const renderContext = {
                     canvasContext,
                     viewport: viewport,
-                    transform: isBelow1000px ? [resolutionMultiplier, 0, 0, resolutionMultiplier, 0, 0] : undefined
+                    transform: isBelow1000px ? [resolutionMultiplier, 0, 0, resolutionMultiplier, 0, 0] : undefined,
+                    useSvg: true
                 };
                 const renderTask = page.render(renderContext as RenderParameters);
 
