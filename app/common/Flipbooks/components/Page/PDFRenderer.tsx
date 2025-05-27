@@ -159,10 +159,26 @@ const PDFRenderer = ({
                 // Create viewport with calculated scale
                 const viewport = page.getViewport({scale: scale});
 
+                // Detect Safari browser
+                const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
+                
                 // Prepare the canvas with calculated dimensions
-                const canvasContext = canvas?.getContext("2d",{alpha:true, preserveDrawingBuffer: true}) as  CanvasRenderingContext2D;
+                const canvasContext = canvas?.getContext("2d", {
+                    alpha: true,
+                    preserveDrawingBuffer: true,
+                    willReadFrequently: isSafari // Improves rendering performance on Safari
+                }) as CanvasRenderingContext2D;
+                
+                // Clear any previous content with transparent background
+                canvasContext.clearRect(0, 0, canvasWidth, canvasHeight);
+                
                 canvas.height = canvasHeight;
                 canvas.width = canvasWidth;
+                
+                // For Safari, ensure the canvas background is properly transparent
+                if (isSafari) {
+                    canvas.style.backgroundColor = 'rgba(255, 255, 255, 0)';
+                }
 
                 // Set the display size to maintain visual dimensions
                 canvas.style.width = `${displayWidth}px`;
@@ -182,7 +198,10 @@ const PDFRenderer = ({
                     canvasContext,
                     viewport: viewport,
                     transform: isBelow1000px ? [resolutionMultiplier, 0, 0, resolutionMultiplier, 0, 0] : undefined,
-                    useSvg: true
+                    useSvg: isSafari ? false : true,
+                    // Safari-specific rendering options to fix transparency issues
+                    transparent: true,
+                    background: 'rgba(255,255,255,0)'
                 };
                 const renderTask = page.render(renderContext as RenderParameters);
 
