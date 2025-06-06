@@ -161,7 +161,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                     <ChevronRight className="h-4 w-4"/>
                 </Button>
             </div>
-            <div className="mx-auto relative w-[calc(100vw-7rem)]">
+            <div className="mx-auto relative w-[calc(100vw-7rem)] z-50">
                 <input
                     className="w-full appearance-none bg-gray-200 h-2 rounded-lg cursor-pointer"
                     ref={rangeRef}
