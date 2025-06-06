@@ -635,6 +635,13 @@ export default function Flipbook({
 
     if (!maxPage) return null;
 
+    const numberOfFigures = Math.floor(Math.log10(maxPage)) + 1;
+    const thumbNailArray = [];
+    for (let i = 1; i <= maxPage; i++) {
+        thumbNailArray.push(`${pdfPath}/page-${(i).toString().padStart(numberOfFigures, '0')}.png`);
+    }
+
+
 
     return <div key={sizeKey} ref={flipbookContainerRef}
                 className="flex flex-col sm:flex-row justify-between items-center flex-wrap mx-auto max-h-screen h-screen">
@@ -710,7 +717,6 @@ export default function Flipbook({
                         {...({} as HTMLAttributes<HTMLDivElement>)}
                     />
                     {Array.from({length: maxPage}).map((_, index) => {
-                        const numberOfFigures = Math.floor(Math.log10(maxPage)) + 1;
 
                         return (
                             <React.Fragment key={index}>
@@ -765,6 +771,7 @@ export default function Flipbook({
                 <Toolbar
                     setPage={setCurrPage}
                     setZoomLevel={setZoomLevel}
+                    thumbNailArray={thumbNailArray}
                     currentPage={currPage}
                     totalPages={maxPage}
                     handleNextPage={handleNextPage}

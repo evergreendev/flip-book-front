@@ -24,8 +24,9 @@ interface ToolbarProps {
     currentZoom: number,
     isFullScreen?: boolean,
     toggleFullScreen?: () => void,
-    handleNextPage: (e: React.MouseEvent<HTMLButtonElement>) => void
-    handlePreviousPage: (e: React.MouseEvent<HTMLButtonElement>) => void
+    handleNextPage: (e: React.MouseEvent<HTMLButtonElement>) => void,
+    handlePreviousPage: (e: React.MouseEvent<HTMLButtonElement>) => void,
+    thumbNailArray: string[]
 }
 
 const Toolbar: React.FC<ToolbarProps> = ({
@@ -38,6 +39,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                                              toggleFullScreen,
                                              handleNextPage,
                                              handlePreviousPage,
+                                             thumbNailArray
                                          }) => {
     const [isSinglePage, setIsSinglePage] = React.useState(true);
     const [showTooltip, setShowTooltip] = React.useState(false);
@@ -159,7 +161,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                     <ChevronRight className="h-4 w-4"/>
                 </Button>
             </div>
-            <div className="relative w-full">
+            <div className="mx-auto relative w-[calc(100vw-7rem)]">
                 <input
                     className="w-full appearance-none bg-gray-200 h-2 rounded-lg cursor-pointer"
                     ref={rangeRef}
@@ -178,7 +180,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
                 />
                 {showTooltip && rangeRef.current && (
                     <div
-                        className="absolute bg-black text-white px-2 py-1 rounded text-sm"
+                        className="absolute bg-black text-white px-2 py-1 rounded text-sm w-28 text-center"
                         style={{
                             left: `${((rangeInternalPage - 1) / (totalPages - 1)) * 100}%`,
                             transform: 'translateX(-50%)',
@@ -186,6 +188,13 @@ const Toolbar: React.FC<ToolbarProps> = ({
                             marginBottom: '8px'
                         }}
                     >
+                        <div className="flex">
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            {!isSinglePage && <img src={thumbNailArray[rangeInternalPage - 2]} className="grow w-6/12 z-50" alt=""/>}
+                            {/* eslint-disable-next-line @next/next/no-img-element */}
+                            <img src={thumbNailArray[rangeInternalPage - 1]} className={`w-6/12 grow z-50`} alt=""/>
+                        </div>
+
                         {isSinglePage ? rangeInternalPage : `${rangeInternalPage - 1} - ${rangeInternalPage}`}
                     </div>
                 )}
