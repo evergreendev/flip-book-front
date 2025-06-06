@@ -156,9 +156,10 @@ const ToolBar = (props: {
     </div>;
 }
 
-const EditForm = ({flipBook, pdfPath, initialOverlays}: {
+const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
     flipBook: FlipBook,
     pdfPath: string,
+    pdfId: string,
     initialOverlays: Overlay[] | null
 }) => {
     const router = useRouter();
@@ -363,7 +364,7 @@ const EditForm = ({flipBook, pdfPath, initialOverlays}: {
                           shouldGenerateOverlays={shouldGenerateOverlays} setOverlaysToRender={setOverlaysToRender}
                           overlaysToDelete={overLaysToDelete}
                           activeOverlayId={activeOverlayId} setOverlaysToDelete={setOverLaysToDelete}
-                          formOverlays={overlaysToUpdate} pdfUrl={pdfPath} initialOverlays={overlaysToRender}
+                          formOverlays={overlaysToUpdate} pdfId={pdfId} pdfPath={pdfPath} initialOverlays={overlaysToRender}
                           setFormOverlays={setOverlaysToUpdate}
                           setActiveOverlayId={setActiveOverlayId}
                 />

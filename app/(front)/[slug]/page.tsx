@@ -3,7 +3,7 @@ import {FlipBook} from "@/app/(admin)/admin/(protected)/dashboard/flipbooks/colu
 import {Metadata} from "next";
 import {Overlay} from "@/app/common/Flipbooks/types";
 import Flipbook from "@/app/common/Flipbooks/components/Flipbook";
-import { ScreenSizeProvider } from "@/app/common/Flipbooks/hooks/useScreenSize";
+import {ScreenSizeProvider} from "@/app/common/Flipbooks/hooks/useScreenSize";
 
 //todo move this somewhere better
 
@@ -44,7 +44,7 @@ export async function generateMetadata({params: paramsPromise}: Args): Promise<M
 export default async function Page({params: paramsPromise}: Args) {
     const {slug} = await paramsPromise
     const data = await getData(slug);
-    const overlays = await getOverlays(data?.id||"");
+    const overlays = await getOverlays(data?.id || "");
 
     if (!data) return null;
 
@@ -52,8 +52,9 @@ export default async function Page({params: paramsPromise}: Args) {
         <div
             className="mx-auto h-[100svh]  flex flex-col sm:block justify-center bg-gradient-to-b from-neutral-900 to-neutral-800">
             <ScreenSizeProvider>
-                <Flipbook pdfUrl={process.env.PDF_URL + "/" + data.pdf_path} initialOverlays={overlays}/>
-            </ScreenSizeProvider>
+                {data.pdf_path && <Flipbook pdfId={data.pdf_path} pdfPath={process.env.PDF_URL + "/" + data.pdf_path}
+                                            initialOverlays={overlays}/>
+                }            </ScreenSizeProvider>
         </div>
     )
 }

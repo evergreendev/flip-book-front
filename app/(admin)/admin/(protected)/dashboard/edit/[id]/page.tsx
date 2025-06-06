@@ -38,7 +38,7 @@ export default async function Page({ params: paramsPromise }: Args) {
 
     return (
         <div className="container mx-auto py-10">
-            {data.pdf_path && <EditForm initialOverlays={overlays} flipBook={data} pdfPath={process.env.PDF_URL + "/" + data.pdf_path}/>}
+            {data.pdf_path && <EditForm pdfId={data.pdf_path} initialOverlays={overlays} flipBook={data} pdfPath={process.env.PDF_URL + "/" + data.pdf_path}/>}
         </div>
     )
 }

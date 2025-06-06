@@ -90,7 +90,8 @@ async function generateOverlays(
 }
 
 export default function Flipbook({
-                                     pdfUrl,
+                                     pdfPath,
+                                     pdfId,
                                      initialOverlays,
                                      formOverlays,
                                      overlaysToDelete,
@@ -102,7 +103,8 @@ export default function Flipbook({
                                      setOverlaysToDelete,
                                      setOverlaysToRender
                                  }: {
-    pdfUrl: string,
+    pdfPath: string,
+    pdfId: string,
     initialOverlays: Overlay[] | null,
     setFormOverlays?: React.Dispatch<React.SetStateAction<Overlay[] | null>>
     setShouldGenerateOverlays?: React.Dispatch<React.SetStateAction<boolean>>
@@ -145,6 +147,8 @@ export default function Flipbook({
     const mode = useContext(ModeContext);
     const router = useRouter();
 
+
+    const pdfUrl = pdfPath + "/" + pdfId + ".pdf";
 
     const [gradientSpring, gradientApi] = useSpring(() => ({
         from: {
@@ -566,7 +570,7 @@ export default function Flipbook({
     const {isBelow1000px, width} = useScreenSize();
 
     const handlePreviousPage = (e?: { preventDefault: () => void; }) => {
-        if (e){
+        if (e) {
             e.preventDefault();
         }
         if (!maxPage) return;
@@ -597,7 +601,7 @@ export default function Flipbook({
     };
 
     const handleNextPage = (e?: { preventDefault: () => void; }) => {
-        if (e){
+        if (e) {
             e.preventDefault();
         }
         if (!maxPage) return;
@@ -706,17 +710,20 @@ export default function Flipbook({
                         {...({} as HTMLAttributes<HTMLDivElement>)}
                     />
                     {Array.from({length: maxPage}).map((_, index) => {
+                        const numberOfFigures = Math.floor(Math.log10(maxPage)) + 1;
+
                         return (
                             <React.Fragment key={index}>
                                 {
                                     !renderedPages.has(index + 1) && (currPage === index + 1 || currPage === index + 2) &&
                                     <div
-                                        className={`absolute ${isBelow1000px ? "": "min-w-96"} inset-0 flex items-center justify-center bg-black bg-opacity-30 z-10`}>
+                                        className={`absolute ${isBelow1000px ? "" : "min-w-96"} inset-0 flex items-center justify-center bg-black bg-opacity-30 z-10`}>
                                         <div
                                             className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-white"></div>
                                     </div>
                                 }
                                 <Page
+                                    renderedPageUrl={`${pdfPath}/page-${(index + 1).toString().padStart(numberOfFigures, '0')}.png`}
                                     flipBookWidth={flipbookWidth}
                                     flipBookHeight={flipbookHeight}
                                     shouldClearQueue={shouldClearQueue}

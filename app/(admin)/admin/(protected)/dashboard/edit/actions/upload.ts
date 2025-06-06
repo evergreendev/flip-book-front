@@ -18,14 +18,14 @@ export async function handleUpload(prevState: { error: string | null, redirect: 
         }
     });
 
-    if (res.status !== 200) return {...loadingState, error: "Invalid Credentials. Please Try again", redirect: null, isLoading: false};
+    if (res.status !== 202) return {...loadingState, error: "Invalid Credentials. Please Try again", redirect: null, isLoading: false};
 
     const pdf = await res.json();
 
     const flipbookRes = await fetch(process.env.BACKEND_URL + "/flipbooks", {
         method: "POST",
         body: JSON.stringify({
-            pdfPath: pdf.filePath,
+            pdfPath: pdf.jobId,
             status: "draft",
         }),
         headers: {
@@ -33,7 +33,7 @@ export async function handleUpload(prevState: { error: string | null, redirect: 
             "Authorization": `Bearer ${userToken?.value}`
         }
     });
-    if (res.status !== 200) return {...loadingState, error: "Invalid Credentials. Please Try again", redirect: null, isLoading: false};
+    if (res.status !== 202) return {...loadingState, error: "Invalid Credentials. Please Try again", redirect: null, isLoading: false};
     const flipbookBody = await flipbookRes.json();
 
     return {error: null, redirect: "edit/"+flipbookBody.flipbook.id, isLoading: false}
