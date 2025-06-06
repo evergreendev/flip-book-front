@@ -2,6 +2,7 @@
 
 import {useActionState, useEffect, useRef, useState} from "react";
 import {handleEdit} from "@/app/(admin)/admin/(protected)/dashboard/edit/actions/edit";
+import {getPdfStatus} from "@/app/(admin)/admin/(protected)/dashboard/edit/actions/getPdfStatus";
 import Flipbook from "@/app/common/Flipbooks/components/Flipbook";
 import {FlipBook} from "@/app/(admin)/admin/(protected)/dashboard/flipbooks/columns";
 import {Check, Loader2, LockKeyhole, LockKeyholeOpen} from "lucide-react"
@@ -176,6 +177,7 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
     const [activeTool, setActiveTool] = useState<string>('edit');
     const [shouldGenerateOverlays, setShouldGenerateOverlays] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const [serverRenderJobIsFinished, setServerRenderJobIsFinished] = useState(false);
     const [notification, setNotification] = useState<{
         message: string;
         type: 'success' | 'error';
@@ -194,6 +196,26 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
         published: "bg-green-200",
         private: "bg-red-100"
     }
+    useEffect(() => {
+        if (serverRenderJobIsFinished) return;
+
+        const checkJob = async() =>{
+            try {
+                const data = await getPdfStatus(pdfId);
+                console.log(data);
+                if (data.status === "done") {
+                    setServerRenderJobIsFinished(true);
+                }
+            } catch (error) {
+                console.error("Error checking PDF status:", error);
+            }
+        }
+        const interval = setInterval(() => {
+            checkJob();
+        }, 1000);
+
+        return () => clearInterval(interval);
+    }, [pdfId, serverRenderJobIsFinished]);
 
     useEffect(() => {
         if (draftFieldRef.current) {
@@ -295,6 +317,13 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
 
         setShouldGenerateOverlays(true);
     }
+
+    if (!serverRenderJobIsFinished) return             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+        <div className="bg-white p-4 rounded-md flex items-center gap-2">
+            <Loader2 className="animate-spin h-6 w-6"/>
+            <span>Rendering Pages</span>
+        </div>
+    </div>
 
     return <div className="flex items-center justify-center min-h-screen p-4 w-full">
         {isSubmitting || shouldGenerateOverlays && (

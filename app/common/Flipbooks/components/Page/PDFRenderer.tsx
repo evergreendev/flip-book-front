@@ -1,6 +1,7 @@
 "use client"
 import React, {useEffect, useRef} from "react";
 import {useScreenSize} from "@/app/common/Flipbooks/hooks/useScreenSize";
+import {PDFDocumentProxy} from "pdfjs-dist";
 
 interface PDFRendererProps {
     currPage: number,
@@ -46,6 +47,7 @@ const PDFRenderer = ({
                          canvasRef,
                          flipbookWidth,
                          flipbookHeight,
+    pdfUrl,
                          pagePosition,
                          setCanvasHeight,
                          setCanvasWidth,
@@ -56,11 +58,13 @@ const PDFRenderer = ({
                      }: PDFRendererProps) => {
     // Use a ref to track the current image loading operation
     const imageLoadingRef = useRef<{ cancel: () => void } | null>(null);
+    const pdfRef = useRef<PDFDocumentProxy>(null);
 
     const {isBelow1000px} = useScreenSize();
 
     useEffect(() => {
         const isCancelled = false;
+        let pdf: PDFDocumentProxy;
 
         const canvas = canvasRef.current;
 
@@ -101,12 +105,26 @@ const PDFRenderer = ({
             }
 
             // Draw the placeholder at the calculated position
-            ctx.fillRect(x, 0, placeholderWidth, placeholderHeight); // todo add loading
+            ctx.fillRect(x, 0, placeholderWidth, placeholderHeight);
             ctx.fillStyle = "#f2fbe9";
         }
 
         async function renderPage(canvas: HTMLCanvasElement) {
             try {
+                // Import pdfjs-dist dynamically for client-side rendering.
+                // @ts-expect-error: TypeScript cannot verify dynamic import for pdfjs-dist.
+                const pdfJS = await import('pdfjs-dist/build/pdf');
+
+                // Set up the worker.
+                pdfJS.GlobalWorkerOptions.workerSrc =
+                    window.location.origin + '/pdf.worker.min.mjs';
+
+                // Load the PDF document.
+                pdf = await pdfJS.getDocument(pdfUrl).promise;
+                pdfRef.current = pdf;
+
+                // Get the first page.
+                const page = await pdf.getPage(currPage);
                 // Detect Safari browser
                 const isSafari = /^((?!chrome|android).)*safari/i.test(navigator.userAgent);
 
@@ -162,17 +180,18 @@ const PDFRenderer = ({
                 let canvasWidth, canvasHeight;
                 let scale: number;
                 let displayWidth, displayHeight;
+                const originalViewport = page.getViewport({scale: resolutionMultiplier});
 
                 if (availableWidth / imageAspectRatio <= availableHeight) {
                     // Width is the constraint
-                    scale = availableWidth / img.width;
                     displayWidth = availableWidth;
                     displayHeight = availableWidth / imageAspectRatio;
+                    scale = (availableWidth / originalViewport.width) * resolutionMultiplier;
                 } else {
                     // Height is the constraint
                     displayHeight = availableHeight;
                     displayWidth = availableHeight * imageAspectRatio;
-                    scale = availableHeight / img.height;
+                    scale = (availableHeight / originalViewport.height) * resolutionMultiplier;
                 }
 
                 // For screens below 1000px, increase canvas pixel density for better quality
@@ -246,7 +265,7 @@ const PDFRenderer = ({
                 imageLoadingRef.current = null;
             }
         };
-    }, [canvasRef, currPage, renderedPageUrl, shouldRender, flipbookWidth, flipbookHeight, pagePosition, setCanvasWidth, setCanvasHeight, setCanvasScale, setRenderedPages, isBelow1000px]);
+    }, [canvasRef, currPage, renderedPageUrl, shouldRender, flipbookWidth, flipbookHeight, pagePosition, setCanvasWidth, setCanvasHeight, setCanvasScale, setRenderedPages, isBelow1000px, pdfUrl]);
 
     useEffect(() => {
         if (shouldClearQueue) {
