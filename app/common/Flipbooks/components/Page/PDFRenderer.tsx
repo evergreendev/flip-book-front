@@ -173,42 +173,28 @@ const PDFRenderer = ({
                 // Calculate image aspect ratio
                 const imageAspectRatio = img.width / img.height;
 
-                // Apply a resolution multiplier for small screens
-                const resolutionMultiplier = isBelow1000px ? 5.0 : 1.0;
-
-                // Calculate the canvas dimensions to fit inside the flipbook
-                let canvasWidth, canvasHeight;
                 let scale: number;
                 let displayWidth, displayHeight;
-                const originalViewport = page.getViewport({scale: resolutionMultiplier});
+                const originalViewport = page.getViewport({scale: 1});
 
                 if (availableWidth / imageAspectRatio <= availableHeight) {
                     // Width is the constraint
                     displayWidth = availableWidth;
                     displayHeight = availableWidth / imageAspectRatio;
-                    scale = (availableWidth / originalViewport.width) * resolutionMultiplier;
+                    scale = (availableWidth / originalViewport.width);
                 } else {
                     // Height is the constraint
                     displayHeight = availableHeight;
                     displayWidth = availableHeight * imageAspectRatio;
-                    scale = (availableHeight / originalViewport.height) * resolutionMultiplier;
-                }
-
-                // For screens below 1000px, increase canvas pixel density for better quality
-                if (isBelow1000px) {
-                    // Increase canvas dimensions for higher pixel density
-                    canvasWidth = displayWidth * resolutionMultiplier;
-                    canvasHeight = displayHeight * resolutionMultiplier;
-                } else {
-                    canvasWidth = displayWidth;
-                    canvasHeight = displayHeight;
+                    scale = (availableHeight / originalViewport.height);
                 }
 
                 // Clear any previous content with transparent background
-                canvasContext.clearRect(0, 0, canvasWidth, canvasHeight);
+                canvasContext.clearRect(0, 0, displayWidth, displayHeight);
+                const dpr = window.devicePixelRatio || 1;
 
-                canvas.height = canvasHeight;
-                canvas.width = canvasWidth;
+                canvas.height = displayHeight * dpr;
+                canvas.width = displayWidth * dpr;
 
                 // Set the display size to maintain visual dimensions
                 canvas.style.width = `${displayWidth}px`;
@@ -224,11 +210,7 @@ const PDFRenderer = ({
                     canvasContext.globalCompositeOperation = 'source-over';
                 }
 
-                // Draw the image on the canvas, scaled to fit
-                if (isBelow1000px) {
-                    // Apply the resolution multiplier for better quality on small screens
-                    canvasContext.scale(resolutionMultiplier, resolutionMultiplier);
-                }
+                canvasContext.scale(dpr, dpr);
 
                 canvasContext.drawImage(img, 0, 0, displayWidth, displayHeight);
 
