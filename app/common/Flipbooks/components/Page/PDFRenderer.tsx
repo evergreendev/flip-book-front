@@ -47,7 +47,7 @@ const PDFRenderer = ({
                          canvasRef,
                          flipbookWidth,
                          flipbookHeight,
-    pdfUrl,
+                         pdfUrl,
                          pagePosition,
                          setCanvasHeight,
                          setCanvasWidth,
@@ -76,7 +76,7 @@ const PDFRenderer = ({
             }
 
             const ctx = canvas?.getContext("2d", {
-                alpha: true,
+                alpha: false,
                 preserveDrawingBuffer: true
             }) as CanvasRenderingContext2D;
 
@@ -130,7 +130,7 @@ const PDFRenderer = ({
 
                 // Prepare the canvas with calculated dimensions
                 const canvasContext = canvas?.getContext("2d", {
-                    alpha: true,
+                    alpha: false,
                     preserveDrawingBuffer: true,
                     willReadFrequently: isSafari // Improves rendering performance on Safari
                 }) as CanvasRenderingContext2D;
@@ -212,12 +212,19 @@ const PDFRenderer = ({
 
                 canvasContext.scale(dpr, dpr);
 
+                canvasContext.clearRect(0, 0, displayWidth, displayHeight);
+
+                canvasContext.imageSmoothingQuality = 'high';
+
+
+
                 canvasContext.drawImage(img, 0, 0, displayWidth, displayHeight);
 
-                // Reset the scale if it was modified
-                if (isBelow1000px) {
-                    canvasContext.setTransform(1, 0, 0, 1, 0, 0);
-                }
+                canvasContext.setTransform(1, 0, 0, 1, 0, 0);
+
+                setCanvasWidth(displayWidth);
+                setCanvasHeight(displayHeight);
+                setCanvasScale(scale);
 
                 // Mark this page as rendered
                 setRenderedPages(prevState => {
