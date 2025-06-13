@@ -84,9 +84,8 @@ function Dropzone(props: { required: boolean, name: string }) {
           Add a hidden file input
           Best to use opacity 0, so that the required validation message will appear on form submission
         */}
-                <input type="file" name={name} required={required} style={{opacity: 0}} ref={hiddenInputRef}/>
-                <input {...getInputProps()} />
-                <p>Drop PDF here</p>
+                {/*Allow only PDF files*/}
+                <input type="file" name={name} required={required} ref={hiddenInputRef} accept=".pdf"/>
             </div>
             <aside>
                 <h4>Files</h4>
