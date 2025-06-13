@@ -253,6 +253,9 @@ const PDFRenderer = ({
                 imageLoadingRef.current.cancel();
                 imageLoadingRef.current = null;
             }
+            if (pdfRef.current) {
+                pdfRef.current.destroy().then(() => console.log("destroyed"));
+            }
         };
     }, [canvasRef, currPage, renderedPageUrl, shouldRender, flipbookWidth, flipbookHeight, pagePosition, setCanvasWidth, setCanvasHeight, setCanvasScale, setRenderedPages, isBelow1000px, pdfUrl]);
 
