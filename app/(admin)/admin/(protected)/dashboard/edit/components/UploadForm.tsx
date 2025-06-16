@@ -43,7 +43,7 @@ function Dropzone(props: { required: boolean, name: string }) {
     const {
         isFocused,
         isDragAccept,
-        isDragReject, getRootProps, getInputProps, acceptedFiles
+        isDragReject, getRootProps, acceptedFiles
     } = useDropzone({
         onDrop: (incomingFiles) => {
             if (hiddenInputRef.current) {
