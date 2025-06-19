@@ -1,6 +1,6 @@
-import { FlipBook, columns } from "./columns"
-import { DataTable } from "./data-table"
 import {headers} from "next/headers";
+import {FlipBook} from "@/app/types";
+import FlipBookMultiView from "@/app/(admin)/admin/(protected)/dashboard/flipbooks/FlipBookMultiView";
 
 async function getData(): Promise<FlipBook[]> {
     const flipbookRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/flipbooks/?showDrafts=true`, {
@@ -24,7 +24,7 @@ export default async function DemoPage() {
 
     return (
         <div className="container mx-auto py-10">
-            <DataTable columns={columns} data={data} />
+            <FlipBookMultiView flipBooks={data}/>
         </div>
     )
 }

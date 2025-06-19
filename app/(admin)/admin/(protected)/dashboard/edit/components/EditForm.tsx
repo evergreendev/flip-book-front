@@ -4,13 +4,13 @@ import {useActionState, useEffect, useRef, useState} from "react";
 import {handleEdit} from "@/app/(admin)/admin/(protected)/dashboard/edit/actions/edit";
 import {getPdfStatus} from "@/app/(admin)/admin/(protected)/dashboard/edit/actions/getPdfStatus";
 import Flipbook from "@/app/common/Flipbooks/components/Flipbook";
-import {FlipBook} from "@/app/(admin)/admin/(protected)/dashboard/flipbooks/columns";
 import {Check, Loader2, LockKeyhole, LockKeyholeOpen} from "lucide-react"
 import slugify from "slugify";
 import {useRouter} from "next/navigation";
 import ModeContext from "../context/ModeContext";
 import Link from "next/link";
 import {Overlay} from "@/app/common/Flipbooks/types";
+import {FlipBook} from "@/app/types";
 
 interface NotificationProps {
     message: string;
@@ -241,6 +241,13 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
             }, 500);
         }
     }, [router, state]);
+    
+    useEffect(()=>{
+        if (title){
+            setCurrPath((prev)=>prev === "" ? slugify(title) : prev);
+            setPathHasBeenEdited(true);
+        }
+    },[title])
 
 
     function handleSubmit(e: React.MouseEvent<HTMLButtonElement>, isDraft: boolean) {

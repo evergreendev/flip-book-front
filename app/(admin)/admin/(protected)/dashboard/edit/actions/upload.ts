@@ -5,6 +5,7 @@ import {checkOrRefreshToken} from "@/app/common/Auth/actions";
 export async function handleUpload(prevState: { error: string | null, redirect: string | null, isLoading: boolean }, formData: FormData) {
     // Set loading state to true at the beginning
     const loadingState = { ...prevState, isLoading: true };
+    const file = formData.get("file");
 
     if (!process.env.BACKEND_URL) return {...loadingState, error: "Something went wrong. Please try again.", redirect: null, isLoading: false};
 
@@ -26,6 +27,7 @@ export async function handleUpload(prevState: { error: string | null, redirect: 
         method: "POST",
         body: JSON.stringify({
             pdfPath: pdf.jobId,
+            title: (file as File).name.replace(/\.pdf$/, ''),
             status: "draft",
         }),
         headers: {

@@ -1,7 +1,7 @@
-import {FlipBook} from "@/app/(admin)/admin/(protected)/dashboard/flipbooks/columns";
 import EditForm from "@/app/(admin)/admin/(protected)/dashboard/edit/components/EditForm";
 import {Overlay} from "@/app/common/Flipbooks/types";
 import {headers} from "next/headers";
+import {FlipBook} from "@/app/types";
 
 async function getData(id:string): Promise<FlipBook|null> {
     const flipbookRes = await fetch(`${process.env.NEXT_PUBLIC_BASE_URL}/api/flipbooks/${id}`, {

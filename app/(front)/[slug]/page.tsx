@@ -1,9 +1,8 @@
-import {FlipBook} from "@/app/(admin)/admin/(protected)/dashboard/flipbooks/columns";
-
 import {Metadata} from "next";
 import {Overlay} from "@/app/common/Flipbooks/types";
 import Flipbook from "@/app/common/Flipbooks/components/Flipbook";
 import {ScreenSizeProvider} from "@/app/common/Flipbooks/hooks/useScreenSize";
+import {FlipBook} from "@/app/types";
 
 //todo move this somewhere better
 
