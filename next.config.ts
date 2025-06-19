@@ -5,7 +5,10 @@ const nextConfig: NextConfig = {
       serverActions: {
           bodySizeLimit: "500mb"
       }
-  }
+  },
+    images:{
+      remotePatterns: [new URL(process.env.BACKEND_URL+"/**"||"")]
+    }
 };
 
 export default nextConfig;

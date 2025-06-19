@@ -4,5 +4,9 @@ export type FlipBook = {
     password: string | null,
     id: string,
     title: string | null,
-    status: "draft" | "published" | "private"
+    status: "draft" | "published" | "private",
+    cover_path: string | null,
+    published_at: string | null,
+    created_at: string|null,
+    updated_at: string|null,
 }
