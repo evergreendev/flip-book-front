@@ -1,6 +1,6 @@
 "use client"
 import React, {HTMLAttributes, useCallback, useContext, useEffect, useRef, useState} from "react";
-import ModeContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/ModeContext";
+import editorContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/EditorContext";
 import {usePdfCache} from "@/app/common/Flipbooks/hooks/PdfCacheHook";
 import {Overlay} from "../types";
 import Page from "@/app/common/Flipbooks/components/Page";
@@ -144,7 +144,7 @@ export default function Flipbook({
     const [dragProgress, setDragProgress] = useState<number>(0); // -1 to 1 value indicating drag progress
     const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
     const flipbookContainerRef = useRef<HTMLDivElement>(null);
-    const mode = useContext(ModeContext);
+    const mode = useContext(editorContext);
     const router = useRouter();
 
 

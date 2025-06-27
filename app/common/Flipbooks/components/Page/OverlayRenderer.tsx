@@ -1,6 +1,6 @@
 import React, {useCallback, useContext, useEffect, useRef} from "react";
 import {useRouter} from 'next/navigation';
-import ModeContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/ModeContext";
+import editorContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/EditorContext";
 import {v4 as uuidv4} from 'uuid';
 import {Overlay} from "../../types";
 
@@ -28,17 +28,17 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
                                                              setOverlays,
                                                              setFormOverlays,
                                                              setActiveOverlayId,
-                                                             setOverlaysToDelete,
                                                              pdfCanvasRef,
                                                              canvasWidth,
                                                              canvasHeight,
                                                              canvasScale
                                                          }) => {
-    const mode = useContext(ModeContext);
+    const editorInfo = useContext(editorContext);
     const overlayRef = useRef<HTMLCanvasElement>(null);
-    const [draggingMode, setDraggingMode] = React.useState<"none" | "move" | "resize">("none");
+    const [draggingMode, setDraggingMode] = React.useState<"none" | "move" | "resize" | "create">("none");
     const [activeGrip, setActiveGrip] = React.useState<{ overlay: Overlay, grip: string | null } | null>(null);
     const [movingOverlay, setMovingOverlay] = React.useState<Overlay | null>(null);
+    const [mouseDragInitialPosition, setMouseDragInitialPosition] = React.useState<[number, number] | null>(null);
     const router = useRouter();
 
     const renderOverlay = useCallback((canvas: HTMLCanvasElement, hideOverlays: boolean) => {
@@ -57,16 +57,13 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
             overlayContext.globalAlpha = hideOverlays ? 0 : .5;
 
             currOverlays.forEach(overlay => {
-                if (mode.activeTool === "delete" && activeOverlayId === overlay.id) {
-                    overlayContext.fillStyle = "#e41919";
-                }
-                if (mode.activeTool !== "delete" && activeOverlayId === overlay.id) {
+                if (activeOverlayId === overlay.id) {
                     overlayContext.fillStyle = "#338ccc";
                 }
                 // @ts-expect-error silly tuple nonsense
                 overlayContext.fillRect(...convertToCanvasCoords([overlay.x, overlay.y, overlay.w, overlay.h]))
 
-                if (mode.mode === "edit") {//render grips if in edit mode
+                if (editorInfo.mode === "edit") {//render grips if in edit editorInfo
                     overlayContext.fillStyle = "#ccb333";
                     overlayContext.globalAlpha = 1;
                     const gripSize = 8;
@@ -86,7 +83,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
 
             overlayContext.globalAlpha = 1;
         }
-    }, [overlays, thisPage, canvasScale, mode.activeTool, mode.mode, activeOverlayId]);
+    }, [overlays, thisPage, canvasScale, editorInfo.mode, activeOverlayId]);
 
     // Effect to sync overlay canvas size with PDF canvas size
     useEffect(() => {
@@ -97,16 +94,16 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
         overlayRef.current.height = canvasHeight;
 
         // Re-render the overlay after resizing
-        renderOverlay(overlayRef.current, mode.mode !== "edit");
-    }, [canvasHeight, canvasWidth, mode.mode, pdfCanvasRef, renderOverlay]);
+        renderOverlay(overlayRef.current, editorInfo.mode !== "edit");
+    }, [canvasHeight, canvasWidth, editorInfo.mode, pdfCanvasRef, renderOverlay]);
 
     //overlay render effect
     useEffect(() => {
         (async function () {
             if (!overlayRef.current) return;
-            renderOverlay(overlayRef.current, mode.mode !== "edit");
+            renderOverlay(overlayRef.current, editorInfo.mode !== "edit");
         })();
-    }, [mode.mode, renderOverlay, pdfCanvasRef, pdfCanvasRef?.current?.width, pdfCanvasRef?.current?.height]);
+    }, [editorInfo.mode, renderOverlay, pdfCanvasRef, pdfCanvasRef?.current?.width, pdfCanvasRef?.current?.height]);
 
     function findInsideOverlay(position: number[], overlays: Overlay[]) {
         if (!overlays) return;
@@ -117,6 +114,18 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
             const top = overlay.y + overlay.h;
             return position[0] > left && position[0] < right && position[1] > bottom && position[1] < top;
         })
+    }
+
+    function getCornerDirection(start: { x: number, y: number }, end: { x: number, y: number }) {
+        const dx = end.x - start.x;
+        const dy = end.y - start.y;
+
+        if (dx > 0 && dy < 0) return 'bottomRight';
+        if (dx < 0 && dy < 0) return 'bottomLeft';
+        if (dx > 0 && dy > 0) return 'topRight';
+        if (dx < 0 && dy > 0) return 'topLeft';
+        if (dx === 0 && dy === 0) return 'same';
+        return 'undetermined';
     }
 
     function findInsideGrip(position: number[], overlays: Overlay[], gripSize: number = 8) {
@@ -189,14 +198,14 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
     }
 
     const createOverlay = useCallback((mouseX: number, mouseY: number) => {
-        if (!setOverlays) return;
+        if (!setOverlays || !mouseDragInitialPosition) return;
         const updatedOverlay: Overlay = {
             id: uuidv4(),
-            flipbook_id: mode.flipBookId,
-            x: mouseX,
-            y: mouseY,
-            w: 50,
-            h: 50,
+            flipbook_id: editorInfo.flipBookId,
+            x: mouseDragInitialPosition[0],
+            y: mouseDragInitialPosition[1],
+            w: mouseDragInitialPosition ? Math.abs(mouseX - mouseDragInitialPosition[0]) : 50,
+            h: mouseDragInitialPosition ? Math.abs(mouseY - mouseDragInitialPosition[1]) : 50,
             url: "",
             page: thisPage
         };
@@ -210,41 +219,49 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
         if (setActiveOverlayId) {
             console.log("setting active overlay id");
             setActiveOverlayId(updatedOverlay.id);
+            setActiveGrip({overlay: updatedOverlay,
+                grip: getCornerDirection({x: mouseDragInitialPosition[0], y: mouseDragInitialPosition[1]}, {
+                    x: mouseX,
+                    y: mouseY
+                })
+            });
         }
-    }, [thisPage, formOverlays, mode.flipBookId, setActiveOverlayId, setFormOverlays, setOverlays]);
+    }, [setOverlays, mouseDragInitialPosition, editorInfo.flipBookId, thisPage, setFormOverlays, setActiveOverlayId, formOverlays]);
+
+
+    function translateCoordinates(e: React.MouseEvent) {
+        const canvas = overlayRef.current;
+        if (!canvas) return [0, 0];
+        const transform = window.getComputedStyle(canvas).transform;
+        const matrix = new DOMMatrixReadOnly(transform);
+        const invertedMatrix = matrix.inverse();
+
+        const rect = canvas.getBoundingClientRect();
+        const mouseX = e.clientX - rect.left;
+        const mouseY = rect.bottom - e.clientY;
+        const canvasScaledHeight = canvas.height / canvasScale;
+        const canvasScaledWidth = canvas.width / canvasScale;
+        const widthAdjust = canvas.getBoundingClientRect().width / canvasScaledWidth;
+        const heightAdjust = canvas.getBoundingClientRect().height / canvasScaledHeight;
+
+        const transformedPoint = invertedMatrix.transformPoint({x: mouseX, y: mouseY});
+        const adjustedX = transformedPoint.x / widthAdjust;
+        const adjustedY = transformedPoint.y / heightAdjust;
+
+        return [adjustedX, adjustedY];
+    }
 
     function handleMouse(e: React.MouseEvent) {
         e.preventDefault();
 
         if (!overlayRef.current) return;
         renderOverlay(overlayRef.current, false);
-        const canvas = overlayRef.current;
         const currOverlays = overlays ? overlays[thisPage - 1] : [];
-
-        function translateCoordinates(e: React.MouseEvent) {
-            const transform = window.getComputedStyle(canvas).transform;
-            const matrix = new DOMMatrixReadOnly(transform);
-            const invertedMatrix = matrix.inverse();
-
-            const rect = canvas.getBoundingClientRect();
-            const mouseX = e.clientX - rect.left;
-            const mouseY = rect.bottom - e.clientY;
-            const canvasScaledHeight = canvas.height / canvasScale;
-            const canvasScaledWidth = canvas.width / canvasScale;
-            const widthAdjust = canvas.getBoundingClientRect().width / canvasScaledWidth;
-            const heightAdjust = canvas.getBoundingClientRect().height / canvasScaledHeight;
-
-            const transformedPoint = invertedMatrix.transformPoint({x: mouseX, y: mouseY});
-            const adjustedX = transformedPoint.x / widthAdjust;
-            const adjustedY = transformedPoint.y / heightAdjust;
-
-            return [adjustedX, adjustedY];
-        }
 
         const insideOverlay = findInsideOverlay(translateCoordinates(e), currOverlays);
         const insideGrip = findInsideGrip(translateCoordinates(e), currOverlays);
 
-        if (insideOverlay && mode.mode !== "edit") {
+        if (insideOverlay && editorInfo.mode !== "edit") {
             if (e.type === "click") {
                 router.push(insideOverlay.url);
             }
@@ -254,7 +271,16 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
             setDraggingMode("none");
             setActiveGrip(null);
         }
-        if (e.buttons === 1 && draggingMode === "none" && mode.mode === "edit") {
+        if (e.buttons === 1 && draggingMode === "none" && editorInfo.mode === "edit") {
+            const [mouseX, mouseY] = translateCoordinates(e);
+
+            if (mouseDragInitialPosition && Math.hypot(mouseX - mouseDragInitialPosition[0], mouseY - mouseDragInitialPosition[1]) > 50) {
+                createOverlay(mouseX, mouseY);
+                setDraggingMode("resize");
+                return;
+            }
+
+
             if (insideGrip) {
                 setDraggingMode("resize");
                 setActiveGrip(insideGrip);
@@ -266,7 +292,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
             }
         }
 
-        if (draggingMode === "resize" && activeGrip && mode.mode === "edit" && (mode.activeTool === "edit" || mode.activeTool === "create")) {
+        if (draggingMode === "resize" && activeGrip && editorInfo.mode === "edit") {
             const [mouseX, mouseY] = translateCoordinates(e);
             const index = currOverlays.findIndex(o => o.id === activeGrip.overlay.id);
             if (index !== -1) {
@@ -303,7 +329,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
                 setFormOverlays([{...activeGrip.overlay, ...updatedDimensions}]);
             }
         } else {
-            if (mode.mode === "edit" && !insideGrip && draggingMode === "move" && movingOverlay && (mode.activeTool === "edit" || mode.activeTool === "create")) {
+            if (editorInfo.mode === "edit" && !insideGrip && draggingMode === "move" && movingOverlay) {
                 const [mouseX, mouseY] = translateCoordinates(e);
                 const index = currOverlays.findIndex(o => o.id === movingOverlay.id);
                 if (index !== -1) {
@@ -347,28 +373,23 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
             if (setActiveOverlayId && e.type === "click") {
                 if (insideOverlay) {
                     setActiveOverlayId(insideOverlay.id);
-                    if (mode.activeTool === "delete") {
-                        if (setOverlaysToDelete && activeOverlayId && activeOverlayId === insideOverlay.id) {
-                            setOverlaysToDelete((overlays) => overlays.concat([activeOverlayId]));
-                        }
-                        if (setFormOverlays && formOverlays && activeOverlayId === insideOverlay.id) {
-                            setFormOverlays(formOverlays.filter(overlay => overlay.id !== activeOverlayId));
-                        }
-                        if (setOverlays && activeOverlayId === insideOverlay.id) {
-                            setOverlays((overlays) => {
-                                if (!overlays) {
-                                    return overlays
-                                }
-                                return overlays.filter(overlay => overlay.id !== activeOverlayId)
-                            })
-                        }
-                    }
+                    /*                        if (setOverlaysToDelete && activeOverlayId && activeOverlayId === insideOverlay.id) {
+                                                setOverlaysToDelete((overlays) => overlays.concat([activeOverlayId]));
+                                            }
+                                            if (setFormOverlays && formOverlays && activeOverlayId === insideOverlay.id) {
+                                                setFormOverlays(formOverlays.filter(overlay => overlay.id !== activeOverlayId));
+                                            }
+                                            if (setOverlays && activeOverlayId === insideOverlay.id) {
+                                                setOverlays((overlays) => {
+                                                    if (!overlays) {
+                                                        return overlays
+                                                    }
+                                                    return overlays.filter(overlay => overlay.id !== activeOverlayId)
+                                                })
+                                            }*/
+
                 } else {
                     setActiveOverlayId(null);
-                    if (mode.activeTool === "create") {
-                        const [mouseX, mouseY] = translateCoordinates(e);
-                        createOverlay(mouseX, mouseY);
-                    }
                 }
             }
         }
@@ -380,14 +401,27 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
         renderOverlay(overlayRef.current, true);
     }
 
+    function handleMouseDown(e: React.MouseEvent) {
+        e.preventDefault();
+        const [mouseX, mouseY] = translateCoordinates(e);
+        setMouseDragInitialPosition([mouseX, mouseY]);
+    }
+
     return (
-        <canvas
-            ref={overlayRef}
-            className="absolute left-0 right-0 top-auto"
-            onMouseLeave={handleMouseExit}
-            onClick={handleMouse}
-            onMouseMove={handleMouse}
-        />
+        <>
+            <div
+                className="absolute top-0">{draggingMode} {mouseDragInitialPosition?.[0]} | {mouseDragInitialPosition?.[1]}</div>
+            <canvas
+                ref={overlayRef}
+                className="absolute left-0 right-0 top-auto"
+                onMouseDown={handleMouseDown}
+                onMouseLeave={handleMouseExit}
+                onClick={handleMouse}
+                onMouseMove={handleMouse}
+                onMouseUp={handleMouse}
+            />
+        </>
+
     );
 };
 

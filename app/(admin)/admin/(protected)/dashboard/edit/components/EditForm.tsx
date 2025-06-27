@@ -7,7 +7,7 @@ import Flipbook from "@/app/common/Flipbooks/components/Flipbook";
 import {Check, Loader2, LockKeyhole, LockKeyholeOpen} from "lucide-react"
 import slugify from "slugify";
 import {useRouter} from "next/navigation";
-import ModeContext from "../context/ModeContext";
+import editorContext from "../context/EditorContext";
 import Link from "next/link";
 import {Overlay} from "@/app/common/Flipbooks/types";
 import {FlipBook} from "@/app/types";
@@ -109,54 +109,6 @@ const OverlayForm = ({hideForm, activeOverlayId, setOverlays, overlays, overlays
     );
 }
 
-const ToolBar = (props: {
-    setActiveTool: (value: (((prevState: (string)) => (string)) | string)) => void,
-    activeTool: string
-}) => {
-    const {setActiveTool, activeTool} = props;
-
-    return <div className="flex flex-wrap my-2 items-center mx-auto justify-center bg-slate-700 rounded-lg">
-        <button onClick={(e) => {
-            e.preventDefault()
-            setActiveTool(activeTool === 'create' ? '' : 'create')
-        }}
-                className={`px-4 py-2 border-x border-x-slate-300 ${activeTool === 'create' ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}>
-            Create Overlay
-        </button>
-        <button onClick={(e) => {
-            e.preventDefault();
-            setActiveTool(activeTool === 'delete' ? '' : 'delete')
-        }}
-                className={`px-4 py-2 border-x border-x-slate-300 ${activeTool === 'delete' ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}>
-            Delete Overlay
-        </button>
-        <button onClick={(e) => {
-            e.preventDefault();
-            setActiveTool(activeTool === 'edit' ? '' : 'edit')
-        }}
-                className={`px-4 py-2 border-x border-x-slate-300 ${activeTool === 'edit' ? 'bg-blue-500 text-white' : 'bg-gray-100'}`}>
-            Edit Overlay
-        </button>
-        <div className="w-full">
-            {activeTool === 'create' && (
-                <div className="bg-slate-600 text-white p-2 text-center">
-                    Click and drag anywhere on the page to create a new overlay
-                </div>
-            )}
-            {activeTool === 'delete' && (
-                <div className="bg-slate-600 text-white p-2 text-center">
-                    Click on an existing overlay twice to delete it
-                </div>
-            )}
-            {activeTool === 'edit' && (
-                <div className="bg-slate-600 text-white p-2 text-center">
-                    Click on an existing overlay to edit its URL, or click and drag on overlays to update positions
-                </div>
-            )}
-        </div>
-    </div>;
-}
-
 const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
     flipBook: FlipBook,
     pdfPath: string,
@@ -199,7 +151,7 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
     useEffect(() => {
         if (serverRenderJobIsFinished) return;
 
-        const checkJob = async() =>{
+        const checkJob = async () => {
             try {
                 const data = await getPdfStatus(pdfId);
                 console.log(data);
@@ -241,13 +193,13 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
             }, 500);
         }
     }, [router, state]);
-    
-    useEffect(()=>{
-        if (title){
-            setCurrPath((prev)=>prev === "" ? slugify(title) : prev);
+
+    useEffect(() => {
+        if (title) {
+            setCurrPath((prev) => prev === "" ? slugify(title) : prev);
             setPathHasBeenEdited(true);
         }
-    },[title])
+    }, [title])
 
 
     function handleSubmit(e: React.MouseEvent<HTMLButtonElement>, isDraft: boolean) {
@@ -325,7 +277,8 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
         setShouldGenerateOverlays(true);
     }
 
-    if (!serverRenderJobIsFinished) return             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
+    if (!serverRenderJobIsFinished) return <div
+        className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
         <div className="bg-white p-4 rounded-md flex items-center gap-2">
             <Loader2 className="animate-spin h-6 w-6"/>
             <span>Rendering Pages</span>
@@ -337,7 +290,7 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
             <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
                 <div className="bg-white p-4 rounded-md flex items-center gap-2">
                     <Loader2 className="animate-spin h-6 w-6"/>
-                    <span>{shouldGenerateOverlays ? "Generating Ad Links":"Saving changes..."}</span>
+                    <span>{shouldGenerateOverlays ? "Generating Ad Links" : "Saving changes..."}</span>
                 </div>
             </div>
         )}
@@ -385,7 +338,19 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
                    value={JSON.stringify(overlaysToUpdate || [])}/>
             <input readOnly className="hidden" aria-hidden={true} name="overlaysToDelete"
                    value={overLaysToDelete || []}/>
-            <ToolBar setActiveTool={setActiveTool} activeTool={activeTool}/>
+            <editorContext.Provider value={{
+                status: status, mode: "edit", flipBookId: id, activeOverlay: {
+                    id: null,
+                    size: {
+                        width: 0,
+                        height: 0
+                    },
+                    position: {
+                        x: 0,
+                        y: 0
+                    }
+                }
+            }}>
             <button onClick={(e) => {
                 handleGenerate(e)
             }}
@@ -395,16 +360,16 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
             <OverlayForm hideForm={activeTool === "delete"} overlaysToUpdate={overlaysToUpdate}
                          overlays={overlaysToRender} setOverlays={setOverlaysToRender} activeOverlayId={activeOverlayId}
                          setOverlaysToUpdate={setOverlaysToUpdate}/>
-            <ModeContext.Provider value={{status: status, mode: "edit", flipBookId: id, activeTool: activeTool}}>
                 <Flipbook setShouldGenerateOverlays={setShouldGenerateOverlays}
                           shouldGenerateOverlays={shouldGenerateOverlays} setOverlaysToRender={setOverlaysToRender}
                           overlaysToDelete={overLaysToDelete}
                           activeOverlayId={activeOverlayId} setOverlaysToDelete={setOverLaysToDelete}
-                          formOverlays={overlaysToUpdate} pdfId={pdfId} pdfPath={pdfPath} initialOverlays={overlaysToRender}
+                          formOverlays={overlaysToUpdate} pdfId={pdfId} pdfPath={pdfPath}
+                          initialOverlays={overlaysToRender}
                           setFormOverlays={setOverlaysToUpdate}
                           setActiveOverlayId={setActiveOverlayId}
                 />
-            </ModeContext.Provider>
+            </editorContext.Provider>
 
             <input ref={draftFieldRef} aria-hidden={true} className="hidden" type="checkbox" name="isDraft"/>
             <div className="bg-slate-300 p-4">
