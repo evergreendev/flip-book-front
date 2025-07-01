@@ -7,11 +7,9 @@ import {Overlay} from "../../types";
 interface OverlayRendererProps {
     thisPage: number,
     overlays: Overlay[][],
-    activeOverlayId?: string | null,
     formOverlays?: Overlay[] | null,
     setOverlays?: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void,
     setFormOverlays?: (value: Overlay[]) => void,
-    setActiveOverlayId?: (value: (((prevState: (string | null)) => (string | null)) | string | null)) => void,
     setOverlaysToDelete?: (value: (((prevState: string[]) => string[]) | string[])) => void,
     pdfCanvasRef?: React.RefObject<HTMLCanvasElement | null>,
     canvasWidth: number,
@@ -23,17 +21,16 @@ interface OverlayRendererProps {
 const OverlayRenderer: React.FC<OverlayRendererProps> = ({
                                                              thisPage,
                                                              overlays,
-                                                             activeOverlayId,
                                                              formOverlays,
                                                              setOverlays,
                                                              setFormOverlays,
-                                                             setActiveOverlayId,
                                                              pdfCanvasRef,
                                                              canvasWidth,
                                                              canvasHeight,
                                                              canvasScale
                                                          }) => {
     const editorInfo = useContext(editorContext);
+    const activeOverlayId = editorInfo?.activeOverlay?.id;
     const overlayRef = useRef<HTMLCanvasElement>(null);
     const [draggingMode, setDraggingMode] = React.useState<"none" | "move" | "resize" | "create">("none");
     const [activeGrip, setActiveGrip] = React.useState<{ overlay: Overlay, grip: string | null } | null>(null);
@@ -83,7 +80,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
 
             overlayContext.globalAlpha = 1;
         }
-    }, [overlays, thisPage, canvasScale, editorInfo.mode, activeOverlayId]);
+    }, [overlays, thisPage, canvasScale, activeOverlayId, editorInfo.mode]);
 
     // Effect to sync overlay canvas size with PDF canvas size
     useEffect(() => {
@@ -216,17 +213,17 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
         if (setFormOverlays) {
             setFormOverlays(formOverlays ? [...formOverlays, updatedOverlay] : [updatedOverlay]);
         }
-        if (setActiveOverlayId) {
-            console.log("setting active overlay id");
-            setActiveOverlayId(updatedOverlay.id);
-            setActiveGrip({overlay: updatedOverlay,
-                grip: getCornerDirection({x: mouseDragInitialPosition[0], y: mouseDragInitialPosition[1]}, {
-                    x: mouseX,
-                    y: mouseY
-                })
-            });
-        }
-    }, [setOverlays, mouseDragInitialPosition, editorInfo.flipBookId, thisPage, setFormOverlays, setActiveOverlayId, formOverlays]);
+        
+        editorInfo.setActiveOverlay(updatedOverlay);
+        setActiveGrip({
+            overlay: updatedOverlay,
+            grip: getCornerDirection({x: mouseDragInitialPosition[0], y: mouseDragInitialPosition[1]}, {
+                x: mouseX,
+                y: mouseY
+            })
+        });
+
+    }, [setOverlays, mouseDragInitialPosition, editorInfo, thisPage, setFormOverlays, formOverlays]);
 
 
     function translateCoordinates(e: React.MouseEvent) {
@@ -370,9 +367,9 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
                 }
             }
 
-            if (setActiveOverlayId && e.type === "click") {
+            if (e.type === "click") {
                 if (insideOverlay) {
-                    setActiveOverlayId(insideOverlay.id);
+                    editorInfo.setActiveOverlay(insideOverlay);
                     /*                        if (setOverlaysToDelete && activeOverlayId && activeOverlayId === insideOverlay.id) {
                                                 setOverlaysToDelete((overlays) => overlays.concat([activeOverlayId]));
                                             }
@@ -389,7 +386,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
                                             }*/
 
                 } else {
-                    setActiveOverlayId(null);
+                    editorInfo.setActiveOverlay(null);
                 }
             }
         }

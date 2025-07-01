@@ -95,11 +95,9 @@ export default function Flipbook({
                                      initialOverlays,
                                      formOverlays,
                                      overlaysToDelete,
-                                     activeOverlayId,
                                      setFormOverlays,
                                      setShouldGenerateOverlays,
                                      shouldGenerateOverlays,
-                                     setActiveOverlayId,
                                      setOverlaysToDelete,
                                      setOverlaysToRender
                                  }: {
@@ -111,8 +109,6 @@ export default function Flipbook({
     shouldGenerateOverlays?: boolean
     formOverlays?: Overlay[] | null,
     overlaysToDelete?: string[],
-    activeOverlayId?: string | null,
-    setActiveOverlayId?: (value: (((prevState: (string | null)) => (string | null)) | string | null)) => void,
     setOverlaysToDelete?: (value: (((prevState: string[]) => string[]) | string[])) => void,
     setOverlaysToRender?: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void
 }) {
@@ -735,11 +731,10 @@ export default function Flipbook({
                                     shouldClearQueue={shouldClearQueue}
                                     currentPage={currPage}
                                     overlaysToDelete={overlaysToDelete}
-                                    activeOverlayId={activeOverlayId}
                                     setOverlaysToDelete={setOverlaysToDelete}
                                     formOverlays={formOverlays} setOverlays={setOverlaysToRender}
                                     setFormOverlays={setFormOverlays}
-                                    setActiveOverlayId={setActiveOverlayId} overlays={overlays}
+                                    overlays={overlays}
                                     maxPage={maxPage}
                                     thisPage={index + 1}
                                     pdfUrl={pdfUrl} shouldRender={shouldRenderList.has(index + 1)}

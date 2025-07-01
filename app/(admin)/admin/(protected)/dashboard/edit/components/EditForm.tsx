@@ -1,6 +1,6 @@
 "use client"
 
-import {useActionState, useEffect, useRef, useState} from "react";
+import {useActionState, useContext, useEffect, useRef, useState} from "react";
 import {handleEdit} from "@/app/(admin)/admin/(protected)/dashboard/edit/actions/edit";
 import {getPdfStatus} from "@/app/(admin)/admin/(protected)/dashboard/edit/actions/getPdfStatus";
 import Flipbook from "@/app/common/Flipbooks/components/Flipbook";
@@ -52,14 +52,16 @@ const Notification = ({message, type, isVisible, onClose}: NotificationProps) =>
     );
 };
 
-const OverlayForm = ({hideForm, activeOverlayId, setOverlays, overlays, overlaysToUpdate, setOverlaysToUpdate}: {
-    activeOverlayId: string | null,
+const OverlayForm = ({hideForm, setOverlays, overlays, overlaysToUpdate, setOverlaysToUpdate}: {
     setOverlays: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void,
     overlays: Overlay[] | null,
     overlaysToUpdate: Overlay[] | null,
     hideForm: boolean,
     setOverlaysToUpdate: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void
 }) => {
+    const editorInfo = useContext(editorContext);
+    if (!editorInfo || !editorInfo.activeOverlay) return null;
+    const activeOverlayId = editorInfo.activeOverlay.id;
     if (!activeOverlayId || !overlays || hideForm) return null;
     const activeOverlay = overlays.find(overlay => overlay.id === activeOverlayId);
     if (!activeOverlay) return null;
@@ -95,7 +97,7 @@ const OverlayForm = ({hideForm, activeOverlayId, setOverlays, overlays, overlays
     };
 
     return (
-        <div>
+        <div className="absolute z-50" style={{left: activeOverlay.x, top: activeOverlay.y}}>
             <label htmlFor="url">URL:</label>
             <input
                 type="text"
@@ -125,8 +127,7 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
     const [overlaysToUpdate, setOverlaysToUpdate] = useState<Overlay[] | null>(null);
     const [overLaysToDelete, setOverLaysToDelete] = useState<string[]>([]);
     const [overlaysToRender, setOverlaysToRender] = useState<Overlay[] | null>(initialOverlays);
-    const [activeOverlayId, setActiveOverlayId] = useState<string | null>(null);
-    const [activeTool, setActiveTool] = useState<string>('edit');
+    const [activeOverlay, setActiveOverlay] = useState<Overlay | null>(null);
     const [shouldGenerateOverlays, setShouldGenerateOverlays] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [serverRenderJobIsFinished, setServerRenderJobIsFinished] = useState(false);
@@ -339,17 +340,11 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
             <input readOnly className="hidden" aria-hidden={true} name="overlaysToDelete"
                    value={overLaysToDelete || []}/>
             <editorContext.Provider value={{
-                status: status, mode: "edit", flipBookId: id, activeOverlay: {
-                    id: null,
-                    size: {
-                        width: 0,
-                        height: 0
-                    },
-                    position: {
-                        x: 0,
-                        y: 0
-                    }
-                }
+                status: status,
+                mode: "edit",
+                flipBookId: id,
+                activeOverlay: activeOverlay,
+                setActiveOverlay: setActiveOverlay
             }}>
             <button onClick={(e) => {
                 handleGenerate(e)
@@ -357,17 +352,16 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
                     className={`bg-green-700 hover:bg-green-500 transition-colors rounded p-2 text-white mx-auto block`}>
                 Generate Ad Links from Text
             </button>
-            <OverlayForm hideForm={activeTool === "delete"} overlaysToUpdate={overlaysToUpdate}
-                         overlays={overlaysToRender} setOverlays={setOverlaysToRender} activeOverlayId={activeOverlayId}
+            <OverlayForm hideForm={!activeOverlay} overlaysToUpdate={overlaysToUpdate}
+                         overlays={overlaysToRender} setOverlays={setOverlaysToRender}
                          setOverlaysToUpdate={setOverlaysToUpdate}/>
                 <Flipbook setShouldGenerateOverlays={setShouldGenerateOverlays}
                           shouldGenerateOverlays={shouldGenerateOverlays} setOverlaysToRender={setOverlaysToRender}
                           overlaysToDelete={overLaysToDelete}
-                          activeOverlayId={activeOverlayId} setOverlaysToDelete={setOverLaysToDelete}
+                          setOverlaysToDelete={setOverLaysToDelete}
                           formOverlays={overlaysToUpdate} pdfId={pdfId} pdfPath={pdfPath}
                           initialOverlays={overlaysToRender}
                           setFormOverlays={setOverlaysToUpdate}
-                          setActiveOverlayId={setActiveOverlayId}
                 />
             </editorContext.Provider>
 

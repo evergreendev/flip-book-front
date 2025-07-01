@@ -12,7 +12,6 @@ interface PageProps {
     shouldRender?: boolean
     overlays: Overlay[][]
     overlaysToDelete?: string[]
-    activeOverlayId?: string | null
     formOverlays?: Overlay[] | null
     flipBookWidth: number
     flipBookHeight: number
@@ -22,7 +21,6 @@ interface PageProps {
     setOverlays?: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void
     setFormOverlays?: (value: Overlay[]) => void
     setRenderedPages: React.Dispatch<React.SetStateAction<Set<number>>>
-    setActiveOverlayId?: (value: (((prevState: (string | null)) => (string | null)) | string | null)) => void
     setOverlaysToDelete?: (value: (((prevState: string[]) => string[]) | string[])) => void
     shouldClearQueue: boolean
 }
@@ -35,14 +33,12 @@ const Page = (({
                    overlays,
                    flipBookWidth,
                    flipBookHeight,
-                   activeOverlayId,
                    formOverlays,
                    maxPage,
                    zoomLevel,
                    renderedPageUrl,
                    setOverlays,
                    setFormOverlays,
-                   setActiveOverlayId,
                    setRenderedPages,
                    setOverlaysToDelete,
                    shouldClearQueue
@@ -143,11 +139,9 @@ const Page = (({
                 canvasWidth={canvasWidth}
                 canvasHeight={canvasHeight}
                 canvasScale={canvasScale}
-                activeOverlayId={activeOverlayId}
                 formOverlays={formOverlays}
                 setOverlays={setOverlays}
                 setFormOverlays={setFormOverlays}
-                setActiveOverlayId={setActiveOverlayId}
                 setOverlaysToDelete={setOverlaysToDelete}
                 pdfCanvasRef={pdfCanvasRef}
                 zoomLevel={zoomLevel}
