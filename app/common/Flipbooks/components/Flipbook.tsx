@@ -104,13 +104,13 @@ export default function Flipbook({
     pdfPath: string,
     pdfId: string,
     initialOverlays: Overlay[] | null,
-    setFormOverlays?: React.Dispatch<React.SetStateAction<Overlay[] | null>>
-    setShouldGenerateOverlays?: React.Dispatch<React.SetStateAction<boolean>>
-    shouldGenerateOverlays?: boolean
+    setFormOverlays?: React.Dispatch<React.SetStateAction<Overlay[] | null>>,
+    setShouldGenerateOverlays?: React.Dispatch<React.SetStateAction<boolean>>,
+    shouldGenerateOverlays?: boolean,
     formOverlays?: Overlay[] | null,
     overlaysToDelete?: string[],
     setOverlaysToDelete?: (value: (((prevState: string[]) => string[]) | string[])) => void,
-    setOverlaysToRender?: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void
+    setOverlaysToRender?: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void,
 }) {
     const formattedInitialOverlays: Overlay[][] = [];
     if (initialOverlays && initialOverlays?.length > 0) {

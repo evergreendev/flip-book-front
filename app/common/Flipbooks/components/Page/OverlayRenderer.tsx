@@ -36,71 +36,10 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
     const [activeGrip, setActiveGrip] = React.useState<{ overlay: Overlay, grip: string | null } | null>(null);
     const [movingOverlay, setMovingOverlay] = React.useState<Overlay | null>(null);
     const [mouseDragInitialPosition, setMouseDragInitialPosition] = React.useState<[number, number] | null>(null);
+    const [initialMouseOverlayMovePosition, setInitialMouseOverlayMovePosition] = React.useState<[number, number] | null>(null);
+    const [mouseCreatePosition, setMouseCreatePosition] = React.useState<[number, number] | null>(null);
     const router = useRouter();
 
-    const renderOverlay = useCallback((canvas: HTMLCanvasElement, hideOverlays: boolean) => {
-        const overlayContext = canvas.getContext('2d');
-        const currOverlays = overlays[thisPage - 1];
-
-        function convertToCanvasCoords([x, y, width, height]: [number, number, number, number]) {
-            const scale = canvasScale;
-            return [x * scale, canvas.height - ((y + height) * scale), width * scale, height * scale];
-        }
-
-        if (overlayContext && currOverlays?.length > 0) {
-            overlayContext.clearRect(0, 0, canvas.width, canvas.height);
-            overlayContext.fillStyle = "#66cc33";
-
-            overlayContext.globalAlpha = hideOverlays ? 0 : .5;
-
-            currOverlays.forEach(overlay => {
-                if (activeOverlayId === overlay.id) {
-                    overlayContext.fillStyle = "#338ccc";
-                }
-                // @ts-expect-error silly tuple nonsense
-                overlayContext.fillRect(...convertToCanvasCoords([overlay.x, overlay.y, overlay.w, overlay.h]))
-
-                if (editorInfo.mode === "edit") {//render grips if in edit editorInfo
-                    overlayContext.fillStyle = "#ccb333";
-                    overlayContext.globalAlpha = 1;
-                    const gripSize = 8;
-                    // @ts-expect-error silly tuple nonsense
-                    overlayContext.fillRect(...convertToCanvasCoords([overlay.x - gripSize / 2, overlay.y - gripSize / 2, gripSize, gripSize]))
-                    // @ts-expect-error silly tuple nonsense
-                    overlayContext.fillRect(...convertToCanvasCoords([overlay.x - ((gripSize / 2) - overlay.w), overlay.y - gripSize / 2, gripSize, gripSize]))
-                    // @ts-expect-error silly tuple nonsense
-                    overlayContext.fillRect(...convertToCanvasCoords([overlay.x - gripSize / 2, overlay.y - ((gripSize / 2) - overlay.h), gripSize, gripSize]))
-                    // @ts-expect-error silly tuple nonsense
-                    overlayContext.fillRect(...convertToCanvasCoords([overlay.x - ((gripSize / 2) - overlay.w), overlay.y - ((gripSize / 2) - overlay.h), gripSize, gripSize]))
-
-                    overlayContext.fillStyle = "#66cc33";
-                    overlayContext.globalAlpha = hideOverlays ? 0 : .5;
-                }
-            })
-
-            overlayContext.globalAlpha = 1;
-        }
-    }, [overlays, thisPage, canvasScale, activeOverlayId, editorInfo.mode]);
-
-    // Effect to sync overlay canvas size with PDF canvas size
-    useEffect(() => {
-        if (!overlayRef.current || !pdfCanvasRef || !pdfCanvasRef.current) return;
-
-        // Set the overlay canvas dimensions to match the PDF canvas
-        overlayRef.current.width = canvasWidth;
-        overlayRef.current.height = canvasHeight;
-
-        // Re-render the overlay after resizing
-        renderOverlay(overlayRef.current, editorInfo.mode !== "edit");
-    }, [canvasHeight, canvasWidth, editorInfo.mode, pdfCanvasRef, renderOverlay]);
-
-    //overlay render effect
-    useEffect(() => {
-        (async function () {
-            if (!overlayRef.current) return;
-            renderOverlay(overlayRef.current, editorInfo.mode !== "edit");
-        })();
-    }, [editorInfo.mode, renderOverlay, pdfCanvasRef, pdfCanvasRef?.current?.width, pdfCanvasRef?.current?.height]);
 
     function findInsideOverlay(position: number[], overlays: Overlay[]) {
         if (!overlays) return;
@@ -213,8 +152,9 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
         if (setFormOverlays) {
             setFormOverlays(formOverlays ? [...formOverlays, updatedOverlay] : [updatedOverlay]);
         }
-        
+
         editorInfo.setActiveOverlay(updatedOverlay);
+        editorInfo.setActiveOverlayPageCanvas(overlayRef.current);
         setActiveGrip({
             overlay: updatedOverlay,
             grip: getCornerDirection({x: mouseDragInitialPosition[0], y: mouseDragInitialPosition[1]}, {
@@ -225,8 +165,52 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
 
     }, [setOverlays, mouseDragInitialPosition, editorInfo, thisPage, setFormOverlays, formOverlays]);
 
+    const renderOverlay = useCallback((canvas: HTMLCanvasElement, hideOverlays: boolean) => {
+        const overlayContext = canvas.getContext('2d');
+        const currOverlays = overlays[thisPage - 1];
 
-    function translateCoordinates(e: React.MouseEvent) {
+        function convertToCanvasCoords([x, y, width, height]: [number, number, number, number]) {
+            const scale = canvasScale;
+            return [x * scale, canvas.height - ((y + height) * scale), width * scale, height * scale];
+        }
+
+        if (overlayContext && currOverlays?.length > 0) {
+            overlayContext.clearRect(0, 0, canvas.width, canvas.height);
+            overlayContext.fillStyle = "#66cc33";
+
+            overlayContext.globalAlpha = hideOverlays ? 0 : .5;
+
+            currOverlays.forEach(overlay => {
+                if (activeOverlayId === overlay.id) {
+                    overlayContext.fillStyle = "#338ccc";
+                }
+                // @ts-expect-error silly tuple nonsense
+                overlayContext.fillRect(...convertToCanvasCoords([overlay.x, overlay.y, overlay.w, overlay.h]))
+
+                if (editorInfo.mode === "edit") {//render grips if in edit editorInfo
+                    overlayContext.fillStyle = "#ccb333";
+                    overlayContext.globalAlpha = 1;
+                    const gripSize = 8;
+                    // @ts-expect-error silly tuple nonsense
+                    overlayContext.fillRect(...convertToCanvasCoords([overlay.x - gripSize / 2, overlay.y - gripSize / 2, gripSize, gripSize]))
+                    // @ts-expect-error silly tuple nonsense
+                    overlayContext.fillRect(...convertToCanvasCoords([overlay.x - ((gripSize / 2) - overlay.w), overlay.y - gripSize / 2, gripSize, gripSize]))
+                    // @ts-expect-error silly tuple nonsense
+                    overlayContext.fillRect(...convertToCanvasCoords([overlay.x - gripSize / 2, overlay.y - ((gripSize / 2) - overlay.h), gripSize, gripSize]))
+                    // @ts-expect-error silly tuple nonsense
+                    overlayContext.fillRect(...convertToCanvasCoords([overlay.x - ((gripSize / 2) - overlay.w), overlay.y - ((gripSize / 2) - overlay.h), gripSize, gripSize]))
+
+                    overlayContext.fillStyle = "#66cc33";
+                    overlayContext.globalAlpha = hideOverlays ? 0 : .5;
+                }
+            })
+
+            overlayContext.globalAlpha = 1;
+        }
+    }, [overlays, thisPage, canvasScale, activeOverlayId, editorInfo.mode]);
+
+
+    const translateCoordinates = useCallback((e: MouseEvent) => {
         const canvas = overlayRef.current;
         if (!canvas) return [0, 0];
         const transform = window.getComputedStyle(canvas).transform;
@@ -246,130 +230,43 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
         const adjustedY = transformedPoint.y / heightAdjust;
 
         return [adjustedX, adjustedY];
+    }, [canvasScale])
+
+    function handleMouseExit(e: React.MouseEvent) {
+        e.preventDefault();
+        if (!overlayRef.current) return;
+        renderOverlay(overlayRef.current, true);
     }
 
-    function handleMouse(e: React.MouseEvent) {
+    function handleMouseDown(e: React.MouseEvent) {
         e.preventDefault();
+        const [mouseX, mouseY] = translateCoordinates(e.nativeEvent);
+        setMouseDragInitialPosition([mouseX, mouseY]);
+    }
 
-        if (!overlayRef.current) return;
-        renderOverlay(overlayRef.current, false);
-        const currOverlays = overlays ? overlays[thisPage - 1] : [];
+    useEffect(() => {
+        function handleMouse(e: MouseEvent) {
+            e.preventDefault();
 
-        const insideOverlay = findInsideOverlay(translateCoordinates(e), currOverlays);
-        const insideGrip = findInsideGrip(translateCoordinates(e), currOverlays);
+            if (!overlayRef.current) return;
+            renderOverlay(overlayRef.current, false);
+            const currOverlays = overlays ? overlays[thisPage - 1] : [];
 
-        if (insideOverlay && editorInfo.mode !== "edit") {
+            const insideOverlay = findInsideOverlay(translateCoordinates(e), currOverlays);
+            const insideGrip = findInsideGrip(translateCoordinates(e), currOverlays);
+
             if (e.type === "click") {
-                router.push(insideOverlay.url);
-            }
-        }
-
-        if (e.buttons !== 1) {
-            setDraggingMode("none");
-            setActiveGrip(null);
-        }
-        if (e.buttons === 1 && draggingMode === "none" && editorInfo.mode === "edit") {
-            const [mouseX, mouseY] = translateCoordinates(e);
-
-            if (mouseDragInitialPosition && Math.hypot(mouseX - mouseDragInitialPosition[0], mouseY - mouseDragInitialPosition[1]) > 50) {
-                createOverlay(mouseX, mouseY);
-                setDraggingMode("resize");
-                return;
-            }
-
-
-            if (insideGrip) {
-                setDraggingMode("resize");
-                setActiveGrip(insideGrip);
-                setMovingOverlay(null);
-            } else if (insideOverlay) {
-                setDraggingMode("move");
-                setActiveGrip(null);
-                setMovingOverlay(insideOverlay);
-            }
-        }
-
-        if (draggingMode === "resize" && activeGrip && editorInfo.mode === "edit") {
-            const [mouseX, mouseY] = translateCoordinates(e);
-            const index = currOverlays.findIndex(o => o.id === activeGrip.overlay.id);
-            if (index !== -1) {
-                const updatedDimensions = updateOverlayDimensions(activeGrip.grip!, activeGrip.overlay, mouseX, mouseY);
-                const updatedOverlay = {...currOverlays[index], ...updatedDimensions};
-                const newOverlays = [...overlays];
-                newOverlays[thisPage - 1] = [...currOverlays];
-                newOverlays[thisPage - 1][index] = updatedOverlay;
-                if (setOverlays) {
-                    setOverlays((overlays) => {
-                        if (!overlays) return overlays;
-                        return overlays.map((overlay) => {
-                            if (overlay.id === activeGrip.overlay.id) {
-                                return {...overlay, ...updatedDimensions}
-                            }
-                            return overlay
-                        })
-                    });
-                }
-
-                if (!setFormOverlays) return;
-
-                if (formOverlays) {
-                    const existingOverlayToUpdate = formOverlays.find(overlay => overlay.id === activeGrip.overlay.id);
-                    setFormOverlays(existingOverlayToUpdate ? formOverlays.map(overlay => {
-                        if (overlay.id === activeGrip.overlay.id) {
-                            return {...overlay, ...updatedDimensions}
-                        }
-                        return overlay
-                    }) : formOverlays.concat([{...activeGrip.overlay, ...updatedDimensions}]));
+                if (e.target !== overlayRef.current) {
+                    setMouseDragInitialPosition(null);
+                    setDraggingMode("none");
+                    setActiveGrip(null);
+                    setMovingOverlay(null);
                     return;
                 }
 
-                setFormOverlays([{...activeGrip.overlay, ...updatedDimensions}]);
-            }
-        } else {
-            if (editorInfo.mode === "edit" && !insideGrip && draggingMode === "move" && movingOverlay) {
-                const [mouseX, mouseY] = translateCoordinates(e);
-                const index = currOverlays.findIndex(o => o.id === movingOverlay.id);
-                if (index !== -1) {
-                    const updatedOverlay = {...currOverlays[index]};
-                    updatedOverlay.x = mouseX - (updatedOverlay.w / 2);
-                    updatedOverlay.y = mouseY - (updatedOverlay.h / 2);
-                    const newOverlays = [...overlays];
-                    newOverlays[thisPage - 1] = [...currOverlays];
-                    newOverlays[thisPage - 1][index] = updatedOverlay;
-                    if (setOverlays) {
-                        setOverlays((overlays) => {
-                            if (!overlays) return overlays;
-
-                            return overlays.map((overlay) => {
-                                if (overlay.id === movingOverlay.id) {
-                                    return {...overlay, x: updatedOverlay.x, y: updatedOverlay.y}
-                                }
-                                return overlay
-                            })
-                        });
-                    }
-
-                    if (!setFormOverlays) return;
-
-                    if (formOverlays) {
-                        const existingOverlayToUpdate = formOverlays.find(overlay => overlay.id === movingOverlay.id);
-                        setFormOverlays(existingOverlayToUpdate ? formOverlays.map(overlay => {
-                            if (overlay.id === movingOverlay.id) {
-                                return {...overlay, x: updatedOverlay.x, y: updatedOverlay.y}
-                            }
-                            return overlay
-                        }) : formOverlays.concat([{...movingOverlay, x: updatedOverlay.x, y: updatedOverlay.y}]))
-
-                        return;
-                    }
-
-                    setFormOverlays([{...movingOverlay, x: updatedOverlay.x, y: updatedOverlay.y}]);
-                }
-            }
-
-            if (e.type === "click") {
                 if (insideOverlay) {
                     editorInfo.setActiveOverlay(insideOverlay);
+                    editorInfo.setActiveOverlayPageCanvas(overlayRef.current);
                     /*                        if (setOverlaysToDelete && activeOverlayId && activeOverlayId === insideOverlay.id) {
                                                 setOverlaysToDelete((overlays) => overlays.concat([activeOverlayId]));
                                             }
@@ -387,22 +284,165 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
 
                 } else {
                     editorInfo.setActiveOverlay(null);
+                    editorInfo.setActiveOverlayPageCanvas(null);
+                }
+            }
+
+            if (insideOverlay && editorInfo.mode !== "edit") {
+                if (e.type === "click") {
+                    router.push(insideOverlay.url);
+                }
+            }
+
+            if (e.buttons !== 1) {
+                setDraggingMode("none");
+                setActiveGrip(null);
+            }
+            if (e.buttons === 1 && draggingMode === "none" && editorInfo.mode === "edit") {
+                const [mouseX, mouseY] = translateCoordinates(e);
+
+                if (mouseDragInitialPosition && Math.hypot(mouseX - mouseDragInitialPosition[0], mouseY - mouseDragInitialPosition[1]) > 50) {
+                    setDraggingMode("create");
+                    setMouseCreatePosition([mouseX, mouseY]);
+                    return;
+                }
+
+
+                if (insideGrip) {
+                    setDraggingMode("resize");
+                    setActiveGrip(insideGrip);
+                    setMovingOverlay(null);
+                } else if (insideOverlay) {
+                    setDraggingMode("move");
+                    setActiveGrip(null);
+                    setMovingOverlay(insideOverlay);
+                    setInitialMouseOverlayMovePosition([mouseX - insideOverlay.x, mouseY - insideOverlay.y]);
+                }
+            }
+
+            if (draggingMode === "resize" && activeGrip && editorInfo.mode === "edit") {
+                const [mouseX, mouseY] = translateCoordinates(e);
+                const index = currOverlays.findIndex(o => o.id === activeGrip.overlay.id);
+                if (index !== -1) {
+                    const updatedDimensions = updateOverlayDimensions(activeGrip.grip!, activeGrip.overlay, mouseX, mouseY);
+                    const updatedOverlay = {...currOverlays[index], ...updatedDimensions};
+                    const newOverlays = [...overlays];
+                    newOverlays[thisPage - 1] = [...currOverlays];
+                    newOverlays[thisPage - 1][index] = updatedOverlay;
+                    if (setOverlays) {
+                        setOverlays((overlays) => {
+                            if (!overlays) return overlays;
+                            return overlays.map((overlay) => {
+                                if (overlay.id === activeGrip.overlay.id) {
+                                    return {...overlay, ...updatedDimensions}
+                                }
+                                return overlay
+                            })
+                        });
+                    }
+
+                    if (!setFormOverlays) return;
+
+                    if (formOverlays) {
+                        const existingOverlayToUpdate = formOverlays.find(overlay => overlay.id === activeGrip.overlay.id);
+                        setFormOverlays(existingOverlayToUpdate ? formOverlays.map(overlay => {
+                            if (overlay.id === activeGrip.overlay.id) {
+                                return {...overlay, ...updatedDimensions}
+                            }
+                            return overlay
+                        }) : formOverlays.concat([{...activeGrip.overlay, ...updatedDimensions}]));
+                        return;
+                    }
+
+                    setFormOverlays([{...activeGrip.overlay, ...updatedDimensions}]);
+                }
+            } else {
+                if (editorInfo.mode === "edit" && !insideGrip && draggingMode === "move" && movingOverlay) {
+                    const [mouseX, mouseY] = translateCoordinates(e);
+                    const index = currOverlays.findIndex(o => o.id === movingOverlay.id);
+                    if (index !== -1 && initialMouseOverlayMovePosition) {
+                        const updatedOverlay = {...currOverlays[index]};
+                        updatedOverlay.x = mouseX - initialMouseOverlayMovePosition[0];
+                        updatedOverlay.y = mouseY - initialMouseOverlayMovePosition[1];
+                        const newOverlays = [...overlays];
+                        newOverlays[thisPage - 1] = [...currOverlays];
+                        newOverlays[thisPage - 1][index] = updatedOverlay;
+                        if (setOverlays) {
+                            setOverlays((overlays) => {
+                                if (!overlays) return overlays;
+
+                                return overlays.map((overlay) => {
+                                    if (overlay.id === movingOverlay.id) {
+                                        return {...overlay, x: updatedOverlay.x, y: updatedOverlay.y}
+                                    }
+                                    return overlay
+                                })
+                            });
+                        }
+
+                        if (!setFormOverlays) return;
+
+                        if (formOverlays) {
+                            const existingOverlayToUpdate = formOverlays.find(overlay => overlay.id === movingOverlay.id);
+                            setFormOverlays(existingOverlayToUpdate ? formOverlays.map(overlay => {
+                                if (overlay.id === movingOverlay.id) {
+                                    return {...overlay, x: updatedOverlay.x, y: updatedOverlay.y}
+                                }
+                                return overlay
+                            }) : formOverlays.concat([{...movingOverlay, x: updatedOverlay.x, y: updatedOverlay.y}]))
+
+                            return;
+                        }
+
+                        setFormOverlays([{...movingOverlay, x: updatedOverlay.x, y: updatedOverlay.y}]);
+                    }
                 }
             }
         }
-    }
 
-    function handleMouseExit(e: React.MouseEvent) {
-        e.preventDefault();
-        if (!overlayRef.current) return;
-        renderOverlay(overlayRef.current, true);
-    }
+        const handleMouseUp = () => {
+            setMouseDragInitialPosition(null);
+        };
 
-    function handleMouseDown(e: React.MouseEvent) {
-        e.preventDefault();
-        const [mouseX, mouseY] = translateCoordinates(e);
-        setMouseDragInitialPosition([mouseX, mouseY]);
-    }
+        // Attach to window so it continues tracking outside the box
+        window.addEventListener('mousemove', handleMouse);
+        window.addEventListener('click', handleMouse);
+        window.addEventListener('mouseup', handleMouseUp);
+
+        return () => {
+            window.removeEventListener('mousemove', handleMouse);
+            window.removeEventListener('click', handleMouse);
+            window.removeEventListener('mouseup', handleMouseUp);
+        };
+    }, [activeGrip, createOverlay, draggingMode, editorInfo, formOverlays, initialMouseOverlayMovePosition, mouseDragInitialPosition, movingOverlay, overlays, renderOverlay, router, setFormOverlays, setOverlays, thisPage, translateCoordinates]);
+
+
+    useEffect(() => {
+        if (draggingMode === "create"){
+            createOverlay(mouseCreatePosition![0], mouseCreatePosition![1]);
+            setDraggingMode("resize");
+        }
+    }, [createOverlay, draggingMode, mouseCreatePosition, mouseDragInitialPosition]);
+
+    // Effect to sync overlay canvas size with PDF canvas size
+    useEffect(() => {
+        if (!overlayRef.current || !pdfCanvasRef || !pdfCanvasRef.current) return;
+
+        // Set the overlay canvas dimensions to match the PDF canvas
+        overlayRef.current.width = canvasWidth;
+        overlayRef.current.height = canvasHeight;
+
+        // Re-render the overlay after resizing
+        renderOverlay(overlayRef.current, editorInfo.mode !== "edit");
+    }, [canvasHeight, canvasWidth, editorInfo.mode, pdfCanvasRef, renderOverlay]);
+
+    //overlay render effect
+    useEffect(() => {
+        (async function () {
+            if (!overlayRef.current) return;
+            renderOverlay(overlayRef.current, editorInfo.mode !== "edit");
+        })();
+    }, [editorInfo.mode, renderOverlay, pdfCanvasRef, pdfCanvasRef?.current?.width, pdfCanvasRef?.current?.height]);
 
     return (
         <>
@@ -413,12 +453,8 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
                 className="absolute left-0 right-0 top-auto"
                 onMouseDown={handleMouseDown}
                 onMouseLeave={handleMouseExit}
-                onClick={handleMouse}
-                onMouseMove={handleMouse}
-                onMouseUp={handleMouse}
             />
         </>
-
     );
 };
 

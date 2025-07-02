@@ -52,19 +52,52 @@ const Notification = ({message, type, isVisible, onClose}: NotificationProps) =>
     );
 };
 
-const OverlayForm = ({hideForm, setOverlays, overlays, overlaysToUpdate, setOverlaysToUpdate}: {
+const OverlayForm = ({
+                         hideForm,
+                         setOverlays,
+                         overlays,
+                         overlaysToUpdate,
+                         setOverlaysToUpdate,
+                     }: {
     setOverlays: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void,
     overlays: Overlay[] | null,
     overlaysToUpdate: Overlay[] | null,
     hideForm: boolean,
-    setOverlaysToUpdate: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void
+    setOverlaysToUpdate: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void,
 }) => {
     const editorInfo = useContext(editorContext);
+
+    if (hideForm){
+        let hasUpdatedFlag = false;
+        const updatedOverlays = overlaysToUpdate ? overlaysToUpdate.map(overlay => {
+            const url = overlay.url || '';
+            const validatedUrl = url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
+            if (url !== validatedUrl) hasUpdatedFlag = true;
+            return {...overlay, url: validatedUrl}
+        }) : null;
+
+        if (hasUpdatedFlag){
+            setOverlaysToUpdate(updatedOverlays);
+        }
+    }
+
     if (!editorInfo || !editorInfo.activeOverlay) return null;
     const activeOverlayId = editorInfo.activeOverlay.id;
     if (!activeOverlayId || !overlays || hideForm) return null;
     const activeOverlay = overlays.find(overlay => overlay.id === activeOverlayId);
     if (!activeOverlay) return null;
+    const activeOverlayCanvas = editorInfo.activeOverlayPageCanvas;
+    if (!activeOverlayCanvas) return null;
+
+    // Get canvas position relative to the viewport
+    const canvasRect = activeOverlayCanvas.getBoundingClientRect();
+
+    const formPosition = {
+        left: canvasRect.left + activeOverlay.x + (activeOverlay.w/2),
+        top: canvasRect.top - activeOverlay.y + canvasRect.height,
+    };
+
+
 
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -96,8 +129,40 @@ const OverlayForm = ({hideForm, setOverlays, overlays, overlaysToUpdate, setOver
         setOverlaysToUpdate([{...overlayToUpdate, url: e.currentTarget.value}]);
     };
 
+    const handleBlur = () => {
+        if (!overlays) return;
+
+        const overlayToUpdate = overlays.find(overlay => overlay.id === activeOverlayId);
+
+        if (!overlayToUpdate) return;
+
+        const url = overlayToUpdate.url || '';
+        const validatedUrl = url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
+
+        setOverlays(overlays.map(overlay => {
+            if (overlay.id === activeOverlayId) {
+                return {...overlay, url: validatedUrl}
+            }
+            return overlay
+        }));
+
+        if (overlaysToUpdate) {
+            const existingOverlayToUpdate = overlaysToUpdate.find(overlay => overlay.id === activeOverlayId);
+            setOverlaysToUpdate(existingOverlayToUpdate ? overlaysToUpdate.map(overlay => {
+                if (overlay.id === activeOverlayId) {
+                    return {...overlay, url: validatedUrl}
+                }
+                return overlay
+            }) : overlaysToUpdate.concat([{...overlayToUpdate, url: validatedUrl}]))
+
+            return;
+        }
+
+        setOverlaysToUpdate([{...overlayToUpdate, url: validatedUrl}]);
+    }
+
     return (
-        <div className="absolute z-50" style={{left: activeOverlay.x, top: activeOverlay.y}}>
+        <div className="absolute z-50" style={{left: formPosition.left, top: formPosition.top}}>
             <label htmlFor="url">URL:</label>
             <input
                 type="text"
@@ -105,6 +170,7 @@ const OverlayForm = ({hideForm, setOverlays, overlays, overlaysToUpdate, setOver
                 name="url"
                 value={activeOverlay.url || ''}
                 onChange={handleChange}
+                onBlur={handleBlur}
                 className="bg-slate-100 w-full border-b-slate-200 border-b p-2"
             />
         </div>
@@ -118,6 +184,7 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
     initialOverlays: Overlay[] | null
 }) => {
     const router = useRouter();
+    const [activeOverlayPageCanvas, setActiveOverlayPageCanvas] = useState<HTMLCanvasElement | null>(null);
     const {id, title, status, path_name} = flipBook;
     const [state, formAction] = useActionState(handleEdit, {error: null, redirect: "", flipBookId: id});
     const [currPath, setCurrPath] = useState(path_name || "");
@@ -340,6 +407,8 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
             <input readOnly className="hidden" aria-hidden={true} name="overlaysToDelete"
                    value={overLaysToDelete || []}/>
             <editorContext.Provider value={{
+                setActiveOverlayPageCanvas: setActiveOverlayPageCanvas,
+                activeOverlayPageCanvas: activeOverlayPageCanvas,
                 status: status,
                 mode: "edit",
                 flipBookId: id,
