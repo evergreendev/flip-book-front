@@ -246,7 +246,6 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
 
     useEffect(() => {
         function handleMouse(e: MouseEvent) {
-            e.preventDefault();
 
             if (!overlayRef.current) return;
             renderOverlay(overlayRef.current, false);
