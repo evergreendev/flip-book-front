@@ -195,6 +195,7 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
     const [overLaysToDelete, setOverLaysToDelete] = useState<string[]>([]);
     const [overlaysToRender, setOverlaysToRender] = useState<Overlay[] | null>(initialOverlays);
     const [activeOverlay, setActiveOverlay] = useState<Overlay | null>(null);
+    const [flipBookContainer, setFlipbookContainer] = useState<HTMLDivElement | null>(null);
     const [shouldGenerateOverlays, setShouldGenerateOverlays] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [serverRenderJobIsFinished, setServerRenderJobIsFinished] = useState(false);
@@ -412,6 +413,8 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
                 status: status,
                 mode: "edit",
                 flipBookId: id,
+                flipbookContainer: flipBookContainer,
+                setFlipbookContainer: setFlipbookContainer,
                 activeOverlay: activeOverlay,
                 setActiveOverlay: setActiveOverlay
             }}>

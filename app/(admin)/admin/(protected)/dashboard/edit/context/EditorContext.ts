@@ -7,8 +7,10 @@ const editorContext = createContext<{
     flipBookId: string,
     activeOverlayPageCanvas: HTMLCanvasElement | null,
     activeOverlay: Overlay | null,
+    flipbookContainer: HTMLDivElement | null,
     setActiveOverlay: (value: Overlay | null) => void,
     setActiveOverlayPageCanvas: (value: HTMLCanvasElement | null) => void,
+    setFlipbookContainer: (value: HTMLDivElement | null) => void,
 }>({
     mode: "",
     status: "published",
@@ -16,7 +18,9 @@ const editorContext = createContext<{
     activeOverlayPageCanvas: null,
     setActiveOverlayPageCanvas: () => {},
     activeOverlay: null,
-    setActiveOverlay: () => {}
+    setActiveOverlay: () => {},
+    flipbookContainer: null,
+    setFlipbookContainer: () => {}
 });
 
 export default editorContext;

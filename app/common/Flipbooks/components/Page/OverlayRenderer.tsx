@@ -3,6 +3,7 @@ import {useRouter} from 'next/navigation';
 import editorContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/EditorContext";
 import {v4 as uuidv4} from 'uuid';
 import {Overlay} from "../../types";
+import {Trash2} from "lucide-react";
 
 interface OverlayRendererProps {
     thisPage: number,
@@ -25,6 +26,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
                                                              setOverlays,
                                                              setFormOverlays,
                                                              pdfCanvasRef,
+    setOverlaysToDelete,
                                                              canvasWidth,
                                                              canvasHeight,
                                                              canvasScale
@@ -38,6 +40,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
     const [mouseDragInitialPosition, setMouseDragInitialPosition] = React.useState<[number, number] | null>(null);
     const [initialMouseOverlayMovePosition, setInitialMouseOverlayMovePosition] = React.useState<[number, number] | null>(null);
     const [mouseCreatePosition, setMouseCreatePosition] = React.useState<[number, number] | null>(null);
+    const [isDeleting, setIsDeleting] = React.useState(false);
     const router = useRouter();
 
 
@@ -154,6 +157,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
         }
 
         editorInfo.setActiveOverlay(updatedOverlay);
+        setIsDeleting(false);
         editorInfo.setActiveOverlayPageCanvas(overlayRef.current);
         setActiveGrip({
             overlay: updatedOverlay,
@@ -265,6 +269,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
 
                 if (insideOverlay) {
                     editorInfo.setActiveOverlay(insideOverlay);
+                    setIsDeleting(false);
                     editorInfo.setActiveOverlayPageCanvas(overlayRef.current);
                     /*                        if (setOverlaysToDelete && activeOverlayId && activeOverlayId === insideOverlay.id) {
                                                 setOverlaysToDelete((overlays) => overlays.concat([activeOverlayId]));
@@ -283,6 +288,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
 
                 } else {
                     editorInfo.setActiveOverlay(null);
+                    setIsDeleting(false);
                     editorInfo.setActiveOverlayPageCanvas(null);
                 }
             }
@@ -415,9 +421,8 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
         };
     }, [activeGrip, createOverlay, draggingMode, editorInfo, formOverlays, initialMouseOverlayMovePosition, mouseDragInitialPosition, movingOverlay, overlays, renderOverlay, router, setFormOverlays, setOverlays, thisPage, translateCoordinates]);
 
-
     useEffect(() => {
-        if (draggingMode === "create"){
+        if (draggingMode === "create") {
             createOverlay(mouseCreatePosition![0], mouseCreatePosition![1]);
             setDraggingMode("resize");
         }
@@ -443,16 +448,85 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
         })();
     }, [editorInfo.mode, renderOverlay, pdfCanvasRef, pdfCanvasRef?.current?.width, pdfCanvasRef?.current?.height]);
 
+    const handleDeleteOverlay = (e: React.MouseEvent) => {
+        e.preventDefault();
+        if (!isDeleting){
+            setIsDeleting(true);
+            return;
+        }
+        if (!setOverlaysToDelete || !activeOverlayId) return;
+
+        // Add the active overlay ID to the list of overlays to delete
+        setOverlaysToDelete((overlays) => overlays.concat([activeOverlayId]));
+
+        // Remove the overlay from formOverlays if it exists
+        if (setFormOverlays && formOverlays) {
+            setFormOverlays(formOverlays.filter(overlay => overlay.id !== activeOverlayId));
+        }
+
+        // Remove the overlay from overlays if it exists
+        if (setOverlays) {
+            setOverlays((overlays) => {
+                if (!overlays) {
+                    return overlays;
+                }
+                return overlays.filter(overlay => overlay.id !== activeOverlayId);
+            });
+        }
+
+        // Clear the active overlay
+        editorInfo.setActiveOverlay(null);
+        setIsDeleting(false);
+        editorInfo.setActiveOverlayPageCanvas(null);
+    };
+
+    // Find the active overlay to position the delete button
+    const activeOverlay = overlays[thisPage - 1]?.find(overlay => overlay.id === activeOverlayId);
+
+    const overlayCanvasBounding = overlayRef.current?.getBoundingClientRect();
+    const overlayCanvasBottom = overlayCanvasBounding?.bottom || 0;
+    const flipbookContainerBounding = editorInfo.flipbookContainer?.getBoundingClientRect();
+    const flipbookContainerBottom = flipbookContainerBounding?.bottom || 0;
+    const canvasBottom = flipbookContainerBottom - overlayCanvasBottom;
+
     return (
         <>
             <div
-                className="absolute top-0">{draggingMode} {mouseDragInitialPosition?.[0]} | {mouseDragInitialPosition?.[1]}</div>
+                className="absolute top-0">
+                {/*{draggingMode} {mouseDragInitialPosition?.[0]} | {mouseDragInitialPosition?.[1]}*/}
+                {activeOverlay?.h} | {activeOverlay?.y}
+            </div>
             <canvas
                 ref={overlayRef}
                 className="absolute left-0 right-0 top-auto"
                 onMouseDown={handleMouseDown}
                 onMouseLeave={handleMouseExit}
             />
+            {activeOverlay && editorInfo.mode === "edit" && (
+                <div
+                    className="absolute z-10 flex"
+                    style={{
+                        bottom: ((activeOverlay.y) * canvasScale) + (canvasBottom / 2),
+                        left: (activeOverlay.x + (activeOverlay.w / 2)) * canvasScale,
+                        transform: `translate(-50%, 0)`
+                    }}>
+                    <button
+                        onClick={handleDeleteOverlay}
+                        className="flex justify-center items-center size-8 bg-red-500 hover:bg-red-600 text-white p-1  transition-colors"
+                    >
+                        <Trash2 size={16}/>
+                    </button>
+                    <button onClick={handleDeleteOverlay} className={`${isDeleting ? "w-24" : "w-0 p-0"} duration-500 overflow-x-hidden bg-red-500 hover:bg-red-600 text-white p-1 transition-colors`}>
+                        Confirm
+                    </button>
+                    <button onClick={(e)=>{
+                        e.preventDefault();
+                        setIsDeleting(false);
+                    }} className={`${isDeleting ? "w-24":"w-0 p-0"} duration-500 overflow-x-hidden bg-gray-200 hover:bg-gray-100 p-1 transition-all`}>
+                        Cancel
+                    </button>
+                </div>
+            )}
         </>
     );
 };

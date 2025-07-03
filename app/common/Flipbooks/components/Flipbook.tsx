@@ -140,8 +140,10 @@ export default function Flipbook({
     const [dragProgress, setDragProgress] = useState<number>(0); // -1 to 1 value indicating drag progress
     const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
     const flipbookContainerRef = useRef<HTMLDivElement>(null);
-    const mode = useContext(editorContext);
+    const editorInfo = useContext(editorContext);
     const router = useRouter();
+
+    editorInfo.setFlipbookContainer(flipbookContainerRef.current);
 
 
     const pdfUrl = pdfPath + "/" + pdfId + ".pdf";
@@ -175,7 +177,7 @@ export default function Flipbook({
             const pdf = await loadPdf(pdfUrl);
 
             for (let i = 1; i <= maxPage; i++) {
-                const newOverlays = await generateOverlays(i, pdf, mode)
+                const newOverlays = await generateOverlays(i, pdf, editorInfo)
 
                 if (setFormOverlays) {
                     setFormOverlays(prevState => prevState ? [...prevState, ...newOverlays] : newOverlays);
@@ -193,7 +195,7 @@ export default function Flipbook({
             setIsGenerating(false);
         });
 
-    }, [shouldGenerateOverlays, maxPage, loadPdf, pdfUrl, mode, setShouldGenerateOverlays, setFormOverlays, isGenerating, setOverlaysToRender]);
+    }, [shouldGenerateOverlays, maxPage, loadPdf, pdfUrl, editorInfo, setShouldGenerateOverlays, setFormOverlays, isGenerating, setOverlaysToRender]);
 
 
     useEffect(() => {
@@ -233,8 +235,8 @@ export default function Flipbook({
         // 2. The target is not an overlay canvas (which needs its own interactions)
         if (zoomLevel > 1.0) {
             setIsPanning(true);
-        } else if (mode.mode !== "edit") {
-            // Start tracking drag for page turning (only if not in edit mode)
+        } else if (editorInfo.mode !== "edit") {
+            // Start tracking drag for page turning (only if not in edit editorInfo)
             setIsDragging(true);
             setDragStartX(e.clientX);
             setDragCurrentX(e.clientX);
@@ -265,8 +267,8 @@ export default function Flipbook({
             });
             // Prevent default behavior to avoid text selection during panning
             e.preventDefault();
-        } else if (isDragging && mode.mode !== "edit") {
-            // Update current drag position for page turning (only if not in edit mode)
+        } else if (isDragging && editorInfo.mode !== "edit") {
+            // Update current drag position for page turning (only if not in edit editorInfo)
             setDragCurrentX(e.clientX);
 
             // Calculate drag progress (-1 to 1)
@@ -282,11 +284,11 @@ export default function Flipbook({
     const handleMouseUp = () => {
         setIsPanning(false);
 
-        if (isDragging && mode.mode !== "edit") {
+        if (isDragging && editorInfo.mode !== "edit") {
             const dragDistance = dragCurrentX - dragStartX;
             const dragThreshold = flipbookWidth * 0.1; // 10% of flipbook width as threshold
 
-            // If drag distance exceeds threshold, trigger page turn (only if not in edit mode)
+            // If drag distance exceeds threshold, trigger page turn (only if not in edit editorInfo)
             if (Math.abs(dragDistance) > dragThreshold) {
                 if (dragDistance > 0) {
                     // Dragged right (positive distance), go to previous page
@@ -303,7 +305,7 @@ export default function Flipbook({
             setDragCurrentX(0);
             setDragProgress(0);
         } else if (isDragging) {
-            // Reset drag state even in edit mode
+            // Reset drag state even in edit editorInfo
             setIsDragging(false);
             setDragStartX(0);
             setDragCurrentX(0);
@@ -315,8 +317,8 @@ export default function Flipbook({
     const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
         if (zoomLevel > 1.0) {
             setIsPanning(true);
-        } else if (mode.mode !== "edit") {
-            // Start tracking drag for page turning (only if not in edit mode)
+        } else if (editorInfo.mode !== "edit") {
+            // Start tracking drag for page turning (only if not in edit editorInfo)
             setIsDragging(true);
             setDragStartX(e.touches[0].clientX);
             setDragCurrentX(e.touches[0].clientX);
@@ -327,8 +329,8 @@ export default function Flipbook({
         if (isPanning && zoomLevel > 1.0) {
             // Touch panning logic would go here
             // For simplicity, we're not implementing full touch panning in this update
-        } else if (isDragging && mode.mode !== "edit") {
-            // Update current drag position for page turning (only if not in edit mode)
+        } else if (isDragging && editorInfo.mode !== "edit") {
+            // Update current drag position for page turning (only if not in edit editorInfo)
             setDragCurrentX(e.touches[0].clientX);
 
             // Calculate drag progress (-1 to 1)
@@ -342,11 +344,11 @@ export default function Flipbook({
     const handleTouchEnd = () => {
         setIsPanning(false);
 
-        if (isDragging && mode.mode !== "edit") {
+        if (isDragging && editorInfo.mode !== "edit") {
             const dragDistance = dragCurrentX - dragStartX;
             const dragThreshold = flipbookWidth * 0.1; // 10% of flipbook width as threshold
 
-            // If drag distance exceeds threshold, trigger page turn (only if not in edit mode)
+            // If drag distance exceeds threshold, trigger page turn (only if not in edit editorInfo)
             if (Math.abs(dragDistance) > dragThreshold) {
                 if (dragDistance > 0) {
                     // Swiped right (positive distance), go to previous page
@@ -363,7 +365,7 @@ export default function Flipbook({
             setDragCurrentX(0);
             setDragProgress(0);
         } else if (isDragging) {
-            // Reset drag state even in edit mode
+            // Reset drag state even in edit editorInfo
             setIsDragging(false);
             setDragStartX(0);
             setDragCurrentX(0);
