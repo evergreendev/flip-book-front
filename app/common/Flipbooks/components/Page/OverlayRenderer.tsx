@@ -41,6 +41,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
     const [initialMouseOverlayMovePosition, setInitialMouseOverlayMovePosition] = React.useState<[number, number] | null>(null);
     const [mouseCreatePosition, setMouseCreatePosition] = React.useState<[number, number] | null>(null);
     const [isDeleting, setIsDeleting] = React.useState(false);
+    const [cursorStyle, setCursorStyle] = React.useState<string>("default");
     const router = useRouter();
 
 
@@ -67,9 +68,38 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
         return 'undetermined';
     }
 
+    function findNearEdge(position: number[], overlay: Overlay, edgeThreshold: number = 8) {
+        const left = overlay.x;
+        const right = overlay.x + overlay.w;
+        const bottom = overlay.y;
+        const top = overlay.y + overlay.h;
+
+        // Check if near horizontal edges (for height-only resizing)
+        if (position[0] > left + edgeThreshold && position[0] < right - edgeThreshold) {
+            if (Math.abs(position[1] - bottom) <= edgeThreshold) {
+                return "bottom"; // Near bottom edge
+            }
+            if (Math.abs(position[1] - top) <= edgeThreshold) {
+                return "top"; // Near top edge
+            }
+        }
+
+        // Check if near vertical edges (for width-only resizing)
+        if (position[1] > bottom + edgeThreshold && position[1] < top - edgeThreshold) {
+            if (Math.abs(position[0] - left) <= edgeThreshold) {
+                return "left"; // Near left edge
+            }
+            if (Math.abs(position[0] - right) <= edgeThreshold) {
+                return "right"; // Near right edge
+            }
+        }
+
+        return null; // Not near any edge
+    }
+
     function findInsideGrip(position: number[], overlays: Overlay[], gripSize: number = 8) {
         if (!overlays) return;
-        let grip: string | null = null;
+        let grip = "";
 
         const foundOverlay = overlays.find(overlay => {
             const topLeft = {x: overlay.x - gripSize / 2, y: overlay.y - gripSize / 2};
@@ -240,6 +270,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
         e.preventDefault();
         if (!overlayRef.current) return;
         renderOverlay(overlayRef.current, true);
+        setCursorStyle("default");
     }
 
     function handleMouseDown(e: React.MouseEvent) {
@@ -254,9 +285,56 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
             if (!overlayRef.current) return;
             renderOverlay(overlayRef.current, false);
             const currOverlays = overlays ? overlays[thisPage - 1] : [];
+            const position = translateCoordinates(e);
 
-            const insideOverlay = findInsideOverlay(translateCoordinates(e), currOverlays);
-            const insideGrip = findInsideGrip(translateCoordinates(e), currOverlays);
+            const insideOverlay = findInsideOverlay(position, currOverlays);
+            const insideGrip = findInsideGrip(position, currOverlays);
+
+            // Set cursor style based on grip or edge position
+            if (editorInfo.mode === "edit") {
+                if (insideGrip) {
+                    // Set cursor style based on which grip is being hovered
+                    switch (insideGrip.grip) {
+                        case "bottomLeft":
+                        case "topRight":
+                            setCursorStyle("nesw-resize");
+                            break;
+                        case "bottomRight":
+                        case "topLeft":
+                            setCursorStyle("nwse-resize");
+                            break;
+                        default:
+                            setCursorStyle("default");
+                    }
+                } else if (insideOverlay) {
+                    // Check if near an edge for width/height-only resizing
+                    const nearEdge = findNearEdge(position, insideOverlay);
+                    if (nearEdge) {
+                        switch (nearEdge) {
+                            case "left":
+                            case "right":
+                                setCursorStyle("ew-resize");
+                                break;
+                            case "top":
+                            case "bottom":
+                                setCursorStyle("ns-resize");
+                                break;
+                        }
+                    } else if (draggingMode === "move") {
+                        // Inside overlay and being dragged
+                        setCursorStyle("move");
+                    } else {
+                        // Inside overlay but not being dragged
+                        setCursorStyle("default");
+                    }
+                } else {
+                    // Not inside any overlay or grip
+                    setCursorStyle("default");
+                }
+            } else {
+                // Not in edit mode
+                setCursorStyle(insideOverlay ? "pointer" : "default");
+            }
 
             if (e.type === "click") {
                 if (e.target !== overlayRef.current) {
@@ -499,6 +577,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
             <canvas
                 ref={overlayRef}
                 className="absolute left-0 right-0 top-auto"
+                style={{ cursor: cursorStyle }}
                 onMouseDown={handleMouseDown}
                 onMouseLeave={handleMouseExit}
             />
