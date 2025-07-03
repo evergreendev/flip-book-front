@@ -68,7 +68,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
         return 'undetermined';
     }
 
-    function findNearEdge(position: number[], overlay: Overlay, edgeThreshold: number = 8) {
+    function findNearEdge(position: number[], overlay: Overlay, edgeThreshold: number = 16) {
         const left = overlay.x;
         const right = overlay.x + overlay.w;
         const bottom = overlay.y;
@@ -137,6 +137,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
 
     function updateOverlayDimensions(grip: string, overlay: Overlay, mouseX: number, mouseY: number): Partial<Overlay> {
         switch (grip) {
+            // Corner grips - update both width and height
             case "bottomLeft":
                 return {
                     w: Math.max((overlay.w + (overlay.x - mouseX)), 0),
@@ -160,6 +161,26 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
                 return {
                     w: Math.max(mouseX - overlay.x, 0),
                     h: Math.max(mouseY - overlay.y, 0),
+                };
+
+            // Edge grips - update only width or height
+            case "left":
+                return {
+                    w: Math.max((overlay.w + (overlay.x - mouseX)), 0),
+                    x: mouseX
+                };
+            case "right":
+                return {
+                    w: Math.max(mouseX - overlay.x, 0)
+                };
+            case "top":
+                return {
+                    h: Math.max(mouseY - overlay.y, 0)
+                };
+            case "bottom":
+                return {
+                    h: Math.max(overlay.h + (overlay.y - mouseY), 0),
+                    y: mouseY
                 };
             default:
                 return {};
@@ -396,10 +417,21 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
                     setActiveGrip(insideGrip);
                     setMovingOverlay(null);
                 } else if (insideOverlay) {
-                    setDraggingMode("move");
-                    setActiveGrip(null);
-                    setMovingOverlay(insideOverlay);
-                    setInitialMouseOverlayMovePosition([mouseX - insideOverlay.x, mouseY - insideOverlay.y]);
+                    // Check if near an edge for width/height-only resizing
+                    const nearEdge = findNearEdge(position, insideOverlay);
+                    if (nearEdge) {
+                        setDraggingMode("resize");
+                        setActiveGrip({
+                            overlay: insideOverlay,
+                            grip: nearEdge
+                        });
+                        setMovingOverlay(null);
+                    } else {
+                        setDraggingMode("move");
+                        setActiveGrip(null);
+                        setMovingOverlay(insideOverlay);
+                        setInitialMouseOverlayMovePosition([mouseX - insideOverlay.x, mouseY - insideOverlay.y]);
+                    }
                 }
             }
 
