@@ -89,16 +89,6 @@ const OverlayForm = ({
     const activeOverlayCanvas = editorInfo.activeOverlayPageCanvas;
     if (!activeOverlayCanvas) return null;
 
-    // Get canvas position relative to the viewport
-    const canvasRect = activeOverlayCanvas.getBoundingClientRect();
-
-    const formPosition = {
-        left: canvasRect.left + activeOverlay.x + (activeOverlay.w/2),
-        top: canvasRect.top - activeOverlay.y + canvasRect.height,
-    };
-
-
-
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
         if (!overlays) return;
@@ -162,8 +152,8 @@ const OverlayForm = ({
     }
 
     return (
-        <div className="absolute z-50" style={{left: formPosition.left, top: formPosition.top}}>
-            <label htmlFor="url">URL:</label>
+        <div className="fixed top-12 left-8 z-50 bg-white w-full max-w-screen-sm p-10 rounded shadow-lg">
+            <label htmlFor="url">Link to a specific webpage:</label>
             <input
                 type="text"
                 id="url"
@@ -171,6 +161,7 @@ const OverlayForm = ({
                 value={activeOverlay.url || ''}
                 onChange={handleChange}
                 onBlur={handleBlur}
+                placeholder="https://egmrc.com"
                 className="bg-slate-100 w-full border-b-slate-200 border-b p-2"
             />
         </div>
@@ -268,7 +259,7 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
             setCurrPath((prev) => prev === "" ? slugify(title) : prev);
             setPathHasBeenEdited(true);
         }
-    }, [title])
+    }, [title]);
 
 
     function handleSubmit(e: React.MouseEvent<HTMLButtonElement>, isDraft: boolean) {
