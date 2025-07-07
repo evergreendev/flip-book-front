@@ -602,7 +602,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
     return (
         <>
             <div
-                className="absolute top-0">
+                className="absolute top-0 hidden">
                 {/*{draggingMode} {mouseDragInitialPosition?.[0]} | {mouseDragInitialPosition?.[1]}*/}
                 {activeOverlay?.h} | {activeOverlay?.y}
             </div>
