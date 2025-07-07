@@ -64,7 +64,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
     const {isBelow1000px} = useScreenSize();
 
     useEffect(() => {
-        if (isBelow1000px || (currentPage === 1 && currentPage === totalPages) || (rangeInternalPage === 1 && rangeInternalPage === totalPages)) {
+        if (isBelow1000px || (currentPage === 1 && currentPage !== totalPages) || (rangeInternalPage === totalPages) || (rangeInternalPage + 1 === totalPages)) {
             setIsSinglePage(true);
         } else {
             setIsSinglePage(false);
@@ -147,8 +147,8 @@ const Toolbar: React.FC<ToolbarProps> = ({
 
                 <div className="text-sm w-44 text-center">
                     <span
-                        className="font-medium">{isSinglePage ? currentPage : `${currentPage - 1} - ${currentPage}`}</span> of <span
-                    className="font-medium">{totalPages}</span>
+                        className="font-medium">{isSinglePage ? Math.max(0, currentPage - 2) : `${Math.max(0, currentPage - 3)} - ${Math.max(0, currentPage - 2)}`}</span> of <span
+                    className="font-medium">{Math.max(0, totalPages - 2)}</span>
                 </div>
 
                 <Button
@@ -190,12 +190,13 @@ const Toolbar: React.FC<ToolbarProps> = ({
                     >
                         <div className="flex">
                             {/* eslint-disable-next-line @next/next/no-img-element */}
-                            {!isSinglePage && <img src={thumbNailArray[rangeInternalPage - 2]} className="grow w-6/12 z-50" alt=""/>}
+                            {!isSinglePage &&
+                                <img src={thumbNailArray[rangeInternalPage - 2]} className="grow w-6/12 z-50" alt=""/>}
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={thumbNailArray[rangeInternalPage - 1]} className={`w-6/12 grow z-50`} alt=""/>
                         </div>
 
-                        {isSinglePage ? rangeInternalPage : `${rangeInternalPage - 1} - ${rangeInternalPage}`}
+                        {isSinglePage ? Math.max(0, rangeInternalPage - 2) : `${Math.max(0, rangeInternalPage - 3)} - ${Math.max(0, rangeInternalPage - 2)}`}
                     </div>
                 )}
             </div>
