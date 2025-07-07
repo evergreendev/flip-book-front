@@ -44,7 +44,21 @@ const Toolbar: React.FC<ToolbarProps> = ({
     const [isSinglePage, setIsSinglePage] = React.useState(true);
     const [showTooltip, setShowTooltip] = React.useState(false);
     const [rangeInternalPage, setRangeInternalPage] = React.useState(currentPage);//This is so we can set the current page to this only when the range is released
+    const [showPageInput, setShowPageInput] = React.useState(false);
+    const [pageInputValue, setPageInputValue] = React.useState("");
     const rangeRef = React.useRef<HTMLInputElement>(null);
+
+    // Helper function to adjust page number according to the requirement
+    // The current page should always be odd, except when it's the last page
+    const adjustPageNumber = (page: number): number => {
+        // If it's the last page, return as is
+        if (page === totalPages) {
+            return page;
+        }
+
+        // If the page is even, increment it to make it odd
+        return page % 2 === 0 ? page + 1 : page;
+    };
 
     const handleZoomIn = (e: React.MouseEvent<HTMLButtonElement>) => {
         e.preventDefault();
@@ -64,7 +78,7 @@ const Toolbar: React.FC<ToolbarProps> = ({
     const {isBelow1000px} = useScreenSize();
 
     useEffect(() => {
-        if (isBelow1000px || (currentPage === 1 && currentPage !== totalPages) || (rangeInternalPage === totalPages) || (rangeInternalPage + 1 === totalPages)) {
+        if (isBelow1000px || (currentPage === 1 && currentPage !== totalPages) || (rangeInternalPage === totalPages)) {
             setIsSinglePage(true);
         } else {
             setIsSinglePage(false);
@@ -73,11 +87,14 @@ const Toolbar: React.FC<ToolbarProps> = ({
 
     function handlePageRangeRelease() {
         setShowTooltip(false);
-        setPage(rangeInternalPage);
+        setPage(adjustPageNumber(rangeInternalPage));
     }
 
     useEffect(() => {
         setRangeInternalPage(currentPage);
+        // Reset page input when page changes
+        setShowPageInput(false);
+        setPageInputValue("");
     }, [currentPage]);
 
     return (
@@ -146,9 +163,42 @@ const Toolbar: React.FC<ToolbarProps> = ({
                 </Button>
 
                 <div className="text-sm w-44 text-center">
-                    <span
-                        className="font-medium">{isSinglePage ? Math.max(0, currentPage - 2) : `${Math.max(0, currentPage - 3)} - ${Math.max(0, currentPage - 2)}`}</span> of <span
-                    className="font-medium">{Math.max(0, totalPages - 2)}</span>
+                    {showPageInput ? (
+                        <form onSubmit={(e) => {
+                            e.preventDefault();
+                            const pageNum = parseInt(pageInputValue);
+                            if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= Math.max(0, totalPages - 2)) {
+                                // Add 2 to account for cover and first page
+                                const actualPage = pageNum + 2;
+                                setPage(adjustPageNumber(actualPage));
+                                setShowPageInput(false);
+                            }
+                            setPageInputValue("");
+                        }}>
+                            <input
+                                type="text"
+                                className="w-16 text-center bg-gray-700 text-white rounded px-2 py-1"
+                                value={pageInputValue}
+                                onChange={(e) => setPageInputValue(e.target.value)}
+                                onBlur={() => {
+                                    setShowPageInput(false);
+                                    setPageInputValue("");
+                                }}
+                                autoFocus
+                                placeholder="Page #"
+                            />
+                        </form>
+                    ) : (
+                        <div 
+                            className="cursor-pointer hover:underline inline-block" 
+                            onClick={() => setShowPageInput(true)}
+                            title="Click to go to specific page"
+                        >
+                            <span className="font-medium">
+                                {isSinglePage ? Math.max(0, currentPage - 2) : `${Math.max(0, currentPage - 3)} - ${Math.max(0, currentPage - 2)}`}
+                            </span> of <span className="font-medium">{Math.max(0, totalPages - 2)}</span>
+                        </div>
+                    )}
                 </div>
 
                 <Button
