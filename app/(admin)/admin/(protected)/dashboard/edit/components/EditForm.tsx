@@ -67,7 +67,7 @@ const OverlayForm = ({
 }) => {
     const editorInfo = useContext(editorContext);
 
-    if (hideForm){
+    if (hideForm) {
         let hasUpdatedFlag = false;
         const updatedOverlays = overlaysToUpdate ? overlaysToUpdate.map(overlay => {
             const url = overlay.url || '';
@@ -76,7 +76,7 @@ const OverlayForm = ({
             return {...overlay, url: validatedUrl}
         }) : null;
 
-        if (hasUpdatedFlag){
+        if (hasUpdatedFlag) {
             setOverlaysToUpdate(updatedOverlays);
         }
     }
@@ -362,62 +362,89 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
             onClose={() => setNotification(prev => ({...prev, isVisible: false}))}
         />
 
-        <form onKeyDown={(e) => {
-            if (e.key === 'Enter') {
-                e.preventDefault();
-            }
-        }}
-
-              ref={formRef} action={formAction} className="w-full">
-            {
-                state.error && <div className="text-red-900 bg-red-100 p-4">{state.error}</div>
-            }
-            <div>
-                <label htmlFor="title">Title</label>
-                <input value={currTitle} onChange={handleUpdateTitle} type="text" name="title"
-                       className="bg-slate-100 w-full border-b-slate-200 border-b p-2 text-2xl"/>
-            </div>
-            <div className="my-2">
-                <label htmlFor="embed-url">Flipbook Slug</label>
-                <div className="flex items-center">
-                    <button onClick={handlePathLock}
-                            className={`mr-2 ${canEditPath ? "bg-blue-200" : "bg-blue-200"} p-1 rounded-full`}>
-                        {
-                            canEditPath ? <LockKeyholeOpen/> : <LockKeyhole/>
-                        }
-                    </button>
-                    <input onChange={handleUpdatePath} value={currPath} type="text" name="path"
-                           className={`${canEditPath ? "bg-slate-100" : "bg-slate-50 pointer-events-none"} w-full border-b-slate-200 border-b p-2 text-2xl`}/>
-                    {
-                        pathHasBeenEdited &&
-                        <button onClick={handleResetSlug} className="bg-blue-200 w-24 self-stretch">Reset Slug</button>
+        <editorContext.Provider value={{
+            setActiveOverlayPageCanvas: setActiveOverlayPageCanvas,
+            activeOverlayPageCanvas: activeOverlayPageCanvas,
+            status: status,
+            mode: "edit",
+            flipBookId: id,
+            flipbookContainer: flipBookContainer,
+            setFlipbookContainer: setFlipbookContainer,
+            activeOverlay: activeOverlay,
+            setActiveOverlay: setActiveOverlay
+        }}>
+            <div className="w-full">
+                <form onKeyDown={(e) => {
+                    if (e.key === 'Enter') {
+                        e.preventDefault();
                     }
-                </div>
-            </div>
-            <input readOnly className="hidden" aria-hidden={true} name="overlays"
-                   value={JSON.stringify(overlaysToUpdate || [])}/>
-            <input readOnly className="hidden" aria-hidden={true} name="overlaysToDelete"
-                   value={overLaysToDelete || []}/>
-            <editorContext.Provider value={{
-                setActiveOverlayPageCanvas: setActiveOverlayPageCanvas,
-                activeOverlayPageCanvas: activeOverlayPageCanvas,
-                status: status,
-                mode: "edit",
-                flipBookId: id,
-                flipbookContainer: flipBookContainer,
-                setFlipbookContainer: setFlipbookContainer,
-                activeOverlay: activeOverlay,
-                setActiveOverlay: setActiveOverlay
-            }}>
-            <button onClick={(e) => {
-                handleGenerate(e)
-            }}
-                    className={`bg-green-700 hover:bg-green-500 transition-colors rounded p-2 text-white mx-auto block`}>
-                Generate Ad Links from Text
-            </button>
-            <OverlayForm hideForm={!activeOverlay} overlaysToUpdate={overlaysToUpdate}
-                         overlays={overlaysToRender} setOverlays={setOverlaysToRender}
-                         setOverlaysToUpdate={setOverlaysToUpdate}/>
+                }}
+
+                      ref={formRef} action={formAction} className="w-full">
+                    {
+                        state.error && <div className="text-red-900 bg-red-100 p-4">{state.error}</div>
+                    }
+                    <div>
+                        <label htmlFor="title">Title</label>
+                        <input value={currTitle} onChange={handleUpdateTitle} type="text" name="title"
+                               className="bg-slate-100 w-full border-b-slate-200 border-b p-2 text-2xl"/>
+                    </div>
+                    <div className="my-2">
+                        <label htmlFor="embed-url">Flipbook Slug</label>
+                        <div className="flex items-center">
+                            <button onClick={handlePathLock}
+                                    className={`mr-2 ${canEditPath ? "bg-blue-200" : "bg-blue-200"} p-1 rounded-full`}>
+                                {
+                                    canEditPath ? <LockKeyholeOpen/> : <LockKeyhole/>
+                                }
+                            </button>
+                            <input onChange={handleUpdatePath} value={currPath} type="text" name="path"
+                                   className={`${canEditPath ? "bg-slate-100" : "bg-slate-50 pointer-events-none"} w-full border-b-slate-200 border-b p-2 text-2xl`}/>
+                            {
+                                pathHasBeenEdited &&
+                                <button onClick={handleResetSlug} className="bg-blue-200 w-24 self-stretch">Reset
+                                    Slug</button>
+                            }
+                        </div>
+                    </div>
+                    <input readOnly className="hidden" aria-hidden={true} name="overlays"
+                           value={JSON.stringify(overlaysToUpdate || [])}/>
+                    <input readOnly className="hidden" aria-hidden={true} name="overlaysToDelete"
+                           value={overLaysToDelete || []}/>
+                    <OverlayForm hideForm={!activeOverlay} overlaysToUpdate={overlaysToUpdate}
+                                 overlays={overlaysToRender} setOverlays={setOverlaysToRender}
+                                 setOverlaysToUpdate={setOverlaysToUpdate}/>
+
+                    <input ref={draftFieldRef} aria-hidden={true} className="hidden" type="checkbox" name="isDraft"/>
+                    <div className="bg-slate-300 p-4">
+                        <div className="flex justify-end gap-2 items-center">
+                            <button onClick={(e) => {
+                                handleGenerate(e)
+                            }}
+                                    className={`bg-green-700 hover:bg-green-500 transition-colors rounded px-4 text-white mx-auto block`}>
+                                Generate Ad Links from Text
+                            </button>
+                            {
+                                status === "published" &&
+                                <Link href={`${process.env.NEXT_PUBLIC_BASE_URL}/${currPath}`} target="_blank"
+                                      className={`my-2 mx-4 px-4 rounded bg-slate-700 text-white`}>
+                                    View Flipbook
+                                </Link>
+                            }
+                            <button type="submit" onClick={(e) => handleSubmit(e, true)}
+                                    className="bg-gray-100 my-2 text-black rounded px-4 block">Save Draft
+                            </button>
+                            <button type="submit" onClick={(e) => handleSubmit(e, false)}
+                                    className="bg-green-700 text-white rounded px-4 block">Publish
+                            </button>
+                        </div>
+                        <div className="flex justify-end">
+                            <p className="flex items-center"><strong>Status:</strong>
+                                <div className={`ml-4 mr-1 size-2 rounded-full ${statusStyles[status]}`}/>
+                                {status}</p>
+                        </div>
+                    </div>
+                </form>
                 <Flipbook setShouldGenerateOverlays={setShouldGenerateOverlays}
                           shouldGenerateOverlays={shouldGenerateOverlays} setOverlaysToRender={setOverlaysToRender}
                           overlaysToDelete={overLaysToDelete}
@@ -426,34 +453,8 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
                           initialOverlays={overlaysToRender}
                           setFormOverlays={setOverlaysToUpdate}
                 />
-            </editorContext.Provider>
-
-            <input ref={draftFieldRef} aria-hidden={true} className="hidden" type="checkbox" name="isDraft"/>
-            <div className="bg-slate-300 p-4">
-                <div className="flex justify-end gap-2 items-center">
-                    {
-                        status === "published" &&
-                        <Link href={`${process.env.NEXT_PUBLIC_BASE_URL}/${currPath}`} target="_blank"
-                              className={`my-2 mx-4 px-4 rounded bg-slate-700 text-white`}>
-                            View Flipbook
-                        </Link>
-                    }
-                    <button type="submit" onClick={(e) => handleSubmit(e, true)}
-                            className="bg-gray-100 my-2 text-black rounded px-4 block">Save Draft
-                    </button>
-                    <button type="submit" onClick={(e) => handleSubmit(e, false)}
-                            className="bg-green-700 text-white rounded px-4 block">Publish
-                    </button>
-                </div>
-                <div className="flex justify-end">
-                    <p className="flex items-center"><strong>Status:</strong>
-                        <div className={`ml-4 mr-1 size-2 rounded-full ${statusStyles[status]}`}/>
-                        {status}</p>
-                </div>
             </div>
-
-
-        </form>
+        </editorContext.Provider>
     </div>
 }
 
