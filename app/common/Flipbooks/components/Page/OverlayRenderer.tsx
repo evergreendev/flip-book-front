@@ -627,13 +627,13 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
                     >
                         <Trash2 size={16}/>
                     </button>
-                    <button onClick={handleDeleteOverlay} className={`${isDeleting ? "w-24" : "w-0 p-0"} duration-500 overflow-x-hidden bg-red-500 hover:bg-red-600 text-white p-1 transition-colors`}>
+                    <button onClick={handleDeleteOverlay} className={`${isDeleting ? "w-24" : "w-0 p-0"} duration-500 overflow-x-hidden bg-red-500 hover:bg-red-600 text-white transition-colors`}>
                         Confirm
                     </button>
                     <button onClick={(e)=>{
                         e.preventDefault();
                         setIsDeleting(false);
-                    }} className={`${isDeleting ? "w-24":"w-0 p-0"} duration-500 overflow-x-hidden bg-gray-200 hover:bg-gray-100 p-1 transition-all`}>
+                    }} className={`${isDeleting ? "w-24 p-1":"w-0 p-0"} duration-500 overflow-x-hidden bg-gray-200 hover:bg-gray-100 transition-all`}>
                         Cancel
                     </button>
                 </div>
