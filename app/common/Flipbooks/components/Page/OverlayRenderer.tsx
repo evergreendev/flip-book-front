@@ -189,11 +189,15 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
 
     const createOverlay = useCallback((mouseX: number, mouseY: number) => {
         if (!setOverlays || !mouseDragInitialPosition) return;
+
+        const dragXDirection = mouseX > mouseDragInitialPosition[0] ? "right" : "left";
+        const dragYDirection = mouseY > mouseDragInitialPosition[1] ? "up" : "down";
+
         const updatedOverlay: Overlay = {
             id: uuidv4(),
             flipbook_id: editorInfo.flipBookId,
-            x: mouseDragInitialPosition[0],
-            y: mouseDragInitialPosition[1],
+            x: dragXDirection === "right" ? mouseDragInitialPosition[0] : mouseX,
+            y: dragYDirection === "up" ? mouseDragInitialPosition[1] : mouseY,
             w: mouseDragInitialPosition ? Math.abs(mouseX - mouseDragInitialPosition[0]) : 50,
             h: mouseDragInitialPosition ? Math.abs(mouseY - mouseDragInitialPosition[1]) : 50,
             url: "",
