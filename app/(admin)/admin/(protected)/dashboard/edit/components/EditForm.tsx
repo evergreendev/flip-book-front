@@ -4,7 +4,7 @@ import {useActionState, useContext, useEffect, useRef, useState} from "react";
 import {handleEdit} from "@/app/(admin)/admin/(protected)/dashboard/edit/actions/edit";
 import {getPdfStatus} from "@/app/(admin)/admin/(protected)/dashboard/edit/actions/getPdfStatus";
 import Flipbook from "@/app/common/Flipbooks/components/Flipbook";
-import {Check, Loader2, LockKeyhole, LockKeyholeOpen} from "lucide-react"
+import {Check, Loader2, LockKeyhole, LockKeyholeOpen, PanelRightClose, PanelRightOpen} from "lucide-react"
 import slugify from "slugify";
 import {useRouter} from "next/navigation";
 import editorContext from "../context/EditorContext";
@@ -201,6 +201,8 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
         isVisible: false
     });
 
+    const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
+
     const formRef = useRef<HTMLFormElement>(null);
     const draftFieldRef = useRef<HTMLInputElement>(null);
 
@@ -301,6 +303,20 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
             }
         }
     }, [state]);
+
+    // Apply padding to the main content when the sidebar is expanded
+    useEffect(() => {
+        // Add transition to body for smooth padding changes
+        document.body.style.transition = 'padding-right 0.3s ease';
+        // Add padding to the main content when sidebar is expanded
+        document.body.style.paddingRight = isSidebarMinimized ? '0' : '80px';
+
+        return () => {
+            // Reset padding and transition when component unmounts
+            document.body.style.paddingRight = '0';
+            document.body.style.transition = '';
+        };
+    }, [isSidebarMinimized]);
 
 
     function handleUpdateTitle(e: { currentTarget: { value: string; }; }) {
@@ -430,40 +446,66 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
                                  setOverlaysToUpdate={setOverlaysToUpdate}/>
 
                     <input ref={draftFieldRef} aria-hidden={true} className="hidden" type="checkbox" name="isDraft"/>
-                    <div className="bg-slate-300 p-4">
-                        <div className="flex justify-end gap-2 items-center">
-                            <div className="flex mx-auto">
-                                <button onClick={(e) => {
-                                    handleGenerate(e)
-                                }}
-                                        className={`bg-green-700 hover:bg-green-500 transition-colors p-1 rounded ${isGeneratingConfirmation ? "rounded-r-none" : ""} px-4 text-white block`}>
-                                    Generate Ad Links from Text
-                                </button>
-                                <button onClick={confirmGenerate} className={`${isGeneratingConfirmation ? "w-24" : "w-0 p-0"} duration-500 overflow-x-hidden bg-green-600 hover:bg-green-500 text-white transition-colors`}>
-                                    Confirm
-                                </button>
-                                <button onClick={cancelGenerate} className={`${isGeneratingConfirmation ? "w-24 p-1":"w-0 p-0"} duration-500 overflow-x-hidden bg-gray-200 hover:bg-gray-100 transition-all`}>
-                                    Cancel
-                                </button>
+
+                    {/* Toggle button for the sidebar */}
+                    <button 
+                        onClick={() => setIsSidebarMinimized(!isSidebarMinimized)}
+                        className="fixed right-0 top-1/2 -translate-y-1/2 bg-slate-300 hover:bg-slate-400 text-black p-2 rounded-l-md z-10 shadow-md transition-colors duration-200 border-l border-t border-b border-slate-400"
+                        title={isSidebarMinimized ? "Expand actions panel" : "Minimize actions panel"}
+                    >
+                        {isSidebarMinimized ? <PanelRightOpen className="h-5 w-5" /> : <PanelRightClose className="h-5 w-5" />}
+                    </button>
+
+                    {/* Floating sidebar with actions */}
+                    <div className={`fixed right-0 top-0 h-full flex transition-all duration-300 z-50 ${isSidebarMinimized ? 'w-0' : 'w-80'}`}>
+                        <div className={`flex flex-col h-full border-l-2 border-l-slate-400 bg-slate-300 text-black p-4 shadow-md overflow-hidden ${isSidebarMinimized ? 'w-0 opacity-0' : 'w-full opacity-100'} transition-all duration-300`}>
+                            <div className="flex flex-col h-full justify-between">
+                                <div className="space-y-4">
+                                    <div className="flex flex-col">
+                                        <button onClick={(e) => {
+                                            handleGenerate(e)
+                                        }}
+                                                className={`bg-green-700 hover:bg-green-500 transition-colors p-1 rounded ${isGeneratingConfirmation ? "rounded-r-none" : ""} px-4 text-white block`}>
+                                            Generate Ad Links from Text
+                                        </button>
+                                        <div className="flex">
+                                            <button onClick={confirmGenerate} className={`${isGeneratingConfirmation ? "w-24" : "w-0 p-0"} duration-500 overflow-x-hidden bg-green-600 hover:bg-green-500 text-white transition-colors`}>
+                                                Confirm
+                                            </button>
+                                            <button onClick={cancelGenerate} className={`${isGeneratingConfirmation ? "w-24 p-1":"w-0 p-0"} duration-500 overflow-x-hidden bg-gray-200 hover:bg-gray-100 transition-all`}>
+                                                Cancel
+                                            </button>
+                                        </div>
+                                    </div>
+
+                                    {
+                                        status === "published" &&
+                                        <Link href={`${process.env.NEXT_PUBLIC_BASE_URL}/${currPath}`} target="_blank"
+                                            className={`block text-center my-2 px-4 py-2 rounded bg-slate-700 text-white hover:bg-slate-600 transition-colors`}>
+                                            View Flipbook
+                                        </Link>
+                                    }
+                                </div>
+
+                                <div className="mt-auto space-y-4">
+                                    <div className="flex justify-end">
+                                        <p className="flex items-center"><strong>Status:</strong>
+                                            <div className={`ml-4 mr-1 size-2 rounded-full ${statusStyles[status]}`}/>
+                                            {status}</p>
+                                    </div>
+
+                                    <div className="flex flex-col gap-2">
+                                        <button type="submit" onClick={(e) => handleSubmit(e, true)}
+                                                className="bg-gray-100 hover:bg-gray-200 transition-colors py-2 text-black rounded px-4 block">
+                                            Save Draft
+                                        </button>
+                                        <button type="submit" onClick={(e) => handleSubmit(e, false)}
+                                                className="bg-green-700 hover:bg-green-600 transition-colors py-2 text-white rounded px-4 block">
+                                            Publish
+                                        </button>
+                                    </div>
+                                </div>
                             </div>
-                            {
-                                status === "published" &&
-                                <Link href={`${process.env.NEXT_PUBLIC_BASE_URL}/${currPath}`} target="_blank"
-                                      className={`my-2 mx-4 px-4 rounded bg-slate-700 text-white`}>
-                                    View Flipbook
-                                </Link>
-                            }
-                            <button type="submit" onClick={(e) => handleSubmit(e, true)}
-                                    className="bg-gray-100 my-2 text-black rounded px-4 block">Save Draft
-                            </button>
-                            <button type="submit" onClick={(e) => handleSubmit(e, false)}
-                                    className="bg-green-700 text-white rounded px-4 block">Publish
-                            </button>
-                        </div>
-                        <div className="flex justify-end">
-                            <p className="flex items-center"><strong>Status:</strong>
-                                <div className={`ml-4 mr-1 size-2 rounded-full ${statusStyles[status]}`}/>
-                                {status}</p>
                         </div>
                     </div>
                 </form>
