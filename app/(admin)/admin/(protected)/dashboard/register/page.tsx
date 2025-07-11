@@ -1,10 +1,15 @@
 "use server"
 import RegisterForm from "@/app/common/Auth/components/RegisterForm";
+import Header from "@/app/(admin)/admin/(protected)/components/Header";
 
 const Page = async () => {
-    return <div>
-        <RegisterForm/>
-    </div>;
+    return <>
+        <Header/>
+        <div>
+            <RegisterForm/>
+        </div>
+    </>
+;
 }
 
 export default Page;

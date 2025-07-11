@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import AdminRoute from "@/app/common/Auth/AdminRoute";
-import Header from "@/app/(admin)/admin/(protected)/components/Header";
 
 export const metadata: Metadata = {
     title: "Evergreen Flip Book",
@@ -14,7 +13,6 @@ export default function RootLayout({
 }>) {
     return (
         <AdminRoute>
-            <Header />
             {children}
         </AdminRoute>
     );
