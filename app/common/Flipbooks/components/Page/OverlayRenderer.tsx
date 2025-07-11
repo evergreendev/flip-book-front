@@ -187,6 +187,47 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
         }
     }
 
+    // Function to ensure overlay stays within page boundaries
+    function ensureOverlayWithinBounds(overlay: Overlay, canvasWidth: number, canvasHeight: number): Partial<Overlay> {
+        const updates: Partial<Overlay> = {};
+
+        // Check x position (left edge)
+        if (overlay.x < 0) {
+            updates.x = 0;
+        }
+
+        // Check right edge
+        if (overlay.x + overlay.w > canvasWidth / canvasScale) {
+            // If width is larger than canvas, adjust width
+            if (overlay.w > canvasWidth / canvasScale) {
+                updates.w = canvasWidth / canvasScale;
+                updates.x = 0;
+            } else {
+                // Otherwise adjust x position
+                updates.x = (canvasWidth / canvasScale) - overlay.w;
+            }
+        }
+
+        // Check y position (bottom edge)
+        if (overlay.y < 0) {
+            updates.y = 0;
+        }
+
+        // Check top edge
+        if (overlay.y + overlay.h > canvasHeight / canvasScale) {
+            // If height is larger than canvas, adjust height
+            if (overlay.h > canvasHeight / canvasScale) {
+                updates.h = canvasHeight / canvasScale;
+                updates.y = 0;
+            } else {
+                // Otherwise adjust y position
+                updates.y = (canvasHeight / canvasScale) - overlay.h;
+            }
+        }
+
+        return updates;
+    }
+
     const createOverlay = useCallback((mouseX: number, mouseY: number) => {
         if (!setOverlays || !mouseDragInitialPosition) return;
 
@@ -445,6 +486,15 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
                 if (index !== -1) {
                     const updatedDimensions = updateOverlayDimensions(activeGrip.grip!, activeGrip.overlay, mouseX, mouseY);
                     const updatedOverlay = {...currOverlays[index], ...updatedDimensions};
+
+                    // Check if mouse is released (end of resize operation)
+                    if (e.buttons !== 1) {
+                        // Ensure overlay stays within bounds after resize is complete
+                        const boundaryAdjustments = ensureOverlayWithinBounds(updatedOverlay, canvasWidth, canvasHeight);
+                        Object.assign(updatedDimensions, boundaryAdjustments);
+                        Object.assign(updatedOverlay, boundaryAdjustments);
+                    }
+
                     const newOverlays = [...overlays];
                     newOverlays[thisPage - 1] = [...currOverlays];
                     newOverlays[thisPage - 1][index] = updatedOverlay;
@@ -483,6 +533,14 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
                         const updatedOverlay = {...currOverlays[index]};
                         updatedOverlay.x = mouseX - initialMouseOverlayMovePosition[0];
                         updatedOverlay.y = mouseY - initialMouseOverlayMovePosition[1];
+
+                        // Check if mouse is released (end of move operation)
+                        if (e.buttons !== 1) {
+                            // Ensure overlay stays within bounds after move is complete
+                            const boundaryAdjustments = ensureOverlayWithinBounds(updatedOverlay, canvasWidth, canvasHeight);
+                            Object.assign(updatedOverlay, boundaryAdjustments);
+                        }
+
                         const newOverlays = [...overlays];
                         newOverlays[thisPage - 1] = [...currOverlays];
                         newOverlays[thisPage - 1][index] = updatedOverlay;
@@ -521,6 +579,50 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
 
         const handleMouseUp = () => {
             setMouseDragInitialPosition(null);
+
+            // When mouse is released, ensure all overlays are within bounds
+            if (overlays && overlays[thisPage - 1] && setOverlays) {
+                const currOverlays = overlays[thisPage - 1];
+                let anyUpdated = false;
+
+                const updatedOverlays = currOverlays.map(overlay => {
+                    const boundaryAdjustments = ensureOverlayWithinBounds(overlay, canvasWidth, canvasHeight);
+                    if (Object.keys(boundaryAdjustments).length > 0) {
+                        anyUpdated = true;
+                        return {...overlay, ...boundaryAdjustments};
+                    }
+                    return overlay;
+                });
+
+                if (anyUpdated) {
+                    // Update overlays in state
+                    const newOverlays = [...overlays];
+                    newOverlays[thisPage - 1] = updatedOverlays;
+
+                    setOverlays((prevOverlays) => {
+                        if (!prevOverlays) return prevOverlays;
+
+                        return prevOverlays.map(overlay => {
+                            const matchingUpdated = updatedOverlays.find(updated => updated.id === overlay.id);
+                            if (matchingUpdated) {
+                                return matchingUpdated;
+                            }
+                            return overlay;
+                        });
+                    });
+
+                    // Update form overlays if needed
+                    if (setFormOverlays && formOverlays) {
+                        setFormOverlays(formOverlays.map(overlay => {
+                            const matchingUpdated = updatedOverlays.find(updated => updated.id === overlay.id);
+                            if (matchingUpdated) {
+                                return matchingUpdated;
+                            }
+                            return overlay;
+                        }));
+                    }
+                }
+            }
         };
 
         // Attach to window so it continues tracking outside the box
