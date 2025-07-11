@@ -188,6 +188,7 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
     const [activeOverlay, setActiveOverlay] = useState<Overlay | null>(null);
     const [flipBookContainer, setFlipbookContainer] = useState<HTMLDivElement | null>(null);
     const [shouldGenerateOverlays, setShouldGenerateOverlays] = useState(false);
+    const [isGeneratingConfirmation, setIsGeneratingConfirmation] = useState(false);
     const [isSubmitting, setIsSubmitting] = useState(false);
     const [serverRenderJobIsFinished, setServerRenderJobIsFinished] = useState(false);
     const [notification, setNotification] = useState<{
@@ -334,7 +335,20 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
     function handleGenerate(e: { preventDefault: () => void; }) {
         e.preventDefault();
 
+        setIsGeneratingConfirmation(true);
+    }
+
+    function confirmGenerate(e: { preventDefault: () => void; }) {
+        e.preventDefault();
+
         setShouldGenerateOverlays(true);
+        setIsGeneratingConfirmation(false);
+    }
+
+    function cancelGenerate(e: { preventDefault: () => void; }) {
+        e.preventDefault();
+
+        setIsGeneratingConfirmation(false);
     }
 
     if (!serverRenderJobIsFinished) return <div
@@ -418,12 +432,20 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
                     <input ref={draftFieldRef} aria-hidden={true} className="hidden" type="checkbox" name="isDraft"/>
                     <div className="bg-slate-300 p-4">
                         <div className="flex justify-end gap-2 items-center">
-                            <button onClick={(e) => {
-                                handleGenerate(e)
-                            }}
-                                    className={`bg-green-700 hover:bg-green-500 transition-colors rounded px-4 text-white mx-auto block`}>
-                                Generate Ad Links from Text
-                            </button>
+                            <div className="flex mx-auto">
+                                <button onClick={(e) => {
+                                    handleGenerate(e)
+                                }}
+                                        className={`bg-green-700 hover:bg-green-500 transition-colors p-1 rounded ${isGeneratingConfirmation ? "rounded-r-none" : ""} px-4 text-white block`}>
+                                    Generate Ad Links from Text
+                                </button>
+                                <button onClick={confirmGenerate} className={`${isGeneratingConfirmation ? "w-24" : "w-0 p-0"} duration-500 overflow-x-hidden bg-green-600 hover:bg-green-500 text-white transition-colors`}>
+                                    Confirm
+                                </button>
+                                <button onClick={cancelGenerate} className={`${isGeneratingConfirmation ? "w-24 p-1":"w-0 p-0"} duration-500 overflow-x-hidden bg-gray-200 hover:bg-gray-100 transition-all`}>
+                                    Cancel
+                                </button>
+                            </div>
                             {
                                 status === "published" &&
                                 <Link href={`${process.env.NEXT_PUBLIC_BASE_URL}/${currPath}`} target="_blank"
