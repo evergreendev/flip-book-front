@@ -503,6 +503,10 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
                                                 className="bg-green-700 hover:bg-green-600 transition-colors py-2 text-white rounded px-4 block">
                                             Publish
                                         </button>
+                                        <Link href="/admin/dashboard/flipbooks"
+                                              className="bg-slate-700 hover:bg-slate-600 transition-colors py-2 text-white rounded px-4 block text-center mt-4">
+                                            Back to Flipbooks
+                                        </Link>
                                     </div>
                                 </div>
                             </div>
