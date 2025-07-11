@@ -318,6 +318,24 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
         };
     }, [isSidebarMinimized]);
 
+    // Add beforeunload event listener to handle browser navigation/tab closing
+    useEffect(() => {
+        const handleBeforeUnload = (e: BeforeUnloadEvent) => {
+            if (overlaysToUpdate) {
+                // Standard way to show a confirmation dialog when closing/navigating
+                e.preventDefault();
+                e.returnValue = 'You have unsaved changes to overlays. Are you sure you want to leave this page?';
+                return e.returnValue;
+            }
+        };
+
+        window.addEventListener('beforeunload', handleBeforeUnload);
+
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [overlaysToUpdate]);
+
 
     function handleUpdateTitle(e: { currentTarget: { value: string; }; }) {
         setCurrTitle(e.currentTarget.value);
@@ -365,6 +383,19 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
         e.preventDefault();
 
         setIsGeneratingConfirmation(false);
+    }
+
+    function handleNavigate(e: { preventDefault: () => void; }) {
+        if (overlaysToUpdate){
+            e.preventDefault();
+
+            const confirmed = window.confirm("You have unsaved changes to overlays. Are you sure you want to navigate away from this page?");
+
+            if (confirmed) {
+                // If user confirms, navigate to the link's destination
+                router.push("/admin/dashboard/flipbooks");
+            }
+        }
     }
 
     if (!serverRenderJobIsFinished) return <div
@@ -504,6 +535,7 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
                                             Publish
                                         </button>
                                         <Link href="/admin/dashboard/flipbooks"
+                                              onClick={handleNavigate}
                                               className="bg-slate-700 hover:bg-slate-600 transition-colors py-2 text-white rounded px-4 block text-center mt-4">
                                             Back to Flipbooks
                                         </Link>
