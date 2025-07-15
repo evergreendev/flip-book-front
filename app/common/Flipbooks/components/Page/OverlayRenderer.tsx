@@ -288,13 +288,16 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
 
         if (overlayContext && currOverlays?.length > 0) {
             overlayContext.clearRect(0, 0, canvas.width, canvas.height);
-            overlayContext.fillStyle = "#66cc33";
 
             overlayContext.globalAlpha = hideOverlays ? 0 : .5;
 
             currOverlays.forEach(overlay => {
                 if (activeOverlayId === overlay.id) {
                     overlayContext.fillStyle = "#338ccc";
+                } else if (!overlay.url) {
+                    overlayContext.fillStyle = "#808080"; // Gray color for overlays with no URL
+                } else {
+                    overlayContext.fillStyle = "#66cc33"; // Default green color
                 }
                 // @ts-expect-error silly tuple nonsense
                 overlayContext.fillRect(...convertToCanvasCoords([overlay.x, overlay.y, overlay.w, overlay.h]))
@@ -312,7 +315,14 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
                     // @ts-expect-error silly tuple nonsense
                     overlayContext.fillRect(...convertToCanvasCoords([overlay.x - ((gripSize / 2) - overlay.w), overlay.y - ((gripSize / 2) - overlay.h), gripSize, gripSize]))
 
-                    overlayContext.fillStyle = "#66cc33";
+                    // Reset fill style based on the same conditions as before
+                    if (activeOverlayId === overlay.id) {
+                        overlayContext.fillStyle = "#338ccc";
+                    } else if (!overlay.url) {
+                        overlayContext.fillStyle = "#808080"; // Gray color for overlays with no URL
+                    } else {
+                        overlayContext.fillStyle = "#66cc33"; // Default green color
+                    }
                     overlayContext.globalAlpha = hideOverlays ? 0 : .5;
                 }
             })
