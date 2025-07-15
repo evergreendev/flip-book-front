@@ -478,17 +478,20 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
 
                     <input ref={draftFieldRef} aria-hidden={true} className="hidden" type="checkbox" name="isDraft"/>
 
-                    {/* Toggle button for the sidebar */}
-                    <button 
-                        onClick={() => setIsSidebarMinimized(!isSidebarMinimized)}
-                        className="fixed right-0 top-1/2 -translate-y-1/2 bg-slate-300 hover:bg-slate-400 text-black p-2 rounded-l-md z-10 shadow-md transition-colors duration-200 border-l border-t border-b border-slate-400"
-                        title={isSidebarMinimized ? "Expand actions panel" : "Minimize actions panel"}
-                    >
-                        {isSidebarMinimized ? <PanelRightOpen className="h-5 w-5" /> : <PanelRightClose className="h-5 w-5" />}
-                    </button>
 
                     {/* Floating sidebar with actions */}
-                    <div className={`fixed right-0 top-0 h-full flex transition-all duration-300 z-50 ${isSidebarMinimized ? 'w-0' : 'w-80'}`}>
+                    <div className={`fixed right-0 top-0 h-full flex transition-all duration-300 z-40 ${isSidebarMinimized ? 'w-0' : 'w-80'}`}>
+                        {/* Toggle button for the sidebar */}
+                        <button
+                            onClick={(e) => {
+                                e.preventDefault();
+                                setIsSidebarMinimized(!isSidebarMinimized)
+                            }}
+                            className="fixed top-1/2 -translate-y-1/2 -translate-x-full bg-slate-300 hover:bg-slate-400 text-black p-2 rounded-l-md z-10 shadow-md transition-colors duration-200 border-l border-t border-b border-slate-400"
+                            title={isSidebarMinimized ? "Expand actions panel" : "Minimize actions panel"}
+                        >
+                            {isSidebarMinimized ? <PanelRightOpen className="h-5 w-5" /> : <PanelRightClose className="h-5 w-5" />}
+                        </button>
                         <div className={`flex flex-col h-full border-l-2 border-l-slate-400 bg-slate-300 text-black p-4 shadow-md overflow-hidden ${isSidebarMinimized ? 'w-0 opacity-0' : 'w-full opacity-100'} transition-all duration-300`}>
                             <div className="flex flex-col h-full justify-between">
                                 <div className="space-y-4">
