@@ -3,7 +3,7 @@ import {useRouter} from 'next/navigation';
 import editorContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/EditorContext";
 import {v4 as uuidv4} from 'uuid';
 import {Overlay} from "../../types";
-import {Copy, Trash2, ClipboardPaste} from "lucide-react";
+import {Copy, Trash2, ClipboardPaste, ExternalLink} from "lucide-react";
 import Notification from "@/app/common/components/Notification";
 
 interface OverlayRendererProps {
@@ -750,6 +750,24 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
         }
     };
 
+    const handleOpenInNewTab = (e: React.MouseEvent) => {
+        e.preventDefault();
+        if (!activeOverlayId) return;
+
+        // Find the active overlay
+        const activeOverlay = overlays[thisPage - 1]?.find(overlay => overlay.id === activeOverlayId);
+        if (!activeOverlay || !activeOverlay.url) return;
+
+        // Ensure URL has https: if needed
+        let url = activeOverlay.url;
+        if (url && !url.startsWith('http://') && !url.startsWith('https://')) {
+            url = 'https://' + url;
+        }
+
+        // Open in new tab
+        window.open(url, '_blank');
+    };
+
     // Find the active overlay to position the delete button
     const activeOverlay = overlays[thisPage - 1]?.find(overlay => overlay.id === activeOverlayId);
 
@@ -793,6 +811,13 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
                         className="flex justify-center items-center size-8 bg-blue-500 hover:bg-blue-600 text-white p-1 transition-colors mr-1"
                     >
                         <Copy size={16}/>
+                    </button>
+                    <button
+                        onClick={handleOpenInNewTab}
+                        title="Open URL in new tab"
+                        className="flex justify-center items-center size-8 bg-green-500 hover:bg-green-600 text-white p-1 transition-colors mr-1"
+                    >
+                        <ExternalLink size={16}/>
                     </button>
                     <button
                         onClick={handleDeleteOverlay}
