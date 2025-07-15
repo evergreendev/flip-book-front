@@ -265,6 +265,8 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
         editorInfo.setActiveOverlay(updatedOverlay);
         setIsDeleting(false);
         editorInfo.setActiveOverlayPageCanvas(overlayRef.current);
+        // Clear the copied overlay when creating a new one
+        editorInfo.setCopiedOverlay(null);
         setActiveGrip({
             overlay: updatedOverlay,
             grip: getCornerDirection({x: mouseDragInitialPosition[0], y: mouseDragInitialPosition[1]}, {
