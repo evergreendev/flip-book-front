@@ -186,6 +186,7 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
     const [overLaysToDelete, setOverLaysToDelete] = useState<string[]>([]);
     const [overlaysToRender, setOverlaysToRender] = useState<Overlay[] | null>(initialOverlays);
     const [activeOverlay, setActiveOverlay] = useState<Overlay | null>(null);
+    const [copiedOverlay, setCopiedOverlay] = useState<Overlay | null>(null);
     const [flipBookContainer, setFlipbookContainer] = useState<HTMLDivElement | null>(null);
     const [shouldGenerateOverlays, setShouldGenerateOverlays] = useState(false);
     const [isGeneratingConfirmation, setIsGeneratingConfirmation] = useState(false);
@@ -432,7 +433,9 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
             flipbookContainer: flipBookContainer,
             setFlipbookContainer: setFlipbookContainer,
             activeOverlay: activeOverlay,
-            setActiveOverlay: setActiveOverlay
+            setActiveOverlay: setActiveOverlay,
+            copiedOverlay: copiedOverlay,
+            setCopiedOverlay: setCopiedOverlay
         }}>
             <div className="w-full">
                 <form onKeyDown={(e) => {

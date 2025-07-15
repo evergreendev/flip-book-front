@@ -1,9 +1,10 @@
-import React, {useCallback, useContext, useEffect, useRef} from "react";
+import React, {useCallback, useContext, useEffect, useRef, useState} from "react";
 import {useRouter} from 'next/navigation';
 import editorContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/EditorContext";
 import {v4 as uuidv4} from 'uuid';
 import {Overlay} from "../../types";
-import {Trash2} from "lucide-react";
+import {Copy, Trash2, ClipboardPaste} from "lucide-react";
+import Notification from "@/app/common/components/Notification";
 
 interface OverlayRendererProps {
     thisPage: number,
@@ -42,6 +43,15 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
     const [mouseCreatePosition, setMouseCreatePosition] = React.useState<[number, number] | null>(null);
     const [isDeleting, setIsDeleting] = React.useState(false);
     const [cursorStyle, setCursorStyle] = React.useState<string>("default");
+    const [notification, setNotification] = useState<{
+        message: string;
+        type: 'success' | 'error';
+        isVisible: boolean;
+    }>({
+        message: '',
+        type: 'success',
+        isVisible: false
+    });
     const router = useRouter();
 
 
@@ -696,6 +706,48 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
         editorInfo.setActiveOverlayPageCanvas(null);
     };
 
+    const handleCopyOverlay = (e: React.MouseEvent) => {
+        e.preventDefault();
+        if (!activeOverlayId) return;
+
+        // Find the active overlay
+        const activeOverlay = overlays[thisPage - 1]?.find(overlay => overlay.id === activeOverlayId);
+        if (!activeOverlay) return;
+
+        // Copy the overlay to the context
+        editorInfo.setCopiedOverlay({...activeOverlay});
+
+        // Show notification
+        setNotification({
+            message: 'Overlay Copied',
+            type: 'success',
+            isVisible: true
+        });
+    };
+
+    const handlePasteOverlay = (e: React.MouseEvent) => {
+        e.preventDefault();
+        if (!editorInfo.copiedOverlay || !setOverlays) return;
+
+        // Create a new overlay based on the copied one
+        const newOverlay: Overlay = {
+            ...editorInfo.copiedOverlay,
+            id: uuidv4(), // Generate a new ID
+            page: thisPage // Set to current page
+        };
+
+        // Add the new overlay to the overlays state
+        setOverlays((prevState) => {
+            if (!prevState) return [newOverlay];
+            return prevState.concat(newOverlay);
+        });
+
+        // Add to formOverlays if it exists
+        if (setFormOverlays) {
+            setFormOverlays(formOverlays ? [...formOverlays, newOverlay] : [newOverlay]);
+        }
+    };
+
     // Find the active overlay to position the delete button
     const activeOverlay = overlays[thisPage - 1]?.find(overlay => overlay.id === activeOverlayId);
 
@@ -707,6 +759,12 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
 
     return (
         <>
+            <Notification
+                message={notification.message}
+                type={notification.type}
+                isVisible={notification.isVisible}
+                onClose={() => setNotification(prev => ({...prev, isVisible: false}))}
+            />
             <div
                 className="absolute top-0 hidden">
                 {/*{draggingMode} {mouseDragInitialPosition?.[0]} | {mouseDragInitialPosition?.[1]}*/}
@@ -728,8 +786,16 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
                         transform: `translate(-50%, 0)`
                     }}>
                     <button
+                        onClick={handleCopyOverlay}
+                        title="Copy overlay"
+                        className="flex justify-center items-center size-8 bg-blue-500 hover:bg-blue-600 text-white p-1 transition-colors mr-1"
+                    >
+                        <Copy size={16}/>
+                    </button>
+                    <button
                         onClick={handleDeleteOverlay}
-                        className="flex justify-center items-center size-8 bg-red-500 hover:bg-red-600 text-white p-1  transition-colors"
+                        title="Delete overlay"
+                        className="flex justify-center items-center size-8 bg-red-500 hover:bg-red-600 text-white p-1 transition-colors"
                     >
                         <Trash2 size={16}/>
                     </button>
@@ -741,6 +807,21 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
                         setIsDeleting(false);
                     }} className={`${isDeleting ? "w-24 p-1":"w-0 p-0"} duration-500 overflow-x-hidden bg-gray-200 hover:bg-gray-100 transition-all`}>
                         Cancel
+                    </button>
+                </div>
+            )}
+
+            {editorInfo.mode === "edit" && editorInfo.copiedOverlay && (
+                <div
+                    className="absolute z-10 bottom-4 right-4"
+                >
+                    <button
+                        onClick={handlePasteOverlay}
+                        title="Paste copied overlay to this page"
+                        className="flex justify-center items-center gap-2 bg-green-500 hover:bg-green-600 text-white p-2 rounded transition-colors"
+                    >
+                        <ClipboardPaste size={16}/>
+                        <span>Paste Overlay</span>
                     </button>
                 </div>
             )}
