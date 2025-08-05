@@ -3,6 +3,8 @@ import {Overlay} from "@/app/common/Flipbooks/types";
 import Flipbook from "@/app/common/Flipbooks/components/Flipbook";
 import {ScreenSizeProvider} from "@/app/common/Flipbooks/hooks/useScreenSize";
 import {FlipBook} from "@/app/types";
+import FlipbookContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/FlipbookContext";
+import PageClient from "@/app/(front)/[slug]/page.client";
 
 //todo move this somewhere better
 
@@ -50,10 +52,7 @@ export default async function Page({params: paramsPromise}: Args) {
     return (
         <div
             className="mx-auto h-[100svh]  flex flex-col sm:block justify-center bg-gradient-to-b from-neutral-900 to-neutral-800">
-            <ScreenSizeProvider>
-                {data.pdf_path && <Flipbook pdfId={data.pdf_path} pdfPath={process.env.PDF_URL + "/" + data.pdf_path}
-                                            initialOverlays={overlays}/>
-                }            </ScreenSizeProvider>
+            <PageClient pdfPath={process.env.PDF_URL + "/" + data.pdf_path} overlays={overlays} data={data}/>
         </div>
     )
 }

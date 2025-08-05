@@ -13,6 +13,7 @@ import {useRouter, useSearchParams} from "next/navigation";
 import useRenderQueue from "@/app/common/Flipbooks/hooks/useRenderQueue";
 import {useScreenSize} from "@/app/common/Flipbooks/hooks/useScreenSize";
 import {useToggleDiagnostics} from "@/app/common/Flipbooks/hooks/useToggleDiagnostics";
+import flipbookContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/FlipbookContext";
 
 async function generateOverlays(
     currPage: number,
@@ -126,7 +127,6 @@ export default function Flipbook({
     const pageParam = searchParams.get('page');
     const [maxPage, setMaxPage] = useState<number | null>(null);
     const [isGenerating, setIsGenerating] = useState<boolean>(false);
-    const [currPage, setCurrPage] = useState(pageParam ? parseInt(pageParam) : 1);
     const [overlays, setOverlays] = useState<Overlay[][]>(formattedInitialOverlays);
     const [animationDirection, setAnimationDirection] = useState<"left" | "right">("left");
     const [flipbookWidth, setFlipbookWidth] = useState<number>(0);
@@ -141,6 +141,8 @@ export default function Flipbook({
     const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
     const flipbookContainerRef = useRef<HTMLDivElement>(null);
     const editorInfo = useContext(editorContext);
+    const {setCurrPage, currPage} = useContext(flipbookContext);
+
     const router = useRouter();
 
     editorInfo.setFlipbookContainer(flipbookContainerRef.current);

@@ -1,16 +1,17 @@
 "use client"
 
-import {useActionState, useContext, useEffect, useRef, useState} from "react";
+import {JSX, useActionState, useContext, useEffect, useRef, useState} from "react";
 import {handleEdit} from "@/app/(admin)/admin/(protected)/dashboard/edit/actions/edit";
 import {getPdfStatus} from "@/app/(admin)/admin/(protected)/dashboard/edit/actions/getPdfStatus";
 import Flipbook from "@/app/common/Flipbooks/components/Flipbook";
-import {Check, Loader2, LockKeyhole, LockKeyholeOpen, PanelRightClose, PanelRightOpen} from "lucide-react"
+import {Check, Loader2, LockKeyhole, LockKeyholeOpen, PanelRightClose, PanelRightOpen, ExternalLink} from "lucide-react"
 import slugify from "slugify";
 import {useRouter} from "next/navigation";
 import editorContext from "../context/EditorContext";
 import Link from "next/link";
 import {Overlay} from "@/app/common/Flipbooks/types";
 import {FlipBook} from "@/app/types";
+import flipbookContext from "../context/FlipbookContext";
 
 interface NotificationProps {
     message: string;
@@ -201,6 +202,8 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
         type: 'success',
         isVisible: false
     });
+
+    const [currPage, setCurrPage] = useState(1);
 
     const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
 
@@ -515,6 +518,61 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
                                         </div>
                                     </div>
 
+                                    {/* Overlay List */}
+                                    <div className="mt-4">
+                                        <h3 className="font-medium mb-2">Overlays by Page</h3>
+                                        <div className="max-h-60 overflow-y-auto bg-slate-200 rounded p-2">
+                                            {overlaysToRender && overlaysToRender.length > 0 ? (
+                                                overlaysToRender.reduce((acc: JSX.Element[], overlay) => {
+                                                    // Group by page
+                                                    if (!acc[overlay.page - 1]) {
+                                                        acc[overlay.page - 1] = (
+                                                            <div key={`page-${overlay.page}`} className="mb-2">
+                                                                <h4 className="text-sm font-medium bg-slate-300 p-1 rounded">Page {overlay.page}</h4>
+                                                                <div className="space-y-1 mt-1">
+                                                                    {overlaysToRender
+                                                                        .filter(o => o.page === overlay.page)
+                                                                        .map(o => (
+                                                                            <button
+                                                                                key={o.id}
+                                                                                onClick={(e) => {
+                                                                                    e.preventDefault()
+                                                                                    setActiveOverlay(o);
+                                                                                    setCurrPage(o.page);
+                                                                                }}
+                                                                                className={`w-full text-left text-xs p-1 rounded flex items-center justify-between ${activeOverlay?.id === o.id ? 'bg-blue-200' : 'bg-white hover:bg-slate-100'}`}
+                                                                            >
+                                                                                <span className="truncate flex-1">
+                                                                                    {o.url || 'No URL'}
+                                                                                </span>
+                                                                                {o.url && (
+                                                                                    <button
+                                                                                        onClick={(e) => {
+                                                                                            e.preventDefault();
+                                                                                            e.stopPropagation();
+                                                                                            const url = o.url?.startsWith('http') ? o.url : `https://${o.url}`;
+                                                                                            window.open(url, '_blank');
+                                                                                        }}
+                                                                                        className="hover:text-blue-500"
+                                                                                    >
+                                                                                        <ExternalLink size={12}
+                                                                                                      className="ml-1 flex-shrink-0"/>
+                                                                                    </button>
+                                                                                )}
+                                                                            </button>
+                                                                        ))}
+                                                                </div>
+                                                            </div>
+                                                        );
+                                                    }
+                                                    return acc;
+                                                }, []).filter(Boolean)
+                                            ) : (
+                                                <p className="text-sm text-gray-500 italic">No overlays created yet</p>
+                                            )}
+                                        </div>
+                                    </div>
+
                                     {
                                         status === "published" &&
                                         <Link href={`${process.env.NEXT_PUBLIC_BASE_URL}/${currPath}`} target="_blank"
@@ -551,14 +609,22 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
                         </div>
                     </div>
                 </form>
-                <Flipbook setShouldGenerateOverlays={setShouldGenerateOverlays}
-                          shouldGenerateOverlays={shouldGenerateOverlays} setOverlaysToRender={setOverlaysToRender}
-                          overlaysToDelete={overLaysToDelete}
-                          setOverlaysToDelete={setOverLaysToDelete}
-                          formOverlays={overlaysToUpdate} pdfId={pdfId} pdfPath={pdfPath}
-                          initialOverlays={overlaysToRender}
-                          setFormOverlays={setOverlaysToUpdate}
-                />
+                <flipbookContext.Provider value={
+                    {
+                        currPage: currPage,
+                        setCurrPage: setCurrPage
+                    }
+                }>
+                    <Flipbook setShouldGenerateOverlays={setShouldGenerateOverlays}
+                              shouldGenerateOverlays={shouldGenerateOverlays} setOverlaysToRender={setOverlaysToRender}
+                              overlaysToDelete={overLaysToDelete}
+                              setOverlaysToDelete={setOverLaysToDelete}
+                              formOverlays={overlaysToUpdate} pdfId={pdfId} pdfPath={pdfPath}
+                              initialOverlays={overlaysToRender}
+                              setFormOverlays={setOverlaysToUpdate}
+                    />
+                </flipbookContext.Provider>
+
             </div>
         </editorContext.Provider>
     </div>
