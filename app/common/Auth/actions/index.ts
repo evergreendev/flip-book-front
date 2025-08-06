@@ -7,7 +7,7 @@ const userTokenKey = "user_token";
 const refreshTokenKey = "refresh_token";
 const dashboardUrl = "/admin/dashboard";
 const usersResourceName = "/users";
-const sessionsResourceName = "/session";
+const authResourceName = "/auth";
 
 export async function handleLogin(prevState: { error?: string | null, redirect?: boolean | null }, formData: FormData) {
     const email = formData.get("email");
@@ -15,7 +15,7 @@ export async function handleLogin(prevState: { error?: string | null, redirect?:
 
     if (!process.env.BACKEND_URL) return {error: "Invalid Credentials. Please Try again"};
 
-    const res = await fetch(process.env.BACKEND_URL + sessionsResourceName, {
+    const res = await fetch(process.env.BACKEND_URL + authResourceName, {
         method: "POST",
         body: JSON.stringify({email, password}),
         headers: {
@@ -100,7 +100,7 @@ export async function checkOrRefreshToken(userTokenParam?: RequestCookie, refres
         return null;
     }
 
-    const res = await fetch(process.env.BACKEND_URL + "/session/validate", {
+    const res = await fetch(process.env.BACKEND_URL + authResourceName + "/validate", {
         method: "POST",
         body: JSON.stringify({token: userToken?.value}),
         headers: {
@@ -109,7 +109,7 @@ export async function checkOrRefreshToken(userTokenParam?: RequestCookie, refres
     });
 
     if (res.status === 401) {//Our token is expired, attempt to refresh
-        const refreshRes = await fetch(process.env.BACKEND_URL + "/session/refresh", {
+        const refreshRes = await fetch(process.env.BACKEND_URL + authResourceName + "/refresh", {
             method: "POST",
             body: JSON.stringify({[refreshTokenKey]: refreshToken?.value}),
             headers: {
