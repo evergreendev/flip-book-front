@@ -52,6 +52,8 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
         type: 'success',
         isVisible: false
     });
+    // Controls visibility of overlays in view mode (non-edit)
+    const [showOverlays, setShowOverlays] = useState(false);
     const router = useRouter();
 
 
@@ -357,6 +359,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
     function handleMouseExit(e: React.MouseEvent) {
         e.preventDefault();
         if (!overlayRef.current) return;
+        setShowOverlays(false);
         renderOverlay(overlayRef.current, true);
         setCursorStyle("default");
     }
@@ -371,11 +374,19 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
         function handleMouse(e: MouseEvent) {
 
             if (!overlayRef.current) return;
-            renderOverlay(overlayRef.current, false);
             const currOverlays = overlays ? overlays[thisPage - 1] : [];
             const position = translateCoordinates(e);
 
             const insideOverlay = findInsideOverlay(position, currOverlays);
+
+            // In view mode, only show overlays when cursor intersects an overlay
+            if (editorInfo.mode !== "edit") {
+                setShowOverlays(!!insideOverlay);
+                renderOverlay(overlayRef.current, !insideOverlay);
+            } else {
+                // In edit mode, always show overlays
+                renderOverlay(overlayRef.current, false);
+            }
             const insideGrip = findInsideGrip(position, currOverlays);
 
             // Set cursor style based on grip or edge position
@@ -675,16 +686,16 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
         overlayRef.current.height = canvasHeight;
 
         // Re-render the overlay after resizing
-        renderOverlay(overlayRef.current, editorInfo.mode !== "edit");
-    }, [canvasHeight, canvasWidth, editorInfo.mode, pdfCanvasRef, renderOverlay]);
+        renderOverlay(overlayRef.current, editorInfo.mode !== "edit" && !showOverlays);
+    }, [canvasHeight, canvasWidth, editorInfo.mode, pdfCanvasRef, renderOverlay, showOverlays]);
 
     //overlay render effect
     useEffect(() => {
         (async function () {
             if (!overlayRef.current) return;
-            renderOverlay(overlayRef.current, editorInfo.mode !== "edit");
+            renderOverlay(overlayRef.current, editorInfo.mode !== "edit" && !showOverlays);
         })();
-    }, [editorInfo.mode, renderOverlay, pdfCanvasRef, pdfCanvasRef?.current?.width, pdfCanvasRef?.current?.height]);
+    }, [editorInfo.mode, renderOverlay, pdfCanvasRef, pdfCanvasRef?.current?.width, pdfCanvasRef?.current?.height, showOverlays]);
 
     const handleDeleteOverlay = (e: React.MouseEvent) => {
         e.preventDefault();
@@ -786,6 +797,20 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
     const flipbookContainerBounding = editorInfo.flipbookContainer?.getBoundingClientRect();
     const flipbookContainerBottom = flipbookContainerBounding?.bottom || 0;
     const canvasBottom = flipbookContainerBottom - overlayCanvasBottom;
+
+    // Briefly show overlays on page change in view mode
+    useEffect(() => {
+        if (editorInfo.mode === "edit") return;
+        if (!overlayRef.current) return;
+        // Show overlays immediately on page flip
+        setShowOverlays(true);
+        renderOverlay(overlayRef.current, false);
+        const t = setTimeout(() => {
+            setShowOverlays(false);
+            if (overlayRef.current) renderOverlay(overlayRef.current, true);
+        }, 1200);
+        return () => clearTimeout(t);
+    }, [thisPage, editorInfo.mode]);
 
     return (
         <>
