@@ -1,6 +1,6 @@
 "use client"
 
-import {JSX, useActionState, useContext, useEffect, useRef, useState} from "react";
+import {JSX, useActionState, useContext, useEffect, useMemo, useRef, useState} from "react";
 import {handleEdit} from "@/app/(admin)/admin/(protected)/dashboard/edit/actions/edit";
 import {getPdfStatus} from "@/app/(admin)/admin/(protected)/dashboard/edit/actions/getPdfStatus";
 import Flipbook from "@/app/common/Flipbooks/components/Flipbook";
@@ -218,6 +218,20 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
         published: "bg-green-200",
         private: "bg-red-100"
     }
+    const contextValue = useMemo(() => ({
+        setActiveOverlayPageCanvas: setActiveOverlayPageCanvas,
+        activeOverlayPageCanvas: activeOverlayPageCanvas,
+        status: status,
+        mode: "edit" as const,
+        flipBookId: id,
+        flipbookContainer: flipBookContainer,
+        setFlipbookContainer: setFlipbookContainer,
+        activeOverlay: activeOverlay,
+        setActiveOverlay: setActiveOverlay,
+        copiedOverlay: copiedOverlay,
+        setCopiedOverlay: setCopiedOverlay
+    }), [activeOverlayPageCanvas, status, id, flipBookContainer, activeOverlay, copiedOverlay]);
+
     useEffect(() => {
         if (serverRenderJobIsFinished) return;
 
@@ -429,19 +443,7 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
             onClose={() => setNotification(prev => ({...prev, isVisible: false}))}
         />
 
-        <editorContext.Provider value={{
-            setActiveOverlayPageCanvas: setActiveOverlayPageCanvas,
-            activeOverlayPageCanvas: activeOverlayPageCanvas,
-            status: status,
-            mode: "edit",
-            flipBookId: id,
-            flipbookContainer: flipBookContainer,
-            setFlipbookContainer: setFlipbookContainer,
-            activeOverlay: activeOverlay,
-            setActiveOverlay: setActiveOverlay,
-            copiedOverlay: copiedOverlay,
-            setCopiedOverlay: setCopiedOverlay
-        }}>
+        <editorContext.Provider value={contextValue}>
             <div className="w-full">
                 <form onKeyDown={(e) => {
                     if (e.key === 'Enter') {

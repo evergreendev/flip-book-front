@@ -15,11 +15,6 @@ import {useScreenSize} from "@/app/common/Flipbooks/hooks/useScreenSize";
 import {useToggleDiagnostics} from "@/app/common/Flipbooks/hooks/useToggleDiagnostics";
 import flipbookContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/FlipbookContext";
 import {addImpression, addReadSession, runHeartbeat, runReadSessionHeartbeat} from "@/app/common/Analytics/actions";
-import {useTabActivity} from "@/app/common/hooks/useTabActivity";
-import {usePageTimer} from "@/app/common/hooks/usePageTimer";
-import {useAnalytics} from "@/app/common/Analytics/AnalyticsProvider";
-import {sendPageTimes} from "@/app/common/Analytics/analyticsTransport";
-import {useUnloadFlush} from "@/app/common/hooks/useUnloadFlush";
 
 async function generateOverlays(
     currPage: number,
@@ -107,7 +102,8 @@ export default function Flipbook({
                                      shouldGenerateOverlays,
                                      setOverlaysToDelete,
                                      setOverlaysToRender,
-                                     flipbookId
+                                     flipbookId,
+                                     onPageChange
                                  }: {
     pdfPath: string,
     pdfId: string,
@@ -120,7 +116,7 @@ export default function Flipbook({
     overlaysToDelete?: string[],
     setOverlaysToDelete?: (value: (((prevState: string[]) => string[]) | string[])) => void,
     setOverlaysToRender?: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void,
-
+    onPageChange?: (newPage: number) => Promise<void>
 }) {
     const formattedInitialOverlays: Overlay[][] = [];
     if (initialOverlays && initialOverlays?.length > 0) {
@@ -134,7 +130,7 @@ export default function Flipbook({
     }
     const searchParams = useSearchParams();
     const pageParam = searchParams.get('page');
-    const [maxPage, setMaxPage] = useState<number | null>(null);
+    const [maxPage, setMaxPage] = useState<number>(0);
     const [isGenerating, setIsGenerating] = useState<boolean>(false);
     const [overlays, setOverlays] = useState<Overlay[][]>(formattedInitialOverlays);
     const [animationDirection, setAnimationDirection] = useState<"left" | "right">("left");
@@ -144,51 +140,23 @@ export default function Flipbook({
     const [panPosition, setPanPosition] = useState<{ x: number, y: number }>({x: 0, y: 0});
     const [isPanning, setIsPanning] = useState<boolean>(false);
     const [isDragging, setIsDragging] = useState<boolean>(false);
-    const [dragStartX, setDragStartX] = useState<number>(0);
-    const [dragCurrentX, setDragCurrentX] = useState<number>(0);
-    const [dragProgress, setDragProgress] = useState<number>(0); // -1 to 1 value indicating drag progress
+    const dragStartXRef = useRef<number>(0);
+    const dragCurrentXRef = useRef<number>(0);
+    const [dragSpring, dragApi] = useSpring(() => ({
+        progress: 0,
+    }));
     const [isFullScreen, setIsFullScreen] = useState<boolean>(false);
     const flipbookContainerRef = useRef<HTMLDivElement>(null);
     const editorInfo = useContext(editorContext);
     const {setCurrPage, currPage} = useContext(flipbookContext);
-
-    const {userSession, readSession} = useAnalytics();
-
-
-    const seqRef = useRef(0);
-    const nextSeq = () => ++seqRef.current;
-
-
-    const {isActive} = useTabActivity();
-
-    // Commit handler: ship each entry immediately
-    const onCommit = useCallback(({ page, time }: { page: number; time: number }) => {
-        const payload = {
-            sessionId: userSession ? userSession : "",
-            readSession: readSession ? readSession : "",
-            flipbookId: flipbookId,
-            page,
-            ms: time,
-            seq: nextSeq(),
-            ts_ms: Date.now(),
-            idempotencyKey: `${readSession}:${seqRef.current}`,
-        };
-        sendPageTimes([payload]);
-    }, [userSession, readSession, flipbookId]);
-
-    const { onPageChange, flush } = usePageTimer({
-        isActive,
-        initialPage: currPage,
-        onCommit: onCommit,
-    });
-
-    //  A) fire when the tab closes / app backgrounds
-    useUnloadFlush(flush);
+    const {isBelow1000px, width} = useScreenSize();
 
     const router = useRouter();
 
     useEffect(() => {
-        editorInfo.setFlipbookContainer(flipbookContainerRef.current);
+        if (editorInfo.setFlipbookContainer && editorInfo.flipbookContainer !== flipbookContainerRef.current) {
+            editorInfo.setFlipbookContainer(flipbookContainerRef.current);
+        }
     }, [editorInfo, flipbookContainerRef]);
 
 
@@ -275,7 +243,7 @@ export default function Flipbook({
     }, [maxPage, pageParam]);
 
 
-    const handleMouseDown = (e: React.MouseEvent<HTMLDivElement>) => {
+    const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
         // Only enable panning if:
         // 1. Zoom level is greater than 1.0
         // 2. The target is not an overlay canvas (which needs its own interactions)
@@ -284,10 +252,11 @@ export default function Flipbook({
         } else if (editorInfo.mode !== "edit") {
             // Start tracking drag for page turning (only if not in edit editorInfo)
             setIsDragging(true);
-            setDragStartX(e.clientX);
-            setDragCurrentX(e.clientX);
+            dragStartXRef.current = e.clientX;
+            dragCurrentXRef.current = e.clientX;
+            dragApi.start({ progress: 0, immediate: true });
         }
-    };
+    }, [zoomLevel, editorInfo.mode, dragApi]);
 
     // Function to constrain pan position within reasonable bounds
     const constrainPanPosition = useCallback((x: number, y: number): { x: number, y: number } => {
@@ -301,7 +270,7 @@ export default function Flipbook({
         };
     }, [flipbookWidth, flipbookHeight, zoomLevel]);
 
-    const handleMouseMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    const handleMouseMove = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
         // Only update pan position if actively panning
         if (isPanning && zoomLevel > 1.0) {
             setPanPosition(prev => {
@@ -315,23 +284,103 @@ export default function Flipbook({
             e.preventDefault();
         } else if (isDragging && editorInfo.mode !== "edit") {
             // Update current drag position for page turning (only if not in edit editorInfo)
-            setDragCurrentX(e.clientX);
+            dragCurrentXRef.current = e.clientX;
 
             // Calculate drag progress (-1 to 1)
-            const dragDistance = e.clientX - dragStartX;
+            const dragDistance = e.clientX - dragStartXRef.current;
             const dragThreshold = flipbookWidth * 0.1;
             const progress = Math.max(-1, Math.min(1, dragDistance / dragThreshold));
-            setDragProgress(progress);
+            dragApi.start({ progress, immediate: true });
 
             e.preventDefault();
         }
-    };
+    }, [isPanning, zoomLevel, isDragging, editorInfo.mode, flipbookWidth, constrainPanPosition, dragApi]);
 
-    const handleMouseUp = () => {
+    const handlePreviousPage =
+        useCallback((e?: { preventDefault: () => void; }) => {
+            if (e) {
+                e.preventDefault();
+            }
+            if (!maxPage) return;
+
+            if (editorInfo.mode !== "edit") {
+                runHeartbeat(true);
+                runReadSessionHeartbeat(true);
+            }
+
+            setAnimationDirection("right")
+            setCurrPage(prev => {
+                let newPage;
+                // If we're at page 3 or higher, generally flip 2 pages back
+                if (prev > 2) {
+                    // If we're at the last page of an even-numbered total, move back just 1 page
+                    if (maxPage % 2 !== 1 && prev === maxPage || isBelow1000px) {
+                        newPage = prev - 1;
+                    } else {
+                        newPage = prev - 2;
+                    }
+                }
+                // If we're at page 2, go to page 1
+                else if (prev === 2) {
+                    newPage = 1;
+                }
+                // Otherwise stay at page 1
+                else {
+                    newPage = 1;
+                }
+
+                return newPage;
+            });
+        },[editorInfo.mode, isBelow1000px, maxPage, setCurrPage])
+
+
+    useEffect(() => {
+        if (onPageChange){
+            onPageChange(currPage);
+        }
+    }, [currPage, onPageChange]);
+
+    const handleNextPage = useCallback((e?: { preventDefault: () => void; }) => {
+        if (e) {
+            e.preventDefault();
+        }
+        if (!maxPage) return;
+        if (editorInfo.mode !== "edit") {
+            runHeartbeat(true);
+            runReadSessionHeartbeat(true);
+        }
+
+        setAnimationDirection("left");
+        setCurrPage(prev => {
+            let newPage;
+            // If we're at the second-to-last page of an odd-numbered total, move to the last page
+            if (maxPage % 2 === 1 && prev === maxPage - 1) {
+                newPage = maxPage;
+            } else if (isBelow1000px) {
+                newPage = prev + 1;
+            }
+            // If we can flip 2 pages forward without exceeding total pages
+            else if (prev + 2 <= maxPage) {
+                newPage = prev + 2;
+            }
+            // If we're one page away from the end, go to the last page
+            else if (prev + 1 <= maxPage) {
+                newPage = maxPage;
+            }
+            // Otherwise stay at the current page
+            else {
+                newPage = prev;
+            }
+
+            return newPage;
+        });
+    }, [editorInfo.mode, isBelow1000px, maxPage, setCurrPage]);
+
+    const handleMouseUp = useCallback(() => {
         setIsPanning(false);
 
         if (isDragging && editorInfo.mode !== "edit") {
-            const dragDistance = dragCurrentX - dragStartX;
+            const dragDistance = dragCurrentXRef.current - dragStartXRef.current;
             const dragThreshold = flipbookWidth * 0.1; // 10% of flipbook width as threshold
 
             // If drag distance exceeds threshold, trigger page turn (only if not in edit editorInfo)
@@ -347,51 +396,52 @@ export default function Flipbook({
 
             // Reset drag state
             setIsDragging(false);
-            setDragStartX(0);
-            setDragCurrentX(0);
-            setDragProgress(0);
+            dragStartXRef.current = 0;
+            dragCurrentXRef.current = 0;
+            dragApi.start({ progress: 0 });
         } else if (isDragging) {
             // Reset drag state even in edit editorInfo
             setIsDragging(false);
-            setDragStartX(0);
-            setDragCurrentX(0);
-            setDragProgress(0);
+            dragStartXRef.current = 0;
+            dragCurrentXRef.current = 0;
+            dragApi.start({ progress: 0 });
         }
-    };
+    }, [isDragging, editorInfo.mode, flipbookWidth, handlePreviousPage, handleNextPage, dragApi]);
 
     // Touch event handlers for mobile devices
-    const handleTouchStart = (e: React.TouchEvent<HTMLDivElement>) => {
+    const handleTouchStart = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
         if (zoomLevel > 1.0) {
             setIsPanning(true);
         } else if (editorInfo.mode !== "edit") {
             // Start tracking drag for page turning (only if not in edit editorInfo)
             setIsDragging(true);
-            setDragStartX(e.touches[0].clientX);
-            setDragCurrentX(e.touches[0].clientX);
+            dragStartXRef.current = e.touches[0].clientX;
+            dragCurrentXRef.current = e.touches[0].clientX;
+            dragApi.start({ progress: 0, immediate: true });
         }
-    };
+    }, [zoomLevel, editorInfo.mode, dragApi]);
 
-    const handleTouchMove = (e: React.TouchEvent<HTMLDivElement>) => {
+    const handleTouchMove = useCallback((e: React.TouchEvent<HTMLDivElement>) => {
         if (isPanning && zoomLevel > 1.0) {
             // Touch panning logic would go here
             // For simplicity, we're not implementing full touch panning in this update
         } else if (isDragging && editorInfo.mode !== "edit") {
             // Update current drag position for page turning (only if not in edit editorInfo)
-            setDragCurrentX(e.touches[0].clientX);
+            dragCurrentXRef.current = e.touches[0].clientX;
 
             // Calculate drag progress (-1 to 1)
-            const dragDistance = e.touches[0].clientX - dragStartX;
+            const dragDistance = e.touches[0].clientX - dragStartXRef.current;
             const dragThreshold = flipbookWidth * 0.1;
             const progress = Math.max(-1, Math.min(1, dragDistance / dragThreshold));
-            setDragProgress(progress);
+            dragApi.start({ progress, immediate: true });
         }
-    };
+    }, [isPanning, zoomLevel, isDragging, editorInfo.mode, flipbookWidth, dragApi]);
 
-    const handleTouchEnd = () => {
+    const handleTouchEnd = useCallback(() => {
         setIsPanning(false);
 
         if (isDragging && editorInfo.mode !== "edit") {
-            const dragDistance = dragCurrentX - dragStartX;
+            const dragDistance = dragCurrentXRef.current - dragStartXRef.current;
             const dragThreshold = flipbookWidth * 0.1; // 10% of flipbook width as threshold
 
             // If drag distance exceeds threshold, trigger page turn (only if not in edit editorInfo)
@@ -407,19 +457,19 @@ export default function Flipbook({
 
             // Reset drag state
             setIsDragging(false);
-            setDragStartX(0);
-            setDragCurrentX(0);
-            setDragProgress(0);
+            dragStartXRef.current = 0;
+            dragCurrentXRef.current = 0;
+            dragApi.start({ progress: 0 });
         } else if (isDragging) {
             // Reset drag state even in edit editorInfo
             setIsDragging(false);
-            setDragStartX(0);
-            setDragCurrentX(0);
-            setDragProgress(0);
+            dragStartXRef.current = 0;
+            dragCurrentXRef.current = 0;
+            dragApi.start({ progress: 0 });
         }
-    };
+    }, [isDragging, editorInfo.mode, flipbookWidth, handlePreviousPage, handleNextPage, dragApi]);
 
-    const toggleFullScreen = () => {
+    const toggleFullScreen = useCallback(() => {
         if (!isFullScreen) {
             if (flipbookContainerRef.current) {
                 // Try standard method first
@@ -469,7 +519,7 @@ export default function Flipbook({
                 (document).msExitFullscreen();
             }
         }
-    };
+    }, [isFullScreen]);
 
     // Reset pan position when zoom level is reset to 1.0
     // or constrain it when zoom level changes
@@ -618,93 +668,18 @@ export default function Flipbook({
         updateUrlWithPage(currPage);
     }, [currPage, router, searchParams]);
 
-    const {isBelow1000px, width} = useScreenSize();
-
-    const handlePreviousPage = (e?: { preventDefault: () => void; }) => {
-        if (e) {
-            e.preventDefault();
+    /*const sizeKey = Math.floor(width / 100);*/
+    const numberOfFigures = React.useMemo(() => Math.floor(Math.log10(maxPage)) + 1, [maxPage]);
+    const thumbNailArray = React.useMemo(() => {
+        const array = [];
+        for (let i = 1; i <= maxPage; i++) {
+            array.push(`${pdfPath}/page-${(i).toString().padStart(numberOfFigures, '0')}.png`);
         }
-        if (!maxPage) return;
+        return array;
+    }, [maxPage, pdfPath, numberOfFigures]);
 
-        if (editorInfo.mode !== "edit") {
-            runHeartbeat(true);
-            runReadSessionHeartbeat(true);
-        }
 
-        setAnimationDirection("right")
-        setCurrPage(prev => {
-            let newPage;
-            // If we're at page 3 or higher, generally flip 2 pages back
-            if (prev > 2) {
-                // If we're at the last page of an even-numbered total, move back just 1 page
-                if (maxPage % 2 !== 1 && prev === maxPage || isBelow1000px) {
-                    newPage = prev - 1;
-                } else {
-                    newPage = prev - 2;
-                }
-            }
-            // If we're at page 2, go to page 1
-            else if (prev === 2) {
-                newPage = 1;
-            }
-            // Otherwise stay at page 1
-            else {
-                newPage = 1;
-            }
-
-            return newPage;
-        });
-    };
-    useEffect(() => {
-        onPageChange(currPage);
-    }, [currPage]);
-
-    const handleNextPage = (e?: { preventDefault: () => void; }) => {
-        if (e) {
-            e.preventDefault();
-        }
-        if (!maxPage) return;
-        if (editorInfo.mode !== "edit") {
-            runHeartbeat(true);
-            runReadSessionHeartbeat(true);
-        }
-
-        setAnimationDirection("left");
-        setCurrPage(prev => {
-            let newPage;
-            // If we're at the second-to-last page of an odd-numbered total, move to the last page
-            if (maxPage % 2 === 1 && prev === maxPage - 1) {
-                newPage = maxPage;
-            } else if (isBelow1000px) {
-                newPage = prev + 1;
-            }
-            // If we can flip 2 pages forward without exceeding total pages
-            else if (prev + 2 <= maxPage) {
-                newPage = prev + 2;
-            }
-            // If we're one page away from the end, go to the last page
-            else if (prev + 1 <= maxPage) {
-                newPage = maxPage;
-            }
-            // Otherwise stay at the current page
-            else {
-                newPage = prev;
-            }
-
-            return newPage;
-        });
-    };
-    const sizeKey = Math.floor(width / 100);
-
-    if (!maxPage) return null;
-
-    const numberOfFigures = Math.floor(Math.log10(maxPage)) + 1;
-    const thumbNailArray = [];
-    for (let i = 1; i <= maxPage; i++) {
-        thumbNailArray.push(`${pdfPath}/page-${(i).toString().padStart(numberOfFigures, '0')}.png`);
-    }
-
-    return <div key={sizeKey} ref={flipbookContainerRef}
+    return <div ref={flipbookContainerRef}
                 className="flex flex-col sm:flex-row justify-between items-center flex-wrap mx-auto max-h-screen h-screen">
         {/*Remove comment for debugging
         <div className="bg-black text-white">
@@ -737,30 +712,28 @@ export default function Flipbook({
                 {isDragging && (
                     <>
                         {/* Previous page indicator (right side) */}
-                        <div
+                        <animated.div
                             className="absolute top-0 left-0 h-full flex items-center justify-start pointer-events-none"
                             style={{
-                                opacity: Math.max(0, dragProgress),
-                                transition: 'opacity 0.1s ease-out'
+                                opacity: dragSpring.progress.to(p => Math.max(0, p)),
                             }}
                         >
                             <div className="bg-white bg-opacity-30 p-4 rounded-r-lg">
                                 <ChevronLeft size="3rem" className="text-white"/>
                             </div>
-                        </div>
+                        </animated.div>
 
                         {/* Next page indicator (left side) */}
-                        <div
+                        <animated.div
                             className="absolute top-0 right-0 h-full flex items-center justify-end pointer-events-none"
                             style={{
-                                opacity: Math.max(0, -dragProgress),
-                                transition: 'opacity 0.1s ease-out'
+                                opacity: dragSpring.progress.to(p => Math.max(0, -p)),
                             }}
                         >
                             <div className="bg-white bg-opacity-30 p-4 rounded-l-lg">
                                 <ChevronRight size="3rem" className="text-white"/>
                             </div>
-                        </div>
+                        </animated.div>
                     </>
                 )}
 

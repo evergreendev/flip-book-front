@@ -5,6 +5,7 @@
   "scripts": {
     "copy-assets": "cp ./node_modules/pdfjs-dist/build/pdf.worker.min.mjs ./public/",
     "dev": "next dev",
+    "scan": "next dev & npx react-scan@latest localhost:3000",
     "build": "npm run copy-assets && next build",
     "window-build": "next build",
     "start": "next start",

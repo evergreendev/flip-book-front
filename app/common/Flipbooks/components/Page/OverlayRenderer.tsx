@@ -25,7 +25,7 @@ interface OverlayRendererProps {
     zoomLevel: number
 }
 
-const OverlayRenderer: React.FC<OverlayRendererProps> = ({
+const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
                                                              thisPage,
                                                              currentPage,
                                                              maxPage,
@@ -824,10 +824,11 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
     const {isBelow1000px} = useScreenSize();
 
     useEffect(() => {
+        if (editorInfo.mode === "edit") return;
         if (currentPage === thisPage || (!isBelow1000px && (currentPage === thisPage + 1 && currentPage !== 2 && currentPage !== maxPage))) {
             overlays[thisPage-1]?.forEach((overlay) => addImpression(flipbookId, "overlay", thisPage-1, overlay.id))
         }
-    }, [thisPage, currentPage, isBelow1000px, maxPage, flipbookId, overlays]);
+    }, [thisPage, currentPage, isBelow1000px, maxPage, flipbookId, overlays, editorInfo.mode]);
 
     return (
         <>
@@ -908,6 +909,6 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
             )}
         </>
     );
-};
+});
 
 export default OverlayRenderer;

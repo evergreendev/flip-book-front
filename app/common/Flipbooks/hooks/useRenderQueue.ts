@@ -7,14 +7,41 @@ function useRenderQueue(
     const maxPagesToRender = 3;
     const maxQueueLookAhead = 5;
     const [shouldClearQueue, setShouldClearQueue] = React.useState(false);
-    const [renderedPages, setRenderedPages] = React.useState<Set<number>>(new Set());
+    const [renderedPages, setRenderedPagesState] = React.useState<Set<number>>(new Set());
+    const renderedPagesRef = React.useRef<Set<number>>(new Set());
+
+    const setRenderedPages = React.useCallback((update: React.SetStateAction<Set<number>>) => {
+        setRenderedPagesState(prev => {
+            const next = typeof update === 'function' ? (update as (prev: Set<number>) => Set<number>)(prev) : update;
+            
+            if (next.size === prev.size) {
+                let isIdentical = true;
+                for (const val of next) {
+                    if (!prev.has(val)) {
+                        isIdentical = false;
+                        break;
+                    }
+                }
+                if (isIdentical) return prev;
+            }
+            
+            renderedPagesRef.current = next;
+            return next;
+        });
+    }, []);
+
     const [queue, setQueue] = React.useState<number[]>([]);
+    const queueRef = React.useRef<number[]>([]);
+    
+    // Sync queueRef with queue state
+    React.useEffect(() => {
+        queueRef.current = queue;
+    }, [queue]);
+
     const [shouldRenderList, setShouldRenderList] = React.useState(new Set<number>());
     const addPageToQueue = useCallback(async (page: number, isPriority?: boolean) => {
-        if (renderedPages.has(page)||page>maxPages||page<1) return false;
+        if (renderedPagesRef.current.has(page)||page>maxPages||page<1) return false;
         let wasFound = false;
-
-        await new Promise(resolve => setTimeout(resolve, 1000));
 
         setQueue(prev => {
             const foundIndex = prev.includes(page);
@@ -34,7 +61,7 @@ function useRenderQueue(
             }
         });
         return wasFound;
-    }, [maxPages, renderedPages]);
+    }, [maxPages]);
 
     useEffect(() => {
         if (shouldClearQueue) {
@@ -47,20 +74,24 @@ function useRenderQueue(
 
 
     useEffect(() => {
+        let isCancelled = false;
         const addPages = async () => {
             let i = currentPage;
             await addPageToQueue(currentPage, true);
-
+            if (isCancelled) return;
 
             //we add the page directly to the left and directly to the right to make sure page pairs render first
             await addPageToQueue(currentPage - 1, true);
+            if (isCancelled) return;
             await addPageToQueue(currentPage + 1, true);
+            if (isCancelled) return;
 
             let pagesAddedLeft = 0;
             let pagesAddedRight = 0;
 
             //First we add the pages to the right
             while (i < maxPages && pagesAddedRight < maxQueueLookAhead) {
+                if (isCancelled) return;
                 i++;
                 if (await addPageToQueue(i)) {
                     pagesAddedRight++;
@@ -70,6 +101,7 @@ function useRenderQueue(
 
             //Then we look left
             while (i >= 1 && pagesAddedLeft < maxQueueLookAhead) {
+                if (isCancelled) return;
                 i--;
                 if (await addPageToQueue(i, pagesAddedLeft < 2)) {
                     pagesAddedLeft++;
@@ -79,6 +111,7 @@ function useRenderQueue(
             i = 1;
             //Then we add the rest
             while (i < maxPages) {
+                if (isCancelled) return;
                 i++;
                 await addPageToQueue(i);
             }
@@ -87,34 +120,50 @@ function useRenderQueue(
         if (!shouldClearQueue){
             addPages();
         }
+
+        return () => {
+            isCancelled = true;
+        };
     }, [addPageToQueue, currentPage, maxPages, shouldClearQueue])
 
-    const dequeuePage = useCallback(() => {
-        if (queue.length === 0) return null;
-        const page = queue[0];
-
-        setQueue(prev => prev.slice(1));
-
-        return page;
-    }, [queue]);
 
     useEffect(() => {
         if (shouldRenderList.size >= maxPagesToRender || queue.length === 0) return;
 
-        const page = dequeuePage();
-
-        if (page && !renderedPages.has(page)) {
-            setShouldRenderList(prev => new Set([...prev, page]));
-        }
-    }, [dequeuePage, queue, renderedPages, shouldRenderList])
+        setQueue(prevQueue => {
+            const nextQueue = [...prevQueue];
+            const pagesToAdd: number[] = [];
+            
+            while (nextQueue.length > 0 && (shouldRenderList.size + pagesToAdd.length) < maxPagesToRender) {
+                const page = nextQueue.shift();
+                if (page !== undefined && page !== null && !renderedPagesRef.current.has(page) && !shouldRenderList.has(page)) {
+                    pagesToAdd.push(page);
+                }
+            }
+            
+            if (pagesToAdd.length > 0) {
+                setShouldRenderList(prevList => {
+                    const nextList = new Set(prevList);
+                    pagesToAdd.forEach(p => nextList.add(p));
+                    return nextList;
+                });
+            }
+            
+            return nextQueue;
+        });
+    }, [queue.length, shouldRenderList.size, maxPagesToRender]);
 
     const removeRenderedPages = useCallback(() => {
         setShouldRenderList(prev => {
-            const newSet = new Set(prev);
+            let changed = false;
+            const next = new Set(prev);
             for (const page of renderedPages) {
-                newSet.delete(page);
+                if (next.has(page)) {
+                    next.delete(page);
+                    changed = true;
+                }
             }
-            return newSet;
+            return changed ? next : prev;
         })
     }, [renderedPages]);
     

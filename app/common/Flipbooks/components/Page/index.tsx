@@ -1,6 +1,6 @@
 import {Overlay} from "@/app/common/Flipbooks/types";
 import {animated, to, useSpring} from "@react-spring/web";
-import React, {useContext, useEffect, useRef, useState} from "react";
+import React, {memo, useContext, useEffect, useRef, useState} from "react";
 import PDFRenderer from "@/app/common/Flipbooks/components/Page/PDFRenderer";
 import OverlayRenderer from "@/app/common/Flipbooks/components/Page/OverlayRenderer";
 import {useScreenSize} from "@/app/common/Flipbooks/hooks/useScreenSize";
@@ -28,7 +28,7 @@ interface PageProps {
     flipbookId: string,
 }
 
-const Page = (({
+const Page = memo(({
                    thisPage,
                    currentPage,
                    pdfUrl,
@@ -64,11 +64,7 @@ const Page = (({
 
     const {isBelow1000px} = useScreenSize();
 
-    const [pageWidth, setPageWidth] = useState(isBelow1000px ? flipBookWidth : flipBookWidth / 2);
-
-    useEffect(() => {
-        setPageWidth(isBelow1000px ? flipBookWidth : flipBookWidth / 2);
-    }, [pageWidth, flipBookWidth, isBelow1000px]);
+    const pageWidth = isBelow1000px ? flipBookWidth : flipBookWidth / 2;
 
     useEffect(() => {
         if (currentPage === thisPage || (!isBelow1000px && (currentPage === thisPage + 1 && currentPage !== 2 && currentPage !== maxPage))) {
@@ -162,5 +158,7 @@ const Page = (({
         </animated.div>
     );
 });
+
+Page.displayName = "Page";
 
 export default Page;

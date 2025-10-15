@@ -1,4 +1,4 @@
-import {useEffect, useRef, useState} from "react";
+import {useCallback, useEffect, useRef, useState} from "react";
 
 export type PageRead = { page: number; time: number };
 
@@ -12,6 +12,8 @@ type UsePageTimerOptions = {
     onCommit?: (entry: PageRead) => void | Promise<void>;
     /** If true, store all commits in state for UI/debug (default: true) */
     keepHistory?: boolean;
+    /** If true, update elapsedTime in state (causes re-renders). Default: false */
+    showTimer?: boolean;
 };
 
 export function usePageTimer({
@@ -20,6 +22,7 @@ export function usePageTimer({
                                  onCommit,
                                  initialPage = 1,
                                  keepHistory = true,
+                                 showTimer = false,
                              }: UsePageTimerOptions) {
     const [elapsedTime, setElapsedTime] = useState(0);
     const [pageReadTime, setPageReadTime] = useState<PageRead[]>([]);
@@ -30,6 +33,8 @@ export function usePageTimer({
 
     // rAF loop: updates elapsedTime for display
     useEffect(() => {
+        if (!showTimer) return;
+
         let rafId: number;
 
         const tick = () => {
@@ -43,7 +48,7 @@ export function usePageTimer({
 
         rafId = requestAnimationFrame(tick);
         return () => cancelAnimationFrame(rafId);
-    }, [isActive]);
+    }, [isActive, showTimer]);
 
     // Pause/resume accumulation
     useEffect(() => {
@@ -59,7 +64,7 @@ export function usePageTimer({
         }
     }, [isActive]);
 
-    const commit = async (page: number, ms: number) => {
+    const commit = useCallback(async (page: number, ms: number) => {
         const entry = {page, time: Math.round(ms)};
         if (entry.time < minCommitMs) return;
 
@@ -69,10 +74,10 @@ export function usePageTimer({
         if (onCommit) {
             await onCommit(entry);
         }
-    };
+    }, [keepHistory, minCommitMs, onCommit]);
 
     /** Call this whenever the page changes */
-    const onPageChange = async (newPage: number) => {
+    const onPageChange = useCallback(async (newPage: number) => {
         const now = performance.now();
         const diff = now - startTimeRef.current;
         const totalMs = accumulatedMsRef.current + diff;
@@ -87,10 +92,10 @@ export function usePageTimer({
         accumulatedMsRef.current = 0;
         startTimeRef.current = performance.now();
         setElapsedTime(0);
-    };
+    }, [commit]);
 
     /** Call this if user navigates away */
-    const flush = async () => {
+    const flush = useCallback(async () => {
         if (prevPageRef.current === null) return;
 
         const now = performance.now();
@@ -103,7 +108,7 @@ export function usePageTimer({
         accumulatedMsRef.current = 0;
         startTimeRef.current = performance.now();
         setElapsedTime(0);
-    };
+    }, [commit]);
 
     // Flush on unmount
     useEffect(() => {

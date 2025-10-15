@@ -41,8 +41,10 @@ export const ScreenSizeProvider: React.FC<{ children: React.ReactNode }> = ({ ch
     return () => window.removeEventListener('resize', updateScreenSize);
   }, []);
 
+  const value = React.useMemo(() => screenSize, [screenSize]);
+
   return (
-    <ScreenSizeContext.Provider value={screenSize}>
+    <ScreenSizeContext.Provider value={value}>
       {children}
     </ScreenSizeContext.Provider>
   );

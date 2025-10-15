@@ -41,7 +41,7 @@ const getSizedCanvasDims = (flipbookWidth: number, flipbookHeight: number, isBel
     return {placeholderWidth, placeholderHeight};
 }
 
-const PDFRenderer = ({
+const PDFRenderer = React.memo(({
                          currPage,
                          shouldRender,
                          canvasRef,
@@ -284,6 +284,6 @@ const PDFRenderer = ({
     }
 
     return <canvas className={positionClasses} ref={canvasRef}/>;
-}
+});
 
 export default PDFRenderer;

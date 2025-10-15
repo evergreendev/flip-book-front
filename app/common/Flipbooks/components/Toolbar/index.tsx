@@ -29,7 +29,7 @@ interface ToolbarProps {
     thumbNailArray: string[]
 }
 
-const Toolbar: React.FC<ToolbarProps> = ({
+const Toolbar: React.FC<ToolbarProps> = React.memo(({
                                              setZoomLevel,
                                              currentPage,
                                              totalPages,
@@ -252,6 +252,6 @@ const Toolbar: React.FC<ToolbarProps> = ({
             </div>
         </div>
     );
-};
+});
 
 export default Toolbar;
