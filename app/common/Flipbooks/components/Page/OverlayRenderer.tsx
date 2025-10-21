@@ -824,7 +824,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
 
     useEffect(() => {
         if (currentPage === thisPage || (!isBelow1000px && (currentPage === thisPage + 1 && currentPage !== 2 && currentPage !== maxPage))) {
-            overlays[thisPage].forEach((overlay) => addImpression(flipbookId, "overlay", thisPage-1, overlay.id))
+            overlays[thisPage-1]?.forEach((overlay) => addImpression(flipbookId, "overlay", thisPage-1, overlay.id))
         }
     }, [thisPage, currentPage, isBelow1000px, maxPage, flipbookId, overlays]);
 
