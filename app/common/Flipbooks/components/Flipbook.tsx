@@ -14,6 +14,7 @@ import useRenderQueue from "@/app/common/Flipbooks/hooks/useRenderQueue";
 import {useScreenSize} from "@/app/common/Flipbooks/hooks/useScreenSize";
 import {useToggleDiagnostics} from "@/app/common/Flipbooks/hooks/useToggleDiagnostics";
 import flipbookContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/FlipbookContext";
+import {addImpression} from "@/app/common/Analytics/actions";
 
 async function generateOverlays(
     currPage: number,
@@ -100,10 +101,12 @@ export default function Flipbook({
                                      setShouldGenerateOverlays,
                                      shouldGenerateOverlays,
                                      setOverlaysToDelete,
-                                     setOverlaysToRender
+                                     setOverlaysToRender,
+                                     flipbookId
                                  }: {
     pdfPath: string,
     pdfId: string,
+    flipbookId: string,
     initialOverlays: Overlay[] | null,
     setFormOverlays?: React.Dispatch<React.SetStateAction<Overlay[] | null>>,
     setShouldGenerateOverlays?: React.Dispatch<React.SetStateAction<boolean>>,
@@ -112,6 +115,7 @@ export default function Flipbook({
     overlaysToDelete?: string[],
     setOverlaysToDelete?: (value: (((prevState: string[]) => string[]) | string[])) => void,
     setOverlaysToRender?: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void,
+
 }) {
     const formattedInitialOverlays: Overlay[][] = [];
     if (initialOverlays && initialOverlays?.length > 0) {
@@ -555,6 +559,12 @@ export default function Flipbook({
 
     }, [animationDirection, currPage, gradientApi]);
 
+    useEffect(() => {
+        if (editorInfo.mode !== "edit") {
+            addImpression(flipbookId, "flipbook");
+        }
+    }, [editorInfo.mode, flipbookId]);
+
     useEffect(() => {    // Helper function to update URL with page parameter
         const updateUrlWithPage = (pageNumber: number) => {
             // Create a new URLSearchParams object with the current query parameters
@@ -640,7 +650,6 @@ export default function Flipbook({
     for (let i = 1; i <= maxPage; i++) {
         thumbNailArray.push(`${pdfPath}/page-${(i).toString().padStart(numberOfFigures, '0')}.png`);
     }
-
 
 
     return <div key={sizeKey} ref={flipbookContainerRef}
@@ -729,6 +738,7 @@ export default function Flipbook({
                                     </div>
                                 }
                                 <Page
+                                    flipbookId={flipbookId}
                                     renderedPageUrl={`${pdfPath}/page-${(index + 1).toString().padStart(numberOfFigures, '0')}.png`}
                                     flipBookWidth={flipbookWidth}
                                     flipBookHeight={flipbookHeight}

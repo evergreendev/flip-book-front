@@ -1,9 +1,6 @@
 import {Metadata} from "next";
 import {Overlay} from "@/app/common/Flipbooks/types";
-import Flipbook from "@/app/common/Flipbooks/components/Flipbook";
-import {ScreenSizeProvider} from "@/app/common/Flipbooks/hooks/useScreenSize";
 import {FlipBook} from "@/app/types";
-import FlipbookContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/FlipbookContext";
 import PageClient from "@/app/(front)/[slug]/page.client";
 
 //todo move this somewhere better

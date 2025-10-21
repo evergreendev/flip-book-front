@@ -11,7 +11,7 @@ const PageClient = ({data, overlays, pdfPath}:{data: FlipBook,overlays: Overlay[
 
     return <ScreenSizeProvider>
         {data.pdf_path && <flipbookContext.Provider value={{setCurrPage: setCurrPage, currPage: currPage}}>
-            <Flipbook pdfId={data.pdf_path} pdfPath={pdfPath}
+            <Flipbook flipbookId={data.id} pdfId={data.pdf_path} pdfPath={pdfPath}
                       initialOverlays={overlays}/>
         </flipbookContext.Provider>
         }            </ScreenSizeProvider>

@@ -1,0 +1,57 @@
+"use server"
+import {cookies} from "next/headers";
+import {AnalyticsCategory, AnalyticsEvent} from "@/app/common/Analytics/types";
+
+async function addGenericEvent(
+    eventType: AnalyticsEvent,
+    flipbookId: string,
+    sessionId: string,
+    userId: string | null = null,
+    pageNumber: number | null = null,
+) {
+    return await fetch(`${process.env.BACKEND_URL}/analytics/events`, {
+        method: "POST",
+        body: JSON.stringify({
+            eventType: eventType,
+            flipbookId: flipbookId,
+            sessionId: sessionId,
+            userId: userId,
+            pageNumber: pageNumber,
+        }),
+        headers: {
+            "Content-Type": "application/json"
+        }
+    })
+}
+
+export async function addImpression(flipbookId: string, impressionType: AnalyticsCategory, pageNumber?: number, overlayId?: string|null) {
+    const cookieStore = await cookies();
+    const userSession = cookieStore.get("user_session")?.value;
+
+    if (!userSession) return null;
+
+    const event = await addGenericEvent("impression", flipbookId, userSession, null, pageNumber);
+
+    if (!event.ok) return null;
+
+    const eventData = await event.json();
+
+    const impression = await fetch(`${process.env.BACKEND_URL}/analytics/events/impression`, {
+        method: "POST",
+        body: JSON.stringify({
+            eventId: eventData.event.id,
+            impressionType: impressionType,
+            overlayId: overlayId,
+        }),
+        headers: {
+            "Content-Type": "application/json"
+        }
+    })
+
+    const impressionData = await impression.json();
+
+    return {
+        event: eventData.event,
+        impression: impressionData.impression
+    }
+}

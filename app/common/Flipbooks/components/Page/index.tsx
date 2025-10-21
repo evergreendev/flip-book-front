@@ -1,9 +1,11 @@
 import {Overlay} from "@/app/common/Flipbooks/types";
 import {animated, to, useSpring} from "@react-spring/web";
-import React, {useEffect, useRef, useState} from "react";
+import React, {useContext, useEffect, useRef, useState} from "react";
 import PDFRenderer from "@/app/common/Flipbooks/components/Page/PDFRenderer";
 import OverlayRenderer from "@/app/common/Flipbooks/components/Page/OverlayRenderer";
 import {useScreenSize} from "@/app/common/Flipbooks/hooks/useScreenSize";
+import {addImpression} from "@/app/common/Analytics/actions";
+import editorContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/EditorContext";
 
 interface PageProps {
     thisPage: number
@@ -22,7 +24,8 @@ interface PageProps {
     setFormOverlays?: (value: Overlay[]) => void
     setRenderedPages: React.Dispatch<React.SetStateAction<Set<number>>>
     setOverlaysToDelete?: (value: (((prevState: string[]) => string[]) | string[])) => void
-    shouldClearQueue: boolean
+    shouldClearQueue: boolean,
+    flipbookId: string,
 }
 
 const Page = (({
@@ -41,13 +44,15 @@ const Page = (({
                    setFormOverlays,
                    setRenderedPages,
                    setOverlaysToDelete,
-                   shouldClearQueue
+                   shouldClearQueue,
+    flipbookId,
                }: PageProps) => {
     // Determine if the page is on the left side of the spread
     const isLeft = thisPage === 1 || thisPage % 2 === 0;
     const [canvasWidth, setCanvasWidth] = useState(0);
     const [canvasHeight, setCanvasHeight] = useState(0);
     const [canvasScale, setCanvasScale] = useState(1);
+    const editorInfo = useContext(editorContext);
 
     // Determine page position based on page number
     const pagePosition = isLeft ? "left" : "right";
@@ -67,6 +72,11 @@ const Page = (({
 
     useEffect(() => {
         if (currentPage === thisPage || (!isBelow1000px && (currentPage === thisPage + 1 && currentPage !== 2 && currentPage !== maxPage))) {
+            if (editorInfo.mode !== "edit") {
+                addImpression(flipbookId, "page", thisPage-1)
+            }
+
+
             if (isLeft) {
                 api.start({
                     to: {
@@ -95,7 +105,7 @@ const Page = (({
                 }
             })
         }
-    }, [api, canvasWidth, currentPage, isBelow1000px, isLeft, maxPage, pageWidth, thisPage]);
+    }, [api, canvasWidth, currentPage, editorInfo.mode, flipbookId, isBelow1000px, isLeft, maxPage, pageWidth, thisPage]);
 
     const pageRef = useRef<HTMLDivElement>(null);
     const pdfCanvasRef = useRef<HTMLCanvasElement>(null);
@@ -135,6 +145,9 @@ const Page = (({
             />
             <OverlayRenderer
                 thisPage={thisPage}
+                currentPage={currentPage}
+                flipbookId={flipbookId}
+                maxPage={maxPage}
                 overlays={overlays}
                 canvasWidth={canvasWidth}
                 canvasHeight={canvasHeight}

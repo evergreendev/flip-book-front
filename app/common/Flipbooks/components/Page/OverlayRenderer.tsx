@@ -5,9 +5,14 @@ import {v4 as uuidv4} from 'uuid';
 import {Overlay} from "../../types";
 import {Copy, Trash2, ClipboardPaste, ExternalLink} from "lucide-react";
 import Notification from "@/app/common/components/Notification";
+import {useScreenSize} from "@/app/common/Flipbooks/hooks/useScreenSize";
+import {addImpression} from "@/app/common/Analytics/actions";
 
 interface OverlayRendererProps {
     thisPage: number,
+    currentPage: number,
+    maxPage?: number | null,
+    flipbookId: string,
     overlays: Overlay[][],
     formOverlays?: Overlay[] | null,
     setOverlays?: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void,
@@ -22,12 +27,15 @@ interface OverlayRendererProps {
 
 const OverlayRenderer: React.FC<OverlayRendererProps> = ({
                                                              thisPage,
+                                                             currentPage,
+                                                             maxPage,
                                                              overlays,
                                                              formOverlays,
                                                              setOverlays,
+                                                             flipbookId,
                                                              setFormOverlays,
                                                              pdfCanvasRef,
-    setOverlaysToDelete,
+                                                             setOverlaysToDelete,
                                                              canvasWidth,
                                                              canvasHeight,
                                                              canvasScale
@@ -699,7 +707,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
 
     const handleDeleteOverlay = (e: React.MouseEvent) => {
         e.preventDefault();
-        if (!isDeleting){
+        if (!isDeleting) {
             setIsDeleting(true);
             return;
         }
@@ -808,9 +816,17 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
         const t = setTimeout(() => {
             setShowOverlays(false);
             if (overlayRef.current) renderOverlay(overlayRef.current, true);
-        }, 1200);
+        }, 500);
         return () => clearTimeout(t);
-    }, [thisPage, editorInfo.mode]);
+    }, [thisPage, editorInfo.mode, renderOverlay, currentPage]);
+
+    const {isBelow1000px} = useScreenSize();
+
+    useEffect(() => {
+        if (currentPage === thisPage || (!isBelow1000px && (currentPage === thisPage + 1 && currentPage !== 2 && currentPage !== maxPage))) {
+            overlays[thisPage].forEach((overlay) => addImpression(flipbookId, "overlay", thisPage-1, overlay.id))
+        }
+    }, [thisPage, currentPage, isBelow1000px, maxPage, flipbookId, overlays]);
 
     return (
         <>
@@ -828,7 +844,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
             <canvas
                 ref={overlayRef}
                 className="absolute left-0 right-0 top-auto"
-                style={{ cursor: cursorStyle }}
+                style={{cursor: cursorStyle}}
                 onMouseDown={handleMouseDown}
                 onMouseLeave={handleMouseExit}
             />
@@ -861,13 +877,15 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
                     >
                         <Trash2 size={16}/>
                     </button>
-                    <button onClick={handleDeleteOverlay} className={`${isDeleting ? "w-24" : "w-0 p-0"} duration-500 overflow-x-hidden bg-red-500 hover:bg-red-600 text-white transition-colors`}>
+                    <button onClick={handleDeleteOverlay}
+                            className={`${isDeleting ? "w-24" : "w-0 p-0"} duration-500 overflow-x-hidden bg-red-500 hover:bg-red-600 text-white transition-colors`}>
                         Confirm
                     </button>
-                    <button onClick={(e)=>{
+                    <button onClick={(e) => {
                         e.preventDefault();
                         setIsDeleting(false);
-                    }} className={`${isDeleting ? "w-24 p-1":"w-0 p-0"} duration-500 overflow-x-hidden bg-gray-200 hover:bg-gray-100 transition-all`}>
+                    }}
+                            className={`${isDeleting ? "w-24 p-1" : "w-0 p-0"} duration-500 overflow-x-hidden bg-gray-200 hover:bg-gray-100 transition-all`}>
                         Cancel
                     </button>
                 </div>

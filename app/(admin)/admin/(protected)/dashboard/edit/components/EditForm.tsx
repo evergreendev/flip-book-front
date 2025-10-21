@@ -615,7 +615,7 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
                         setCurrPage: setCurrPage
                     }
                 }>
-                    <Flipbook setShouldGenerateOverlays={setShouldGenerateOverlays}
+                    <Flipbook flipbookId="" setShouldGenerateOverlays={setShouldGenerateOverlays}
                               shouldGenerateOverlays={shouldGenerateOverlays} setOverlaysToRender={setOverlaysToRender}
                               overlaysToDelete={overLaysToDelete}
                               setOverlaysToDelete={setOverLaysToDelete}
