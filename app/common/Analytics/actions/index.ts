@@ -55,3 +55,22 @@ export async function addImpression(flipbookId: string, impressionType: Analytic
         impression: impressionData.impression
     }
 }
+
+export async function runHeartbeat(){
+    const cookieStore = await cookies();
+    const userSession = cookieStore.get("user_session")?.value;
+
+    if (!userSession) return;
+
+    await fetch(`${process.env.BACKEND_URL}/session/heartbeat`, {
+        method: "POST",
+        body: JSON.stringify({
+            sessionId: userSession,
+        }),
+        headers: {
+            "Content-Type": "application/json"
+        }
+    });
+
+    return;
+}
