@@ -1,6 +1,7 @@
 "use server"
 import {cookies} from "next/headers";
 import {AnalyticsCategory, AnalyticsEvent} from "@/app/common/Analytics/types";
+import {handleCreateSession} from "@/app/common/Sessions/actions";
 
 async function addGenericEvent(
     eventType: AnalyticsEvent,
@@ -62,7 +63,7 @@ export async function runHeartbeat(){
 
     if (!userSession) return;
 
-    await fetch(`${process.env.BACKEND_URL}/session/heartbeat`, {
+    const res = await fetch(`${process.env.BACKEND_URL}/session/heartbeat`, {
         method: "POST",
         body: JSON.stringify({
             sessionId: userSession,
@@ -72,5 +73,13 @@ export async function runHeartbeat(){
         }
     });
 
-    return;
+    const data = await res.json();
+
+    if (data.session.state === "ended"){
+        cookieStore.delete("user_session");
+        const newSession = await handleCreateSession();
+        cookieStore.set("user_session", newSession.sessionId);
+    }
+
+    return data;
 }
