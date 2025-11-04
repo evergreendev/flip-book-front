@@ -7,13 +7,17 @@ import {useCallback, useState} from "react";
 import flipbookContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/FlipbookContext";
 import {runHeartbeat} from "@/app/common/Analytics/actions";
 import {useHeartbeat} from "@/app/common/hooks/useHeartbeat";
+import {useTabActivity} from "@/app/common/hooks/useTabActivity";
 
 const PageClient = ({data, overlays, pdfPath}:{data: FlipBook,overlays: Overlay[] | null, pdfPath:string}) => {
     const [currPage, setCurrPage] = useState(1);
+    const {isActive} = useTabActivity();
+
 
     const heartbeatFn = useCallback(async () => {
+        if (!isActive) return;
         await runHeartbeat();
-    }, []);
+    }, [isActive]);
 
     useHeartbeat(heartbeatFn);
 
