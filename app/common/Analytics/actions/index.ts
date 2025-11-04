@@ -57,6 +57,39 @@ export async function addImpression(flipbookId: string, impressionType: Analytic
     }
 }
 
+export async function addClick(flipbookId: string, pageNumber?: number, overlayId?: string|null, href?: string|null){
+    const cookieStore = await cookies();
+    const userSession = cookieStore.get("user_session")?.value;
+
+    if (!userSession) return null;
+
+    const event = await addGenericEvent("click", flipbookId, userSession, null, pageNumber);
+    if (!event.ok) return null;
+
+    const eventData = await event.json();
+
+    const click = await fetch(`${process.env.BACKEND_URL}/analytics/events/click`, {
+        method: "POST",
+        body: JSON.stringify({
+            eventId: eventData.event.id,
+            clickType: "external",
+            overlayId: overlayId,
+            href: href
+        }),
+        headers: {
+            "Content-Type": "application/json"
+        }
+    })
+
+    const clickData = await click.json();
+
+    return {
+        event: eventData.event,
+        impression: clickData.click,
+    }
+
+}
+
 export async function runHeartbeat(){
     const cookieStore = await cookies();
     const userSession = cookieStore.get("user_session")?.value;

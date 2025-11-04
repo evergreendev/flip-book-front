@@ -6,7 +6,7 @@ import {Overlay} from "../../types";
 import {Copy, Trash2, ClipboardPaste, ExternalLink} from "lucide-react";
 import Notification from "@/app/common/components/Notification";
 import {useScreenSize} from "@/app/common/Flipbooks/hooks/useScreenSize";
-import {addImpression} from "@/app/common/Analytics/actions";
+import {addClick, addImpression} from "@/app/common/Analytics/actions";
 
 interface OverlayRendererProps {
     thisPage: number,
@@ -480,6 +480,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = ({
 
             if (insideOverlay && editorInfo.mode !== "edit") {
                 if (e.type === "click") {
+                    addClick(flipbookId, thisPage, insideOverlay.id, insideOverlay.url);
                     router.push(insideOverlay.url);
                 }
             }
