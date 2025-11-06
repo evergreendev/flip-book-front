@@ -14,7 +14,9 @@ import useRenderQueue from "@/app/common/Flipbooks/hooks/useRenderQueue";
 import {useScreenSize} from "@/app/common/Flipbooks/hooks/useScreenSize";
 import {useToggleDiagnostics} from "@/app/common/Flipbooks/hooks/useToggleDiagnostics";
 import flipbookContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/FlipbookContext";
-import {addImpression} from "@/app/common/Analytics/actions";
+import {addImpression, addReadSession, runHeartbeat} from "@/app/common/Analytics/actions";
+import {useTabActivity} from "@/app/common/hooks/useTabActivity";
+import {usePageTimer} from "@/app/common/hooks/usePageTimer";
 
 async function generateOverlays(
     currPage: number,
@@ -146,6 +148,16 @@ export default function Flipbook({
     const flipbookContainerRef = useRef<HTMLDivElement>(null);
     const editorInfo = useContext(editorContext);
     const {setCurrPage, currPage} = useContext(flipbookContext);
+
+    const {isActive} = useTabActivity();
+
+    const { elapsedTime, pageReadTime, onPageChange } = usePageTimer({
+        isActive,
+        initialPage: currPage,
+        onCommit: ({ page, time }) => {
+            console.log("Committed", page, time, "ms");
+        },
+    });
 
     const router = useRouter();
 
@@ -562,6 +574,7 @@ export default function Flipbook({
     useEffect(() => {
         if (editorInfo.mode !== "edit") {
             addImpression(flipbookId, "flipbook");
+            addReadSession();
         }
     }, [editorInfo.mode, flipbookId]);
 
@@ -584,6 +597,10 @@ export default function Flipbook({
             e.preventDefault();
         }
         if (!maxPage) return;
+
+        if (editorInfo.mode !== "edit") {
+            runHeartbeat(true);
+        }
 
         setAnimationDirection("right")
         setCurrPage(prev => {
@@ -609,12 +626,18 @@ export default function Flipbook({
             return newPage;
         });
     };
+    useEffect(() => {
+        onPageChange(currPage);
+    }, [currPage]);
 
     const handleNextPage = (e?: { preventDefault: () => void; }) => {
         if (e) {
             e.preventDefault();
         }
         if (!maxPage) return;
+        if (editorInfo.mode !== "edit") {
+            runHeartbeat(true);
+        }
 
         setAnimationDirection("left");
         setCurrPage(prev => {
@@ -654,6 +677,13 @@ export default function Flipbook({
 
     return <div key={sizeKey} ref={flipbookContainerRef}
                 className="flex flex-col sm:flex-row justify-between items-center flex-wrap mx-auto max-h-screen h-screen">
+        {/*Remove comment for debugging
+        <div className="bg-black text-white">
+            {elapsedTime}
+            {pageReadTime.map((time, index) => {
+                return <div key={index} className="text-center text-sm">{time.page} - {time.time}</div>
+            })}
+        </div>*/}
         <div className="h-full flex flex-col w-full">
             <div
                 ref={flipbookRef}

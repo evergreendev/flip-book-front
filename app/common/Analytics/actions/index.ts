@@ -57,6 +57,30 @@ export async function addImpression(flipbookId: string, impressionType: Analytic
     }
 }
 
+export async function addReadSession() {
+    const cookieStore = await cookies();
+    const userSession = cookieStore.get("user_session")?.value;
+
+    if (!userSession) return null;
+
+    const readSession = await fetch(`${process.env.BACKEND_URL}/analytics/events/read-session`, {
+        method: "POST",
+        body: JSON.stringify({
+            sessionId: userSession,
+        }),
+        headers: {
+            "Content-Type": "application/json"
+        }
+    })
+
+    const readSessionData = await readSession.json();
+
+    return {
+        readSession: readSessionData,
+    }
+}
+
+
 export async function addClick(flipbookId: string, pageNumber?: number, overlayId?: string|null, href?: string|null){
     const cookieStore = await cookies();
     const userSession = cookieStore.get("user_session")?.value;
@@ -90,7 +114,7 @@ export async function addClick(flipbookId: string, pageNumber?: number, overlayI
 
 }
 
-export async function runHeartbeat(){
+export async function runHeartbeat(updateLastSeen: boolean){
     const cookieStore = await cookies();
     const userSession = cookieStore.get("user_session")?.value;
 
@@ -100,6 +124,7 @@ export async function runHeartbeat(){
         method: "POST",
         body: JSON.stringify({
             sessionId: userSession,
+            updateLastSeen: updateLastSeen
         }),
         headers: {
             "Content-Type": "application/json"

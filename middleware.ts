@@ -7,9 +7,10 @@ const COOKIE_NAME = 'user_session' // your analytics session id
 
 export async function middleware(req: NextRequest) {
     const res = NextResponse.next()
-    const hasSid = req.cookies.get(COOKIE_NAME)?.value
+    const sessionIdFromCookie = req.cookies.get(COOKIE_NAME)?.value
 
-    if (!hasSid) {
+    // If no session id cookie, create a new one
+    if (!sessionIdFromCookie) {
         const sid = await handleCreateSession();
 
         res.cookies.set({
@@ -19,6 +20,27 @@ export async function middleware(req: NextRequest) {
             sameSite: 'lax',
             secure: process.env.NODE_ENV === 'production',
         })
+
+        return res;
+    }
+
+    const sessionFromDB = await fetch(`${process.env.BACKEND_URL}/session/${sessionIdFromCookie}`);
+
+    const sessionFromDBData = await sessionFromDB.json();
+
+
+    if (sessionFromDBData[0].state === "ended") {
+        const sid = await handleCreateSession();
+
+        res.cookies.set({
+            name: COOKIE_NAME,
+            value: sid,
+            path: '/',
+            sameSite: 'lax',
+            secure: process.env.NODE_ENV === 'production',
+        })
+
+        return res;
     }
 
     return res
