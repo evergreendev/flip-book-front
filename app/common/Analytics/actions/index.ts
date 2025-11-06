@@ -73,11 +73,7 @@ export async function addReadSession() {
         }
     })
 
-    const readSessionData = await readSession.json();
-
-    return {
-        readSession: readSessionData,
-    }
+    return await readSession.json()
 }
 
 
@@ -140,4 +136,44 @@ export async function runHeartbeat(updateLastSeen: boolean){
     }
 
     return data;
+}
+
+export async function runReadSessionHeartbeat(updateLastSeen: boolean){
+    const cookieStore = await cookies();
+    const readSession = cookieStore.get("read_session")?.value;
+
+    if (readSession){
+        const res = await fetch(`${process.env.BACKEND_URL}/analytics/events/read-session/heartbeat`, {
+            method: "POST",
+            body: JSON.stringify({
+                id: readSession,
+                updateLastSeen: updateLastSeen
+            }),
+            headers: {
+                "Content-Type": "application/json"
+            }
+        });
+
+        const data = await res.json();
+
+        console.log(data);
+
+        if (data.session.state === "ended"){
+            cookieStore.delete("read_session");
+            const newSession = await addReadSession();
+            if (!newSession) return;
+
+            cookieStore.set("read_session", newSession.readSession.id);
+            return newSession.readSession;
+        }
+
+        return data;
+    } else{
+        const newSession = await addReadSession();
+        if (!newSession) return;
+        console.log(newSession);
+        cookieStore.set("read_session", newSession.readSession.id);
+        return newSession.readSession;
+    }
+
 }

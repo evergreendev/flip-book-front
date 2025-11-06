@@ -5,7 +5,7 @@ import { Overlay } from "@/app/common/Flipbooks/types";
 import { FlipBook } from "@/app/types";
 import { useCallback, useState } from "react";
 import flipbookContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/FlipbookContext";
-import { runHeartbeat } from "@/app/common/Analytics/actions";
+import {runHeartbeat, runReadSessionHeartbeat} from "@/app/common/Analytics/actions";
 import { useHeartbeat } from "@/app/common/hooks/useHeartbeat";
 import { useTabActivity } from "@/app/common/hooks/useTabActivity";
 
@@ -23,6 +23,7 @@ const PageClient = ({
 
     const heartbeatFn = useCallback(async () => {
         await runHeartbeat(isActive);
+        await runReadSessionHeartbeat(isActive);
     }, [isActive]);
     useHeartbeat(heartbeatFn);
 

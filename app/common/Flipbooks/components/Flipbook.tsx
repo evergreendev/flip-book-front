@@ -14,7 +14,7 @@ import useRenderQueue from "@/app/common/Flipbooks/hooks/useRenderQueue";
 import {useScreenSize} from "@/app/common/Flipbooks/hooks/useScreenSize";
 import {useToggleDiagnostics} from "@/app/common/Flipbooks/hooks/useToggleDiagnostics";
 import flipbookContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/FlipbookContext";
-import {addImpression, addReadSession, runHeartbeat} from "@/app/common/Analytics/actions";
+import {addImpression, addReadSession, runHeartbeat, runReadSessionHeartbeat} from "@/app/common/Analytics/actions";
 import {useTabActivity} from "@/app/common/hooks/useTabActivity";
 import {usePageTimer} from "@/app/common/hooks/usePageTimer";
 
@@ -600,6 +600,7 @@ export default function Flipbook({
 
         if (editorInfo.mode !== "edit") {
             runHeartbeat(true);
+            runReadSessionHeartbeat(true);
         }
 
         setAnimationDirection("right")
@@ -637,6 +638,7 @@ export default function Flipbook({
         if (!maxPage) return;
         if (editorInfo.mode !== "edit") {
             runHeartbeat(true);
+            runReadSessionHeartbeat(true);
         }
 
         setAnimationDirection("left");
