@@ -12,6 +12,7 @@ import Link from "next/link";
 import {Overlay} from "@/app/common/Flipbooks/types";
 import {FlipBook} from "@/app/types";
 import flipbookContext from "../context/FlipbookContext";
+import {AnalyticsProvider} from "@/app/common/Analytics/AnalyticsProvider";
 
 interface NotificationProps {
     message: string;
@@ -390,7 +391,7 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
     }
 
     function handleNavigate(e: { preventDefault: () => void; }) {
-        if (overlaysToUpdate){
+        if (overlaysToUpdate) {
             e.preventDefault();
 
             const confirmed = window.confirm("You have unsaved changes to overlays. Are you sure you want to navigate away from this page?");
@@ -486,7 +487,8 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
 
 
                     {/* Floating sidebar with actions */}
-                    <div className={`fixed right-0 top-0 h-full flex transition-all duration-300 z-40 ${isSidebarMinimized ? 'w-0' : 'w-80'}`}>
+                    <div
+                        className={`fixed right-0 top-0 h-full flex transition-all duration-300 z-40 ${isSidebarMinimized ? 'w-0' : 'w-80'}`}>
                         {/* Toggle button for the sidebar */}
                         <button
                             onClick={(e) => {
@@ -496,9 +498,11 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
                             className="fixed top-1/2 -translate-y-1/2 -translate-x-full bg-slate-300 hover:bg-slate-400 text-black p-2 rounded-l-md z-10 shadow-md transition-colors duration-200 border-l border-t border-b border-slate-400"
                             title={isSidebarMinimized ? "Expand actions panel" : "Minimize actions panel"}
                         >
-                            {isSidebarMinimized ? <PanelRightOpen className="h-5 w-5" /> : <PanelRightClose className="h-5 w-5" />}
+                            {isSidebarMinimized ? <PanelRightOpen className="h-5 w-5"/> :
+                                <PanelRightClose className="h-5 w-5"/>}
                         </button>
-                        <div className={`flex flex-col h-full border-l-2 border-l-slate-400 bg-slate-300 text-black p-4 shadow-md overflow-hidden ${isSidebarMinimized ? 'w-0 opacity-0' : 'w-full opacity-100'} transition-all duration-300`}>
+                        <div
+                            className={`flex flex-col h-full border-l-2 border-l-slate-400 bg-slate-300 text-black p-4 shadow-md overflow-hidden ${isSidebarMinimized ? 'w-0 opacity-0' : 'w-full opacity-100'} transition-all duration-300`}>
                             <div className="flex flex-col h-full justify-between">
                                 <div className="space-y-4">
                                     <div className="flex flex-col">
@@ -509,10 +513,12 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
                                             Generate Ad Links from Text
                                         </button>
                                         <div className="flex">
-                                            <button onClick={confirmGenerate} className={`${isGeneratingConfirmation ? "w-24" : "w-0 p-0"} duration-500 overflow-x-hidden bg-green-600 hover:bg-green-500 text-white transition-colors`}>
+                                            <button onClick={confirmGenerate}
+                                                    className={`${isGeneratingConfirmation ? "w-24" : "w-0 p-0"} duration-500 overflow-x-hidden bg-green-600 hover:bg-green-500 text-white transition-colors`}>
                                                 Confirm
                                             </button>
-                                            <button onClick={cancelGenerate} className={`${isGeneratingConfirmation ? "w-24 p-1":"w-0 p-0"} duration-500 overflow-x-hidden bg-gray-200 hover:bg-gray-100 transition-all`}>
+                                            <button onClick={cancelGenerate}
+                                                    className={`${isGeneratingConfirmation ? "w-24 p-1" : "w-0 p-0"} duration-500 overflow-x-hidden bg-gray-200 hover:bg-gray-100 transition-all`}>
                                                 Cancel
                                             </button>
                                         </div>
@@ -576,7 +582,7 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
                                     {
                                         status === "published" &&
                                         <Link href={`${process.env.NEXT_PUBLIC_BASE_URL}/${currPath}`} target="_blank"
-                                            className={`block text-center my-2 px-4 py-2 rounded bg-slate-700 text-white hover:bg-slate-600 transition-colors`}>
+                                              className={`block text-center my-2 px-4 py-2 rounded bg-slate-700 text-white hover:bg-slate-600 transition-colors`}>
                                             View Flipbook
                                         </Link>
                                     }
@@ -609,22 +615,24 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
                         </div>
                     </div>
                 </form>
-                <flipbookContext.Provider value={
-                    {
-                        currPage: currPage,
-                        setCurrPage: setCurrPage
-                    }
-                }>
-                    <Flipbook flipbookId="" setShouldGenerateOverlays={setShouldGenerateOverlays}
-                              shouldGenerateOverlays={shouldGenerateOverlays} setOverlaysToRender={setOverlaysToRender}
-                              overlaysToDelete={overLaysToDelete}
-                              setOverlaysToDelete={setOverLaysToDelete}
-                              formOverlays={overlaysToUpdate} pdfId={pdfId} pdfPath={pdfPath}
-                              initialOverlays={overlaysToRender}
-                              setFormOverlays={setOverlaysToUpdate}
-                    />
-                </flipbookContext.Provider>
-
+                <AnalyticsProvider>
+                    <flipbookContext.Provider value={
+                        {
+                            currPage: currPage,
+                            setCurrPage: setCurrPage
+                        }
+                    }>
+                        <Flipbook flipbookId="" setShouldGenerateOverlays={setShouldGenerateOverlays}
+                                  shouldGenerateOverlays={shouldGenerateOverlays}
+                                  setOverlaysToRender={setOverlaysToRender}
+                                  overlaysToDelete={overLaysToDelete}
+                                  setOverlaysToDelete={setOverLaysToDelete}
+                                  formOverlays={overlaysToUpdate} pdfId={pdfId} pdfPath={pdfPath}
+                                  initialOverlays={overlaysToRender}
+                                  setFormOverlays={setOverlaysToUpdate}
+                        />
+                    </flipbookContext.Provider>
+                </AnalyticsProvider>
             </div>
         </editorContext.Provider>
     </div>

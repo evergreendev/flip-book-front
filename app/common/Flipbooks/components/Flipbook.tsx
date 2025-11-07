@@ -17,6 +17,9 @@ import flipbookContext from "@/app/(admin)/admin/(protected)/dashboard/edit/cont
 import {addImpression, addReadSession, runHeartbeat, runReadSessionHeartbeat} from "@/app/common/Analytics/actions";
 import {useTabActivity} from "@/app/common/hooks/useTabActivity";
 import {usePageTimer} from "@/app/common/hooks/usePageTimer";
+import {useAnalytics} from "@/app/common/Analytics/AnalyticsProvider";
+import {sendPageTimes} from "@/app/common/Analytics/analyticsTransport";
+import {useUnloadFlush} from "@/app/common/hooks/useUnloadFlush";
 
 async function generateOverlays(
     currPage: number,
@@ -149,15 +152,38 @@ export default function Flipbook({
     const editorInfo = useContext(editorContext);
     const {setCurrPage, currPage} = useContext(flipbookContext);
 
+    const {userSession, readSession} = useAnalytics();
+
+
+    const seqRef = useRef(0);
+    const nextSeq = () => ++seqRef.current;
+
+
     const {isActive} = useTabActivity();
 
-    const { elapsedTime, pageReadTime, onPageChange } = usePageTimer({
+    // Commit handler: ship each entry immediately
+    const onCommit = useCallback(({ page, time }: { page: number; time: number }) => {
+        const payload = {
+            sessionId: userSession ? userSession : "",
+            readSession: readSession ? readSession : "",
+            flipbookId: flipbookId,
+            page,
+            ms: time,
+            seq: nextSeq(),
+            ts_ms: Date.now(),
+            idempotencyKey: `${readSession}:${seqRef.current}`,
+        };
+        sendPageTimes([payload]);
+    }, [userSession, readSession, flipbookId]);
+
+    const { onPageChange, flush } = usePageTimer({
         isActive,
         initialPage: currPage,
-        onCommit: ({ page, time }) => {
-            console.log("Committed", page, time, "ms");
-        },
+        onCommit: onCommit,
     });
+
+    //  A) fire when the tab closes / app backgrounds
+    useUnloadFlush(flush);
 
     const router = useRouter();
 
@@ -675,7 +701,6 @@ export default function Flipbook({
     for (let i = 1; i <= maxPage; i++) {
         thumbNailArray.push(`${pdfPath}/page-${(i).toString().padStart(numberOfFigures, '0')}.png`);
     }
-
 
     return <div key={sizeKey} ref={flipbookContainerRef}
                 className="flex flex-col sm:flex-row justify-between items-center flex-wrap mx-auto max-h-screen h-screen">

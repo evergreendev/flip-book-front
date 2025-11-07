@@ -17,6 +17,7 @@ export const metadata: Metadata = {
   description: "",
 };
 import { ScreenSizeProvider } from "./common/Flipbooks/hooks/useScreenSize";
+import { AnalyticsProvider } from "./common/Analytics/AnalyticsProvider";
 import "./globals.css";
 
 
@@ -30,9 +31,11 @@ export default function RootLayout({
       <body
         className={`${geistSans.variable} ${geistMono.variable} antialiased`}
       >
-      <ScreenSizeProvider>
-          {children}
-      </ScreenSizeProvider>
+      <AnalyticsProvider>
+        <ScreenSizeProvider>
+            {children}
+        </ScreenSizeProvider>
+      </AnalyticsProvider>
       </body>
     </html>
   );

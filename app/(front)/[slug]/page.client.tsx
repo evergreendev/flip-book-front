@@ -8,6 +8,7 @@ import flipbookContext from "@/app/(admin)/admin/(protected)/dashboard/edit/cont
 import {runHeartbeat, runReadSessionHeartbeat} from "@/app/common/Analytics/actions";
 import { useHeartbeat } from "@/app/common/hooks/useHeartbeat";
 import { useTabActivity } from "@/app/common/hooks/useTabActivity";
+import {AnalyticsProvider} from "@/app/common/Analytics/AnalyticsProvider";
 
 const PageClient = ({
                         data,
@@ -31,12 +32,14 @@ const PageClient = ({
         <ScreenSizeProvider>
             {data.pdf_path && (
                 <flipbookContext.Provider value={{ setCurrPage, currPage }}>
-                    <Flipbook
-                        flipbookId={data.id}
-                        pdfId={data.pdf_path}
-                        pdfPath={pdfPath}
-                        initialOverlays={overlays}
-                    />
+                    <AnalyticsProvider>
+                        <Flipbook
+                            flipbookId={data.id}
+                            pdfId={data.pdf_path}
+                            pdfPath={pdfPath}
+                            initialOverlays={overlays}
+                        />
+                    </AnalyticsProvider>
                 </flipbookContext.Provider>
             )}
         </ScreenSizeProvider>
