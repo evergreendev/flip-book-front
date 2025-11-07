@@ -73,7 +73,11 @@ export async function addReadSession() {
         }
     })
 
-    return await readSession.json()
+    const data = await readSession.json();
+
+    cookieStore.set("read_session", data.readSession.id)
+
+    return data
 }
 
 
@@ -155,8 +159,6 @@ export async function runReadSessionHeartbeat(updateLastSeen: boolean){
         });
 
         const data = await res.json();
-
-        console.log(data);
 
         if (data.session.state === "ended"){
             cookieStore.delete("read_session");
