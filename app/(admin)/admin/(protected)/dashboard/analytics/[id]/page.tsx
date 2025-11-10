@@ -71,7 +71,7 @@ export default async function AnalyticsPage({params: paramsPromise}: Args) {
                         <div className="text-gray-500">{flipbookImpressions.length}</div>
                     </section>
 
-                    {/* Overlay impressions */}
+                    {/* Reads */}
                     <section className="border p-4 bg-white">
                         <h2 className="text-lg font-semibold mb-2">Reads</h2>
                         <div className="text-gray-500">{Object.keys(readsData).length}</div>
