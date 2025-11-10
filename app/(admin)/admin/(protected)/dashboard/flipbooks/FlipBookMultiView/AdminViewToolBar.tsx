@@ -16,7 +16,7 @@ const AdminViewToolBar = ({id,reads}:{id:string,reads:Record<string, AnalyticsRe
                 router.push(`/admin/dashboard/analytics/${id}`);
             }}
             title="View analytics"
-            className="text-blue-600 hover:text-blue-800 p-2"
+            className="text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-full p-2 flex gap-1"
         >
             <LucideTrendingUp/>
             {readCount > 0 && <span className="bg-blue-500 text-white rounded-full px-2 py-1 text-xs">{readCount}</span>}
