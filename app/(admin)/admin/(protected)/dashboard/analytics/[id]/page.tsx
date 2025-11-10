@@ -21,6 +21,10 @@ const getReadsByFlipbookId = async (flipbookId: string): Promise<Response> => {
     return await fetch(`${process.env.BACKEND_URL}/analytics/events/read/${flipbookId}`, {})
 }
 
+const getClicksByFlipbookId = async (flipbookId: string): Promise<Response> => {
+    return await fetch(`${process.env.BACKEND_URL}/analytics/events/click/${flipbookId}`, {})
+}
+
 const getImpressionsByFlipbookId = async (flipbookId: string): Promise<Response> => {
     return await fetch(`${process.env.BACKEND_URL}/analytics/events/impression/${flipbookId}`, {})
 }
@@ -55,6 +59,10 @@ export default async function AnalyticsPage({params: paramsPromise}: Args) {
         return e["impression_type"] === "flipbook"
     });
 
+    const clicks = await getClicksByFlipbookId(id);
+    const clicksData = await clicks.json();
+    const allClicks = Object.values(clicksData).flat();
+
     return (
         <>
             <Header/>
@@ -80,7 +88,7 @@ export default async function AnalyticsPage({params: paramsPromise}: Args) {
                     {/* Overlay clicks */}
                     <section className="border p-4 bg-white">
                         <h2 className="text-lg font-semibold mb-2">Clicks</h2>
-                        <div className="text-gray-500">Coming soon</div>
+                        <div className="text-gray-500">{allClicks.length}</div>
                     </section>
 
                     {/* Average read time per flipbook */}
