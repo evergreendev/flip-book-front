@@ -13,5 +13,5 @@ export async function handleCreateSession() {
 
     console.log(data);
 
-    return await res.json();
+    return data;
 }
