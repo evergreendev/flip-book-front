@@ -71,8 +71,6 @@ export default async function AnalyticsPage({params: paramsPromise}: Args) {
         Object.entries(overlayImpressionsByUrl).map(([url, impressions]) => [url, impressions?.length||0])
     );
 
-    console.log(overlayImpressionCounts);
-
     const clicks = await getClicksByFlipbookId(id);
     const clicksData: Record<string, AnalyticsClick[]> = await clicks.json();
     const allClicks = Object.values(clicksData).flat();
