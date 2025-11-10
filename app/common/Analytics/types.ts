@@ -23,3 +23,17 @@ export type AnalyticsRead = {
     user_id: string | null;
     timestamp: Date;
 }
+
+export type AnalyticsClick = {
+    event_id: string;
+    click_type: 'external' | 'internal' | string; // adjust if you know all possible types
+    href: string;
+    overlay_id: string;
+    id: string;
+    event_type: 'click'
+    flipbook_id: string;
+    page_number: number;
+    session_id: string;
+    user_id: string | null;
+    timestamp: string; // or Date if you parse it
+}

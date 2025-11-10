@@ -1,5 +1,5 @@
 import Header from "@/app/(admin)/admin/(protected)/components/Header";
-import {AnalyticsRead} from "@/app/common/Analytics/types";
+import {AnalyticsClick, AnalyticsRead} from "@/app/common/Analytics/types";
 import {formatDuration, intervalToDuration} from "date-fns";
 
 // Simple stub page for per‑flipbook analytics
@@ -60,8 +60,13 @@ export default async function AnalyticsPage({params: paramsPromise}: Args) {
     });
 
     const clicks = await getClicksByFlipbookId(id);
-    const clicksData = await clicks.json();
+    const clicksData: Record<string, AnalyticsClick[]> = await clicks.json();
     const allClicks = Object.values(clicksData).flat();
+    const clicksByHref = allClicks.reduce((acc: Record<string, number>, click) => {
+        acc[click.href] = (acc[click.href] || 0) + 1;
+        return acc;
+    }, {});
+
 
     return (
         <>
@@ -105,6 +110,33 @@ export default async function AnalyticsPage({params: paramsPromise}: Args) {
                         </div>
                     </section>
                 </div>
+
+                {/* Clicks per href table */}
+                <section className="mt-8 border bg-white p-4">
+                    <h2 className="text-lg font-semibold mb-4">Clicks per Link</h2>
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Link
+                                    URL
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Click
+                                    Count
+                                </th>
+                            </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                            {Object.entries(clicksByHref).map(([href, count]) => (
+                                <tr key={href}>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{href}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{count}</td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
             </div>
         </>
     );
