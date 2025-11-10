@@ -21,6 +21,10 @@ const getReadsByFlipbookId = async (flipbookId: string): Promise<Response> => {
     return await fetch(`${process.env.BACKEND_URL}/analytics/events/read/${flipbookId}`, {})
 }
 
+const getImpressionsByFlipbookId = async (flipbookId: string): Promise<Response> => {
+    return await fetch(`${process.env.BACKEND_URL}/analytics/events/impression/${flipbookId}`, {})
+}
+
 function averageReadTimeByGroup(
     grouped: Record<string, AnalyticsRead[]>
 ): Record<string, number> {
@@ -44,6 +48,13 @@ export default async function AnalyticsPage({params: paramsPromise}: Args) {
     const averageReadTimeArray = Object.values(averageReadTimeByGrouped);
     const flipBookAverageReadTime = (averageReadTimeArray.reduce((a, b) => a + b, 0) / averageReadTimeArray.length);
 
+
+    const impressions = await getImpressionsByFlipbookId(id);
+    const impressionsData = await impressions.json();
+    const flipbookImpressions = impressionsData.filter((e: { [x: string]: string; }) => {
+        return e["impression_type"] === "flipbook"
+    });
+
     return (
         <>
             <Header/>
@@ -53,28 +64,28 @@ export default async function AnalyticsPage({params: paramsPromise}: Args) {
                     <p className="text-gray-600">Flipbook ID: <span className="font-mono">{id}</span></p>
                 </div>
 
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+                <div className="grid grid-cols-1 lg:grid-cols-5 gap-0">
                     {/* Flipbook impressions */}
-                    <section className="border rounded-lg p-4 bg-white">
+                    <section className="border p-4 bg-white">
                         <h2 className="text-lg font-semibold mb-2">Flipbook impressions</h2>
-                        <div className="text-gray-500">Coming soon</div>
+                        <div className="text-gray-500">{flipbookImpressions.length}</div>
                     </section>
 
                     {/* Overlay impressions */}
-                    <section className="border rounded-lg p-4 bg-white">
-                        <h2 className="text-lg font-semibold mb-2">Overlay impressions</h2>
-                        <div className="text-gray-500">Coming soon</div>
+                    <section className="border p-4 bg-white">
+                        <h2 className="text-lg font-semibold mb-2">Reads</h2>
+                        <div className="text-gray-500">{Object.keys(readsData).length}</div>
                     </section>
 
                     {/* Overlay clicks */}
-                    <section className="border rounded-lg p-4 bg-white">
-                        <h2 className="text-lg font-semibold mb-2">Overlay clicks</h2>
+                    <section className="border p-4 bg-white">
+                        <h2 className="text-lg font-semibold mb-2">Clicks</h2>
                         <div className="text-gray-500">Coming soon</div>
                     </section>
 
                     {/* Average read time per flipbook */}
-                    <section className="border rounded-lg p-4 bg-white">
-                        <h2 className="text-lg font-semibold mb-2">Average read time (flipbook)</h2>
+                    <section className="border p-4 bg-white">
+                        <h2 className="text-lg font-semibold mb-2">Average read time</h2>
                         <div className="text-gray-500">
                             {formatDuration(
                                 intervalToDuration({
