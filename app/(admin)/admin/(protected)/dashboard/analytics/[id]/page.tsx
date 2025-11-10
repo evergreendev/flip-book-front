@@ -29,6 +29,10 @@ const getImpressionsByFlipbookId = async (flipbookId: string): Promise<Response>
     return await fetch(`${process.env.BACKEND_URL}/analytics/events/impression/${flipbookId}`, {})
 }
 
+const getOverlayImpressionsByFlipbookId = async (flipbookId: string): Promise<Response> => {
+    return await fetch(`${process.env.BACKEND_URL}/analytics/events/impression/${flipbookId}?impression_type=overlay`, {})
+}
+
 function averageReadTimeByGroup(
     grouped: Record<string, AnalyticsRead[]>
 ): Record<string, number> {
@@ -58,6 +62,16 @@ export default async function AnalyticsPage({params: paramsPromise}: Args) {
     const flipbookImpressions = impressionsData.filter((e: { [x: string]: string; }) => {
         return e["impression_type"] === "flipbook"
     });
+
+
+    const overlayImpressions = await getOverlayImpressionsByFlipbookId(id);
+    const overlayImpressionsData = await overlayImpressions.json();
+    const overlayImpressionsByUrl = Object.groupBy(overlayImpressionsData,(overlay:{url:string}) => overlay.url);
+    const overlayImpressionCounts = Object.fromEntries(
+        Object.entries(overlayImpressionsByUrl).map(([url, impressions]) => [url, impressions?.length||0])
+    );
+
+    console.log(overlayImpressionCounts);
 
     const clicks = await getClicksByFlipbookId(id);
     const clicksData: Record<string, AnalyticsClick[]> = await clicks.json();
@@ -128,6 +142,33 @@ export default async function AnalyticsPage({params: paramsPromise}: Args) {
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
                             {Object.entries(clicksByHref).map(([href, count]) => (
+                                <tr key={href}>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{href}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{count}</td>
+                                </tr>
+                            ))}
+                            </tbody>
+                        </table>
+                    </div>
+                </section>
+
+                {/* Impressions per href table */}
+                <section className="mt-8 border bg-white p-4">
+                    <h2 className="text-lg font-semibold mb-4">Impressions per Link</h2>
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-200">
+                            <thead className="bg-gray-50">
+                            <tr>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Link
+                                    URL
+                                </th>
+                                <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Impression
+                                    Count
+                                </th>
+                            </tr>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-200">
+                            {Object.entries(overlayImpressionCounts).map(([href, count]) => (
                                 <tr key={href}>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{href}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-900">{count}</td>
