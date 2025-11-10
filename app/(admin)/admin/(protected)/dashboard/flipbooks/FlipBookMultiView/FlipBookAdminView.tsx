@@ -4,8 +4,15 @@ import Link from "next/link";
 import {format} from "date-fns";
 import AdminViewToolBar from "@/app/(admin)/admin/(protected)/dashboard/flipbooks/FlipBookMultiView/AdminViewToolBar";
 
-const FlipBookAdminView = ({flipBook}: { flipBook: FlipBook }) => {
+const getReadsByFlipbookId = async (flipbookId: string): Promise<Response> => {
+
+    return await fetch(`${process.env.BACKEND_URL}/analytics/events/read/${flipbookId}`, {})
+}
+
+const FlipBookAdminView = async ({flipBook}: { flipBook: FlipBook }) => {
     const mode = "edit";
+    const reads = await getReadsByFlipbookId(flipBook.id);
+    const readsData = await reads.json();
 
     switch (mode) {
         case "edit":
@@ -37,7 +44,7 @@ const FlipBookAdminView = ({flipBook}: { flipBook: FlipBook }) => {
                     </div>
                 </div>
                 <div className="ml-auto">
-                    <AdminViewToolBar id={flipBook.id}/>
+                    <AdminViewToolBar id={flipBook.id} reads={readsData}/>
                 </div>
             </Link>
         default:
