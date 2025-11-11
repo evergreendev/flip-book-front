@@ -24,8 +24,6 @@ export async function middleware(req: NextRequest) {
         return res;
     }
 
-    console.log(sessionIdFromCookie);
-
     const sessionFromDB = await fetch(`${process.env.BACKEND_URL}/session/${sessionIdFromCookie}`);
 
     const sessionFromDBData = await sessionFromDB.json();
