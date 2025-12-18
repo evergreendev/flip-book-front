@@ -69,19 +69,21 @@ const OverlayForm = ({
 }) => {
     const editorInfo = useContext(editorContext);
 
-    if (hideForm) {
-        let hasUpdatedFlag = false;
-        const updatedOverlays = overlaysToUpdate ? overlaysToUpdate.map(overlay => {
-            const url = overlay.url || '';
-            const validatedUrl = url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
-            if (url !== validatedUrl) hasUpdatedFlag = true;
-            return {...overlay, url: validatedUrl}
-        }) : null;
+    useEffect(() => {
+        if (hideForm) {
+            let hasUpdatedFlag = false;
+            const updatedOverlays = overlaysToUpdate ? overlaysToUpdate.map(overlay => {
+                const url = overlay.url || '';
+                const validatedUrl = url.startsWith('http://') || url.startsWith('https://') ? url : `https://${url}`;
+                if (url !== validatedUrl) hasUpdatedFlag = true;
+                return {...overlay, url: validatedUrl}
+            }) : null;
 
-        if (hasUpdatedFlag) {
-            setOverlaysToUpdate(updatedOverlays);
+            if (hasUpdatedFlag) {
+                setOverlaysToUpdate(updatedOverlays);
+            }
         }
-    }
+    }, [hideForm, overlaysToUpdate, setOverlaysToUpdate]);
 
     if (!editorInfo || !editorInfo.activeOverlay) return null;
     const activeOverlayId = editorInfo.activeOverlay.id;
@@ -245,7 +247,6 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
 
     useEffect(() => {
         if (state.redirect) {
-            console.log(state.redirect);
             // Show success notification
             const wasDraft = draftFieldRef.current?.checked;
             setNotification({
@@ -475,7 +476,7 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
                             }
                         </div>
                     </div>
-                    <input readOnly className="hidden" aria-hidden={true} name="overlays"
+                    <input readOnly className="w-full h-52" aria-hidden={true} name="overlays"
                            value={JSON.stringify(overlaysToUpdate || [])}/>
                     <input readOnly className="hidden" aria-hidden={true} name="overlaysToDelete"
                            value={overLaysToDelete || []}/>
@@ -539,18 +540,19 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
                                                                     {overlaysToRender
                                                                         .filter(o => o.page === overlay.page)
                                                                         .map(o => (
-                                                                            <button
-                                                                                key={o.id}
-                                                                                onClick={(e) => {
-                                                                                    e.preventDefault()
-                                                                                    setActiveOverlay(o);
-                                                                                    setCurrPage(o.page);
-                                                                                }}
-                                                                                className={`w-full text-left text-xs p-1 rounded flex items-center justify-between ${activeOverlay?.id === o.id ? 'bg-blue-200' : 'bg-white hover:bg-slate-100'}`}
-                                                                            >
+                                                                            <div className="flex items-center justify-between" key={o.id}>
+                                                                                <button
+                                                                                    onClick={(e) => {
+                                                                                        e.preventDefault()
+                                                                                        setActiveOverlay(o);
+                                                                                        setCurrPage(o.page);
+                                                                                    }}
+                                                                                    className={`w-full text-left text-xs p-1 rounded flex items-center justify-between ${activeOverlay?.id === o.id ? 'bg-blue-200' : 'bg-white hover:bg-slate-100'}`}
+                                                                                >
                                                                                 <span className="truncate flex-1">
                                                                                     {o.url || 'No URL'}
                                                                                 </span>
+                                                                                </button>
                                                                                 {o.url && (
                                                                                     <button
                                                                                         onClick={(e) => {
@@ -565,7 +567,7 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
                                                                                                       className="ml-1 flex-shrink-0"/>
                                                                                     </button>
                                                                                 )}
-                                                                            </button>
+                                                                            </div>
                                                                         ))}
                                                                 </div>
                                                             </div>
@@ -591,7 +593,7 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
                                 <div className="mt-auto space-y-4">
                                     <div className="flex justify-end">
                                         <p className="flex items-center"><strong>Status:</strong>
-                                            <div className={`ml-4 mr-1 size-2 rounded-full ${statusStyles[status]}`}/>
+                                            <span className={`ml-4 mr-1 size-2 rounded-full block ${statusStyles[status]}`}/>
                                             {status}</p>
                                     </div>
 

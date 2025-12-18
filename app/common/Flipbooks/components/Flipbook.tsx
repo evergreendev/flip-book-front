@@ -187,7 +187,9 @@ export default function Flipbook({
 
     const router = useRouter();
 
-    editorInfo.setFlipbookContainer(flipbookContainerRef.current);
+    useEffect(() => {
+        editorInfo.setFlipbookContainer(flipbookContainerRef.current);
+    }, [editorInfo, flipbookContainerRef]);
 
 
     const pdfUrl = pdfPath + "/" + pdfId + ".pdf";
