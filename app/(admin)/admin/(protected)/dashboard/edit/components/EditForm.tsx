@@ -12,6 +12,7 @@ import Link from "next/link";
 import {Overlay} from "@/app/common/Flipbooks/types";
 import {FlipBook} from "@/app/types";
 import flipbookContext from "../context/FlipbookContext";
+import {useScreenSize} from "@/app/common/Flipbooks/hooks/useScreenSize";
 
 interface NotificationProps {
     message: string;
@@ -206,6 +207,8 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
     });
 
     const [currPage, setCurrPage] = useState(1);
+    const [maxPage, setMaxPage] = useState<number>(0);
+    const {isBelow1000px} = useScreenSize();
 
     const [isSidebarMinimized, setIsSidebarMinimized] = useState(false);
 
@@ -546,7 +549,17 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
                                                                                     onClick={(e) => {
                                                                                         e.preventDefault()
                                                                                         setActiveOverlay(o);
-                                                                                        setCurrPage(o.page);
+                                                                                        if (isBelow1000px) {
+                                                                                            setCurrPage(o.page);
+                                                                                        } else {
+                                                                                            // If it's the last page, return as is
+                                                                                            if (o.page === maxPage) {
+                                                                                                setCurrPage(o.page);
+                                                                                            } else {
+                                                                                                // If the page is even, increment it to make it odd
+                                                                                                setCurrPage(o.page % 2 === 0 ? o.page + 1 : o.page);
+                                                                                            }
+                                                                                        }
                                                                                     }}
                                                                                     className={`w-full text-left text-xs p-1 rounded flex items-center justify-between ${activeOverlay?.id === o.id ? 'bg-blue-200' : 'bg-white hover:bg-slate-100'}`}
                                                                                 >
@@ -627,6 +640,7 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
                         <Flipbook flipbookId="" setShouldGenerateOverlays={setShouldGenerateOverlays}
                                   shouldGenerateOverlays={shouldGenerateOverlays}
                                   setOverlaysToRender={setOverlaysToRender}
+                                  onMaxPage={setMaxPage}
                                   overlaysToDelete={overLaysToDelete}
                                   setOverlaysToDelete={setOverLaysToDelete}
                                   formOverlays={overlaysToUpdate} pdfId={pdfId} pdfPath={pdfPath}

@@ -103,21 +103,23 @@ export default function Flipbook({
                                      setOverlaysToDelete,
                                      setOverlaysToRender,
                                      flipbookId,
+                                     onMaxPage,
                                      onPageChange
                                  }: {
-    pdfPath: string,
-    pdfId: string,
-    flipbookId: string,
-    initialOverlays: Overlay[] | null,
-    setFormOverlays?: React.Dispatch<React.SetStateAction<Overlay[] | null>>,
-    setShouldGenerateOverlays?: React.Dispatch<React.SetStateAction<boolean>>,
-    shouldGenerateOverlays?: boolean,
-    formOverlays?: Overlay[] | null,
-    overlaysToDelete?: string[],
-    setOverlaysToDelete?: (value: (((prevState: string[]) => string[]) | string[])) => void,
-    setOverlaysToRender?: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void,
-    onPageChange?: (newPage: number) => Promise<void>
-}) {
+                                     pdfPath: string,
+                                     pdfId: string,
+                                     flipbookId: string,
+                                     initialOverlays: Overlay[] | null,
+                                     setFormOverlays?: React.Dispatch<React.SetStateAction<Overlay[] | null>>,
+                                     setShouldGenerateOverlays?: React.Dispatch<React.SetStateAction<boolean>>,
+                                     shouldGenerateOverlays?: boolean,
+                                     formOverlays?: Overlay[] | null,
+                                     overlaysToDelete?: string[],
+                                     setOverlaysToDelete?: (value: (((prevState: string[]) => string[]) | string[])) => void,
+                                     setOverlaysToRender?: (value: (((prevState: (Overlay[] | null)) => (Overlay[] | null)) | Overlay[] | null)) => void,
+                                     onPageChange?: (newPage: number) => Promise<void>,
+                                     onMaxPage?: (maxPage: number) => void,
+                                 }) {
     const formattedInitialOverlays: Overlay[][] = [];
     if (initialOverlays && initialOverlays?.length > 0) {
         initialOverlays.forEach(overlay => {
@@ -220,6 +222,9 @@ export default function Flipbook({
                 const pdf = await loadPdf(pdfUrl);
 
                 setMaxPage(pdf.numPages);
+                if (onMaxPage) {
+                    onMaxPage(pdf.numPages);
+                }
 
                 prefetchPdf(pdfUrl);
 
