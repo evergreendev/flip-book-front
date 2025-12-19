@@ -26,20 +26,20 @@ interface OverlayRendererProps {
 }
 
 const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
-                                                             thisPage,
-                                                             currentPage,
-                                                             maxPage,
-                                                             overlays,
-                                                             formOverlays,
-                                                             setOverlays,
-                                                             flipbookId,
-                                                             setFormOverlays,
-                                                             pdfCanvasRef,
-                                                             setOverlaysToDelete,
-                                                             canvasWidth,
-                                                             canvasHeight,
-                                                             canvasScale
-                                                         }) => {
+                                                                        thisPage,
+                                                                        currentPage,
+                                                                        maxPage,
+                                                                        overlays,
+                                                                        formOverlays,
+                                                                        setOverlays,
+                                                                        flipbookId,
+                                                                        setFormOverlays,
+                                                                        pdfCanvasRef,
+                                                                        setOverlaysToDelete,
+                                                                        canvasWidth,
+                                                                        canvasHeight,
+                                                                        canvasScale
+                                                                    }) => {
     const editorInfo = useContext(editorContext);
     const {isBelow1000px} = useScreenSize();
     const activeOverlayId = editorInfo?.activeOverlay?.id;
@@ -65,18 +65,22 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
     const [showOverlays, setShowOverlays] = useState(false);
     const router = useRouter();
 
+    function isVisible(currentPage: number, thisPage: number, maxPage: number) {
+        return currentPage === thisPage || (!isBelow1000px && (currentPage === thisPage + 1 && currentPage !== 2 && currentPage !== maxPage));
+    }
 
     function findInsideOverlay(position: number[], overlays: Overlay[]) {
-        if (!overlays || !currentPage) return;
-        const isVisible = currentPage === thisPage || (!isBelow1000px && (currentPage === thisPage + 1 && currentPage !== 2 && currentPage !== maxPage));
-        if (!isVisible) return;
+        if (!overlays || !maxPage) return;
 
         return overlays.find(overlay => {
             const left = overlay.x;
             const right = overlay.x + overlay.w;
             const bottom = overlay.y;
             const top = overlay.y + overlay.h;
-            return position[0] > left && position[0] < right && position[1] > bottom && position[1] < top;
+            return position[0] > left
+                && position[0] < right
+                && position[1] > bottom
+                && position[1] < top && isVisible(currentPage, overlay.page, maxPage);
         })
     }
 
@@ -93,13 +97,14 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
     }
 
     function findNearEdge(position: number[], overlay: Overlay, edgeThreshold: number = 16) {
-        const isVisible = currentPage === thisPage || (!isBelow1000px && (currentPage === thisPage + 1 && currentPage !== 2 && currentPage !== maxPage));
-        if (!isVisible) return;
-
         const left = overlay.x;
         const right = overlay.x + overlay.w;
         const bottom = overlay.y;
         const top = overlay.y + overlay.h;
+
+        if (!maxPage) return null;
+
+        if (!isVisible(currentPage, overlay.page, maxPage)) return null;
 
         // Check if near horizontal edges (for height-only resizing)
         if (position[0] > left + edgeThreshold && position[0] < right - edgeThreshold) {
@@ -126,8 +131,6 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
 
     function findInsideGrip(position: number[], overlays: Overlay[], gripSize: number = 8) {
         if (!overlays) return;
-        const isVisible = currentPage === thisPage || (!isBelow1000px && (currentPage === thisPage + 1 && currentPage !== 2 && currentPage !== maxPage));
-        if (!isVisible) return;
 
         let grip = "";
 
@@ -136,6 +139,10 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
             const topRight = {x: overlay.x + overlay.w - gripSize / 2, y: overlay.y - gripSize / 2};
             const bottomLeft = {x: overlay.x - gripSize / 2, y: overlay.y + overlay.h - gripSize / 2};
             const bottomRight = {x: overlay.x + overlay.w - gripSize / 2, y: overlay.y + overlay.h - gripSize / 2};
+
+            if (!maxPage) return null;
+
+            if (!isVisible(currentPage, overlay.page, maxPage)) return null;
 
             if ((position[0] >= topLeft.x && position[0] <= topLeft.x + gripSize &&
                 position[1] >= topLeft.y && position[1] <= topLeft.y + gripSize)) {
@@ -220,6 +227,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
     // Function to ensure overlay stays within page boundaries
     function ensureOverlayWithinBounds(overlay: Overlay, canvasWidth: number, canvasHeight: number): Partial<Overlay> {
         const updates: Partial<Overlay> = {};
+        if(canvasWidth === 0 || canvasHeight === 0) return updates;
 
         // Check x position (left edge)
         if (overlay.x < 0) {
@@ -502,7 +510,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
             if (e.buttons === 1 && draggingMode === "none" && editorInfo.mode === "edit") {
                 const [mouseX, mouseY] = translateCoordinates(e);
 
-                if (mouseDragInitialPosition && Math.hypot(mouseX - mouseDragInitialPosition[0], mouseY - mouseDragInitialPosition[1]) > 50) {
+                if (!insideGrip && !insideOverlay && mouseDragInitialPosition && Math.hypot(mouseX - mouseDragInitialPosition[0], mouseY - mouseDragInitialPosition[1]) > 50) {
                     setDraggingMode("create");
                     setMouseCreatePosition([mouseX, mouseY]);
                     return;

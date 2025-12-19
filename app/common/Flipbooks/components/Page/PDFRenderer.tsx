@@ -233,7 +233,7 @@ const PDFRenderer = React.memo(({
                     return newSet;
                 });
 
-                console.log('Image rendering succeeded');
+                /*console.log('Image rendering succeeded');*/
             } catch (e) {
                 console.log(e);
             } finally {
@@ -254,14 +254,16 @@ const PDFRenderer = React.memo(({
                 imageLoadingRef.current = null;
             }
             if (pdfRef.current) {
-                pdfRef.current.destroy().then(() => console.log("destroyed"));
+                pdfRef.current.destroy().then(() => {
+                    /*console.log("destroyed")*/
+                });
             }
         };
     }, [canvasRef, currPage, renderedPageUrl, shouldRender, flipbookWidth, flipbookHeight, pagePosition, setCanvasWidth, setCanvasHeight, setCanvasScale, setRenderedPages, isBelow1000px, pdfUrl]);
 
     useEffect(() => {
         if (shouldClearQueue) {
-            console.log("Image loading cancelled by renderQueue");
+            /*console.log("Image loading cancelled by renderQueue");*/
             if (imageLoadingRef.current) {
                 imageLoadingRef.current.cancel();
                 imageLoadingRef.current = null;
