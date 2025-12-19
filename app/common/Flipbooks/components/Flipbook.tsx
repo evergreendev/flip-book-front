@@ -149,7 +149,7 @@ export default function Flipbook({
     const flipbookContainerRef = useRef<HTMLDivElement>(null);
     const editorInfo = useContext(editorContext);
     const {setCurrPage, currPage} = useContext(flipbookContext);
-    const {isBelow1000px, width} = useScreenSize();
+    const {isBelow1000px} = useScreenSize();
 
     const router = useRouter();
 
@@ -712,6 +712,7 @@ export default function Flipbook({
                 {isDragging && (
                     <>
                         {/* Previous page indicator (right side) */}
+                        {/*@ts-expect-error Type problems*/}
                         <animated.div
                             className="absolute top-0 left-0 h-full flex items-center justify-start pointer-events-none"
                             style={{
@@ -724,6 +725,7 @@ export default function Flipbook({
                         </animated.div>
 
                         {/* Next page indicator (left side) */}
+                        {/*@ts-expect-error Type problems*/}
                         <animated.div
                             className="absolute top-0 right-0 h-full flex items-center justify-end pointer-events-none"
                             style={{
