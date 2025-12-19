@@ -286,4 +286,6 @@ const PDFRenderer = React.memo(({
     return <canvas className={positionClasses} ref={canvasRef}/>;
 });
 
+PDFRenderer.displayName = "PDFRenderer";
+
 export default PDFRenderer;

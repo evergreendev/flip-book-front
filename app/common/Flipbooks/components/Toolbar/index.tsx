@@ -254,4 +254,6 @@ const Toolbar: React.FC<ToolbarProps> = React.memo(({
     );
 });
 
+Toolbar.displayName = "Toolbar";
+
 export default Toolbar;

@@ -911,4 +911,6 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
     );
 });
 
+OverlayRenderer.displayName = 'OverlayRenderer';
+
 export default OverlayRenderer;
