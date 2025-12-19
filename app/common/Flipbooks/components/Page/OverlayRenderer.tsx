@@ -302,6 +302,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
             overlayContext.globalAlpha = hideOverlays ? 0 : .5;
 
             currOverlays.forEach(overlay => {
+                //console.log(overlay);
                 if (activeOverlayId === overlay.id) {
                     overlayContext.fillStyle = "#338ccc";
                 } else if (!overlay.url) {
@@ -341,6 +342,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
         }
     }, [overlays, thisPage, canvasScale, activeOverlayId, editorInfo.mode]);
 
+    const edgeThreshold = 32;
 
     const translateCoordinates = useCallback((e: MouseEvent) => {
         const canvas = overlayRef.current;
@@ -415,7 +417,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
                     }
                 } else if (insideOverlay) {
                     // Check if near an edge for width/height-only resizing
-                    const nearEdge = findNearEdge(position, insideOverlay);
+                    const nearEdge = findNearEdge(position, insideOverlay, edgeThreshold);
                     if (nearEdge) {
                         switch (nearEdge) {
                             case "left":
@@ -505,7 +507,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
                     setMovingOverlay(null);
                 } else if (insideOverlay) {
                     // Check if near an edge for width/height-only resizing
-                    const nearEdge = findNearEdge(position, insideOverlay);
+                    const nearEdge = findNearEdge(position, insideOverlay, edgeThreshold);
                     if (nearEdge) {
                         setDraggingMode("resize");
                         setActiveGrip({
