@@ -231,11 +231,6 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
         setCopiedOverlay: setCopiedOverlay
     }), [activeOverlayPageCanvas, status, id, flipBookContainer, activeOverlay, copiedOverlay]);
 
-    /*Load bearing console.log This seems to fix the weird overlay bug where overlays would be rendered in the corner*/
-    useEffect(() => {
-        console.log(initialOverlays)
-    }, []);
-
     useEffect(() => {
         if (serverRenderJobIsFinished) return;
 

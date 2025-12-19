@@ -41,6 +41,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
                                                              canvasScale
                                                          }) => {
     const editorInfo = useContext(editorContext);
+    const {isBelow1000px} = useScreenSize();
     const activeOverlayId = editorInfo?.activeOverlay?.id;
     const overlayRef = useRef<HTMLCanvasElement>(null);
     const [draggingMode, setDraggingMode] = React.useState<"none" | "move" | "resize" | "create">("none");
@@ -66,7 +67,10 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
 
 
     function findInsideOverlay(position: number[], overlays: Overlay[]) {
-        if (!overlays) return;
+        if (!overlays || !currentPage) return;
+        const isVisible = currentPage === thisPage || (!isBelow1000px && (currentPage === thisPage + 1 && currentPage !== 2 && currentPage !== maxPage));
+        if (!isVisible) return;
+
         return overlays.find(overlay => {
             const left = overlay.x;
             const right = overlay.x + overlay.w;
@@ -89,6 +93,9 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
     }
 
     function findNearEdge(position: number[], overlay: Overlay, edgeThreshold: number = 16) {
+        const isVisible = currentPage === thisPage || (!isBelow1000px && (currentPage === thisPage + 1 && currentPage !== 2 && currentPage !== maxPage));
+        if (!isVisible) return;
+
         const left = overlay.x;
         const right = overlay.x + overlay.w;
         const bottom = overlay.y;
@@ -119,6 +126,9 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
 
     function findInsideGrip(position: number[], overlays: Overlay[], gripSize: number = 8) {
         if (!overlays) return;
+        const isVisible = currentPage === thisPage || (!isBelow1000px && (currentPage === thisPage + 1 && currentPage !== 2 && currentPage !== maxPage));
+        if (!isVisible) return;
+
         let grip = "";
 
         const foundOverlay = overlays.find(overlay => {
@@ -342,8 +352,6 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
         }
     }, [overlays, thisPage, canvasScale, activeOverlayId, editorInfo.mode]);
 
-    const edgeThreshold = 32;
-
     const translateCoordinates = useCallback((e: MouseEvent) => {
         const canvas = overlayRef.current;
         if (!canvas) return [0, 0];
@@ -417,7 +425,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
                     }
                 } else if (insideOverlay) {
                     // Check if near an edge for width/height-only resizing
-                    const nearEdge = findNearEdge(position, insideOverlay, edgeThreshold);
+                    const nearEdge = findNearEdge(position, insideOverlay);
                     if (nearEdge) {
                         switch (nearEdge) {
                             case "left":
@@ -507,7 +515,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
                     setMovingOverlay(null);
                 } else if (insideOverlay) {
                     // Check if near an edge for width/height-only resizing
-                    const nearEdge = findNearEdge(position, insideOverlay, edgeThreshold);
+                    const nearEdge = findNearEdge(position, insideOverlay);
                     if (nearEdge) {
                         setDraggingMode("resize");
                         setActiveGrip({
@@ -823,12 +831,12 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
         return () => clearTimeout(t);
     }, [thisPage, editorInfo.mode, renderOverlay, currentPage]);
 
-    const {isBelow1000px} = useScreenSize();
 
     useEffect(() => {
         if (editorInfo.mode === "edit") return;
-        if (currentPage === thisPage || (!isBelow1000px && (currentPage === thisPage + 1 && currentPage !== 2 && currentPage !== maxPage))) {
-            overlays[thisPage-1]?.forEach((overlay) => addImpression(flipbookId, "overlay", thisPage-1, overlay.id))
+        const isVisible = currentPage === thisPage || (!isBelow1000px && (currentPage === thisPage + 1 && currentPage !== 2 && currentPage !== maxPage));
+        if (isVisible) {
+            overlays[thisPage - 1]?.forEach((overlay) => addImpression(flipbookId, "overlay", thisPage - 1, overlay.id))
         }
     }, [thisPage, currentPage, isBelow1000px, maxPage, flipbookId, overlays, editorInfo.mode]);
 
