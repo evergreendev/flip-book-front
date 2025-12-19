@@ -12,7 +12,6 @@ import Link from "next/link";
 import {Overlay} from "@/app/common/Flipbooks/types";
 import {FlipBook} from "@/app/types";
 import flipbookContext from "../context/FlipbookContext";
-import {AnalyticsProvider} from "@/app/common/Analytics/AnalyticsProvider";
 
 interface NotificationProps {
     message: string;
@@ -478,7 +477,7 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
                             }
                         </div>
                     </div>
-                    <input readOnly className="w-full h-52" aria-hidden={true} name="overlays"
+                    <input readOnly className="hidden" aria-hidden={true} name="overlays"
                            value={JSON.stringify(overlaysToUpdate || [])}/>
                     <input readOnly className="hidden" aria-hidden={true} name="overlaysToDelete"
                            value={overLaysToDelete || []}/>
@@ -619,7 +618,6 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
                         </div>
                     </div>
                 </form>
-                <AnalyticsProvider>
                     <flipbookContext.Provider value={
                         {
                             currPage: currPage,
@@ -636,7 +634,6 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
                                   setFormOverlays={setOverlaysToUpdate}
                         />
                     </flipbookContext.Provider>
-                </AnalyticsProvider>
             </div>
         </editorContext.Provider>
     </div>
