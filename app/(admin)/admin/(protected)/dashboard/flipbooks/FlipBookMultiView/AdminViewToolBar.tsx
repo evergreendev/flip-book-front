@@ -4,12 +4,14 @@ import {deleteFlipBook} from "@/app/(admin)/admin/(protected)/dashboard/flipbook
 import {useRouter} from "next/navigation";
 import {LucideTrendingUp} from "lucide-react";
 import {AnalyticsRead} from "@/app/common/Analytics/types";
+import {EmbedDialog} from "@/app/(admin)/admin/(protected)/dashboard/flipbooks/FlipBookMultiView/EmbedDialog";
 
-const AdminViewToolBar = ({id,reads}:{id:string,reads:Record<string, AnalyticsRead[]>}) => {
+const AdminViewToolBar = ({id,reads, pathName}:{id:string,reads:Record<string, AnalyticsRead[]>, pathName: string | null}) => {
     const router = useRouter();
     const readCount = Object.keys(reads).length;
 
     return <div className="flex items-center gap-2">
+        <EmbedDialog id={id} pathName={pathName} />
         <button
             onClick={(e) => {
                 e.preventDefault();

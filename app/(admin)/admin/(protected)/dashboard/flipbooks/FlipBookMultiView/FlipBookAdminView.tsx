@@ -16,10 +16,10 @@ const FlipBookAdminView = async ({flipBook}: { flipBook: FlipBook }) => {
 
     switch (mode) {
         case "edit":
-            return <Link href={`/admin/dashboard/edit/${flipBook.id}`}
-                         className="flex justify-between w-full border-t border-b border-gray-200 p-2 items-center hover:bg-green-50/50 transition-all"
-            >
-                <div className="flex items-center">
+            return <div className="flex justify-between w-full border-t border-b border-gray-200 p-2 items-center hover:bg-green-50/50 transition-all group">
+                <Link href={`/admin/dashboard/edit/${flipBook.id}`}
+                      className="flex items-center flex-grow"
+                >
                     {
                         flipBook.cover_path ?
                             <Image className="mr-4 group-hover:shadow-lg transition-shadow border border-gray-200"
@@ -42,11 +42,11 @@ const FlipBookAdminView = async ({flipBook}: { flipBook: FlipBook }) => {
                             </div>
                         </div>
                     </div>
+                </Link>
+                <div className="ml-auto flex-shrink-0">
+                    <AdminViewToolBar id={flipBook.id} reads={readsData} pathName={flipBook.path_name}/>
                 </div>
-                <div className="ml-auto">
-                    <AdminViewToolBar id={flipBook.id} reads={readsData}/>
-                </div>
-            </Link>
+            </div>
         default:
             return <div>
                 <Link href={`/admin/dashboard/edit/${flipBook.id}`}
