@@ -792,7 +792,8 @@ export default function Flipbook({
                                     thisPage={index + 1}
                                     pdfUrl={pdfUrl} shouldRender={shouldRenderList.has(index + 1)}
                                     setRenderedPages={setRenderedPages}
-                                    zoomLevel={zoomLevel}/>
+                                    zoomLevel={zoomLevel}
+                                    loadPdf={loadPdf}/>
                             </React.Fragment>
                         );
                     })}

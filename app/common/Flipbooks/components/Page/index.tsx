@@ -6,6 +6,7 @@ import OverlayRenderer from "@/app/common/Flipbooks/components/Page/OverlayRende
 import {useScreenSize} from "@/app/common/Flipbooks/hooks/useScreenSize";
 import {addImpression} from "@/app/common/Analytics/actions";
 import editorContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/EditorContext";
+import {PDFDocumentProxy} from "pdfjs-dist";
 
 interface PageProps {
     thisPage: number
@@ -26,6 +27,7 @@ interface PageProps {
     setOverlaysToDelete?: (value: (((prevState: string[]) => string[]) | string[])) => void
     shouldClearQueue: boolean,
     flipbookId: string,
+    loadPdf: (pdfUrl: string) => Promise<PDFDocumentProxy>
 }
 
 const Page = memo(({
@@ -46,6 +48,7 @@ const Page = memo(({
                    setOverlaysToDelete,
                    shouldClearQueue,
     flipbookId,
+    loadPdf
                }: PageProps) => {
     // Determine if the page is on the left side of the spread
     const isLeft = thisPage === 1 || thisPage % 2 === 0;
@@ -138,6 +141,7 @@ const Page = memo(({
                 shouldRender={shouldRender}
                 pagePosition={pagePosition}
                 zoomLevel={zoomLevel}
+                loadPdf={loadPdf}
             />
             <OverlayRenderer
                 thisPage={thisPage}

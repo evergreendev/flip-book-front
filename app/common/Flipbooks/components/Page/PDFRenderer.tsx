@@ -17,7 +17,8 @@ interface PDFRendererProps {
     setCanvasScale: (value: (((prevState: number) => number) | number)) => void,
     setRenderedPages: React.Dispatch<React.SetStateAction<Set<number>>>,
     shouldClearQueue: boolean,
-    renderedPageUrl: string
+    renderedPageUrl: string,
+    loadPdf: (pdfUrl: string) => Promise<PDFDocumentProxy>
 }
 
 const getSizedCanvasDims = (flipbookWidth: number, flipbookHeight: number, isBelow1000px: boolean) => {
@@ -54,7 +55,8 @@ const PDFRenderer = React.memo(({
                          setCanvasScale,
                          setRenderedPages,
                          shouldClearQueue,
-                         renderedPageUrl
+                         renderedPageUrl,
+                         loadPdf
                      }: PDFRendererProps) => {
     // Use a ref to track the current image loading operation
     const imageLoadingRef = useRef<{ cancel: () => void } | null>(null);
@@ -115,12 +117,14 @@ const PDFRenderer = React.memo(({
                 // @ts-expect-error: TypeScript cannot verify dynamic import for pdfjs-dist.
                 const pdfJS = await import('pdfjs-dist/build/pdf');
 
-                // Set up the worker.
-                pdfJS.GlobalWorkerOptions.workerSrc =
-                    window.location.origin + '/pdf.worker.min.mjs';
+                // Set up the worker if not already set.
+                if (!pdfJS.GlobalWorkerOptions.workerSrc) {
+                    pdfJS.GlobalWorkerOptions.workerSrc =
+                        window.location.origin + '/pdf.worker.min.mjs';
+                }
 
-                // Load the PDF document.
-                pdf = await pdfJS.getDocument(pdfUrl).promise;
+                // Load the PDF document using the provided loadPdf function.
+                pdf = await loadPdf(pdfUrl);
                 pdfRef.current = pdf;
 
                 // Get the first page.
@@ -253,13 +257,9 @@ const PDFRenderer = React.memo(({
                 imageLoadingRef.current.cancel();
                 imageLoadingRef.current = null;
             }
-            if (pdfRef.current) {
-                pdfRef.current.destroy().then(() => {
-                    /*console.log("destroyed")*/
-                });
-            }
+            // Note: We don't destroy the PDF proxy here because it's shared/cached
         };
-    }, [canvasRef, currPage, renderedPageUrl, shouldRender, flipbookWidth, flipbookHeight, pagePosition, setCanvasWidth, setCanvasHeight, setCanvasScale, setRenderedPages, isBelow1000px, pdfUrl]);
+    }, [canvasRef, currPage, renderedPageUrl, shouldRender, flipbookWidth, flipbookHeight, pagePosition, setCanvasWidth, setCanvasHeight, setCanvasScale, setRenderedPages, isBelow1000px, pdfUrl, loadPdf]);
 
     useEffect(() => {
         if (shouldClearQueue) {
