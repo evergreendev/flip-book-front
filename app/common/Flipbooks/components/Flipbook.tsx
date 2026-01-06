@@ -236,16 +236,32 @@ export default function Flipbook({
     }, []);
 
 
-    // Check for page parameter in URL when component loads
+    // Check for page parameter in URL when component loads or URL changes
     useEffect(() => {
         if (pageParam && maxPage) {
             const pageNumber = parseInt(pageParam, 10);
             // Ensure the page number is valid
             if (!isNaN(pageNumber) && pageNumber >= 1 && pageNumber <= maxPage) {
-                setCurrPage(pageNumber);
+                // Only set if different to avoid unnecessary updates
+                if (currPage !== pageNumber) {
+                    setCurrPage(pageNumber);
+                }
             }
         }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [maxPage, pageParam]);
+
+    // Update URL when page changes
+    useEffect(() => {
+        if (editorInfo.mode !== "edit" && currPage > 0) {
+            const params = new URLSearchParams(window.location.search);
+            const currentPageInUrl = params.get('page');
+            if (currentPageInUrl !== currPage.toString()) {
+                params.set('page', currPage.toString());
+                router.push(`?${params.toString()}`, { scroll: false });
+            }
+        }
+    }, [currPage, editorInfo.mode, router]);
 
 
     const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
@@ -339,10 +355,12 @@ export default function Flipbook({
         },[editorInfo.mode, isBelow1000px, maxPage, setCurrPage])
 
 
+    const isFirstRender = useRef(true);
     useEffect(() => {
-        if (onPageChange){
+        if (onPageChange && !isFirstRender.current){
             onPageChange(currPage);
         }
+        isFirstRender.current = false;
     }, [currPage, onPageChange]);
 
     const handleNextPage = useCallback((e?: { preventDefault: () => void; }) => {

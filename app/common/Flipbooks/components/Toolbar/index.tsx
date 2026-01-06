@@ -87,7 +87,8 @@ const Toolbar: React.FC<ToolbarProps> = React.memo(({
 
     function handlePageRangeRelease() {
         setShowTooltip(false);
-        setPage(adjustPageNumber(rangeInternalPage));
+        const newPage = adjustPageNumber(rangeInternalPage);
+        setPage(newPage);
     }
 
     useEffect(() => {
@@ -170,7 +171,8 @@ const Toolbar: React.FC<ToolbarProps> = React.memo(({
                             if (!isNaN(pageNum) && pageNum >= 1 && pageNum <= Math.max(0, totalPages - 2)) {
                                 // Add 2 to account for cover and first page
                                 const actualPage = pageNum + 2;
-                                setPage(adjustPageNumber(actualPage));
+                                const newPage = adjustPageNumber(actualPage);
+                                setPage(newPage);
                                 setShowPageInput(false);
                             }
                             setPageInputValue("");
@@ -239,8 +241,8 @@ const Toolbar: React.FC<ToolbarProps> = React.memo(({
                         }}
                     >
                         <div className="flex">
-                            {/* eslint-disable-next-line @next/next/no-img-element */}
                             {!isSinglePage &&
+                                // eslint-disable-next-line @next/next/no-img-element
                                 <img src={thumbNailArray[rangeInternalPage - 2]} className="grow w-6/12 z-50" alt=""/>}
                             {/* eslint-disable-next-line @next/next/no-img-element */}
                             <img src={thumbNailArray[rangeInternalPage - 1]} className={`w-6/12 grow z-50`} alt=""/>

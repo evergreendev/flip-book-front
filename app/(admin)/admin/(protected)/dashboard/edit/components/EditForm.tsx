@@ -206,7 +206,10 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
         isVisible: false
     });
 
-    const [currPage, setCurrPage] = useState(1);
+    const searchParams = typeof window !== 'undefined' ? new URLSearchParams(window.location.search) : null;
+    const pageParam = searchParams?.get('page');
+    const initialPage = pageParam ? parseInt(pageParam, 10) : 1;
+    const [currPage, setCurrPage] = useState(isNaN(initialPage) ? 1 : initialPage);
     const [maxPage, setMaxPage] = useState<number>(0);
     const {isBelow1000px} = useScreenSize();
 
