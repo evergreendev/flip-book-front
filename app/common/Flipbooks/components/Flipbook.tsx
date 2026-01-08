@@ -15,6 +15,7 @@ import {useScreenSize} from "@/app/common/Flipbooks/hooks/useScreenSize";
 import {useToggleDiagnostics} from "@/app/common/Flipbooks/hooks/useToggleDiagnostics";
 import flipbookContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/FlipbookContext";
 import {addImpression, addReadSession, runHeartbeat, runReadSessionHeartbeat} from "@/app/common/Analytics/actions";
+import {getPdfPageCount} from "@/app/common/Flipbooks/actions/getPdfPageCount";
 
 async function generateOverlays(
     currPage: number,
@@ -218,22 +219,31 @@ export default function Flipbook({
         //Get the max pages
         (async function () {
             try {
-                // Use the cached PDF loader
-                const pdf = await loadPdf(pdfUrl);
+                // Try to get page count from backend first
+                const backendPageCount = await getPdfPageCount(pdfId);
 
-                setMaxPage(pdf.numPages);
-                if (onMaxPage) {
-                    onMaxPage(pdf.numPages);
+                if (backendPageCount !== null) {
+                    setMaxPage(backendPageCount);
+                    if (onMaxPage) {
+                        onMaxPage(backendPageCount);
+                    }
+                } else {
+                    // Fallback to loading the full PDF if backend doesn't provide it
+                    const pdf = await loadPdf(pdfUrl);
+                    setMaxPage(pdf.numPages);
+                    if (onMaxPage) {
+                        onMaxPage(pdf.numPages);
+                    }
                 }
 
                 prefetchPdf(pdfUrl);
 
             } catch (error) {
-                console.error("Error loading PDF:", error);
+                console.error("Error loading PDF page count:", error);
             }
         })();
         // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, []);
+    }, [pdfId, pdfUrl]);
 
 
     // Check for page parameter in URL when component loads or URL changes

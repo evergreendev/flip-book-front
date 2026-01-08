@@ -16,10 +16,12 @@ export async function handleUpload(prevState: { error: string | null, redirect: 
         body: formData,
         headers: {
             "Authorization": `Bearer ${userToken?.value}`
-        }
+        },
+        // @ts-expect-error duplex is missing on the type
+        duplex: 'half'
     });
 
-    if (res.status !== 202) return {...loadingState, error: "Invalid Credentials. Please Try again", redirect: null, isLoading: false};
+    if (res.status !== 202 && res.status !== 200 && res.status !== 201) return {...loadingState, error: "Invalid Credentials or Upload failed. Please Try again", redirect: null, isLoading: false};
 
     const pdf = await res.json();
 
@@ -35,7 +37,7 @@ export async function handleUpload(prevState: { error: string | null, redirect: 
             "Authorization": `Bearer ${userToken?.value}`
         }
     });
-    if (res.status !== 202) return {...loadingState, error: "Invalid Credentials. Please Try again", redirect: null, isLoading: false};
+    if (flipbookRes.status !== 201 && flipbookRes.status !== 200) return {...loadingState, error: "Something went wrong while creating flipbook. Please Try again", redirect: null, isLoading: false};
     const flipbookBody = await flipbookRes.json();
 
     return {error: null, redirect: "edit/"+flipbookBody.flipbook.id, isLoading: false}
