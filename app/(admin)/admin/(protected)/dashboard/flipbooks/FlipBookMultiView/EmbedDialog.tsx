@@ -22,7 +22,7 @@ export function EmbedDialog({ id, pathName }: EmbedDialogProps) {
   const [copied, setCopied] = useState(false)
   const baseUrl = typeof window !== "undefined" ? window.location.origin : ""
   const embedUrl = `${baseUrl}/${pathName || id}`
-  const iframeCode = `<iframe src="${embedUrl}" width="100%" height="600px" frameborder="0" allowfullscreen></iframe>`
+  const iframeCode = `<iframe src="${embedUrl}" width="100%" height="900px" frameborder="0" allowfullscreen></iframe>`
 
   const copyToClipboard = async () => {
     try {
