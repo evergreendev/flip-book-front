@@ -423,6 +423,19 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
         }
     }
 
+    const [copied, setCopied] = useState(false);
+
+    const copyToClipboard = async () => {
+        try {
+            if (!currPath) return;
+            await navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_BASE_URL}/${currPath}`)
+            setCopied(true)
+            setTimeout(() => setCopied(false), 2000)
+        } catch (err) {
+            console.error("Failed to copy!", err)
+        }
+    }
+
     if (!serverRenderJobIsFinished) return <div
         className="fixed inset-0 bg-black/50 flex items-center justify-center z-50">
         <div className="bg-white p-4 rounded-md flex items-center gap-2">
@@ -600,10 +613,19 @@ const EditForm = ({flipBook, pdfPath, pdfId, initialOverlays}: {
 
                                     {
                                         status === "published" &&
-                                        <Link href={`${process.env.NEXT_PUBLIC_BASE_URL}/${currPath}`} target="_blank"
-                                              className={`block text-center my-2 px-4 py-2 rounded bg-slate-700 text-white hover:bg-slate-600 transition-colors`}>
-                                            View Flipbook
-                                        </Link>
+                                        <>
+                                            <Link href={`${process.env.NEXT_PUBLIC_BASE_URL}/${currPath}`} target="_blank"
+                                                  className={`block text-center my-2 px-4 py-2 rounded bg-slate-700 text-white hover:bg-slate-600 transition-colors`}>
+                                                View Flipbook
+                                            </Link>
+                                            <button
+                                                className={`block text-center my-2 px-4 py-2 rounded bg-slate-500 text-white hover:bg-slate-600 transition-colors`}
+                                                onClick={copyToClipboard}>
+                                                {
+                                                    copied ? <span>Copied!</span> : <span>Copy Link</span>
+                                                }
+                                            </button>
+                                        </>
                                     }
                                 </div>
 
