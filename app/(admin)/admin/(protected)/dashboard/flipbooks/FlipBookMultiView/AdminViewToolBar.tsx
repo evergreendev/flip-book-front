@@ -2,16 +2,43 @@
 
 import {deleteFlipBook} from "@/app/(admin)/admin/(protected)/dashboard/flipbooks/actions/flipbook";
 import {useRouter} from "next/navigation";
-import {LucideTrendingUp} from "lucide-react";
+import {LucideTrendingUp, Link as LinkIcon, LucideCheck, EyeIcon} from "lucide-react";
 import {AnalyticsRead} from "@/app/common/Analytics/types";
 import {EmbedDialog} from "@/app/(admin)/admin/(protected)/dashboard/flipbooks/FlipBookMultiView/EmbedDialog";
+import {useState} from "react";
+import Link from "next/link";
 
-const AdminViewToolBar = ({id,reads, pathName}:{id:string,reads:Record<string, AnalyticsRead[]>, pathName: string | null}) => {
+const AdminViewToolBar = ({id, reads, pathName}: {
+    id: string,
+    reads: Record<string, AnalyticsRead[]>,
+    pathName: string | null
+}) => {
     const router = useRouter();
     const readCount = Object.keys(reads).length;
+    const [copied, setCopied] = useState(false);
+
+    const copyToClipboard = async () => {
+        try {
+            if (!pathName) return;
+            await navigator.clipboard.writeText(`${process.env.NEXT_PUBLIC_BASE_URL}/${pathName}`)
+            setCopied(true)
+            setTimeout(() => setCopied(false), 2000)
+        } catch (err) {
+            console.error("Failed to copy!", err)
+        }
+    }
 
     return <div className="flex items-center gap-2">
-        <EmbedDialog id={id} pathName={pathName} />
+
+        <Link href={`/${pathName}`} className="hover:bg-gray-100 rounded-full p-2 flex gap-1">
+            <EyeIcon size={20}/>
+        </Link>
+
+        <button title="Copy link to clipboard" onClick={copyToClipboard} className="hover:bg-gray-100 rounded-full p-2 flex gap-1">
+            {copied ? <LucideCheck className="text-green-500"/> : <LinkIcon size={20}/>}
+        </button>
+        <EmbedDialog id={id} pathName={pathName}/>
+
         <button
             onClick={(e) => {
                 e.preventDefault();
@@ -21,7 +48,8 @@ const AdminViewToolBar = ({id,reads, pathName}:{id:string,reads:Record<string, A
             className="text-blue-600 hover:text-blue-800 hover:bg-blue-100 rounded-full p-2 flex gap-1"
         >
             <LucideTrendingUp/>
-            {readCount > 0 && <span className="bg-blue-500 text-white rounded-full px-2 py-1 text-xs">{readCount}</span>}
+            {readCount > 0 &&
+                <span className="bg-blue-500 text-white rounded-full px-2 py-1 text-xs">{readCount}</span>}
         </button>
 
         <button
