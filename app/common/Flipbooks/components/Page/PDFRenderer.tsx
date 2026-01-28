@@ -56,6 +56,7 @@ const PDFRenderer = React.memo(({
                          setRenderedPages,
                          shouldClearQueue,
                          renderedPageUrl,
+                         zoomLevel,
                          loadPdf
                      }: PDFRendererProps) => {
     // Use a ref to track the current image loading operation
@@ -194,11 +195,11 @@ const PDFRenderer = React.memo(({
                 }
 
                 // Clear any previous content with transparent background
-                canvasContext.clearRect(0, 0, displayWidth, displayHeight);
-                const dpr = window.devicePixelRatio || 1;
+                canvasContext.clearRect(0, 0, canvas.width, canvas.height);
+                const dpr = (window.devicePixelRatio || 1) * zoomLevel;
 
-                canvas.height = displayHeight * dpr;
                 canvas.width = displayWidth * dpr;
+                canvas.height = displayHeight * dpr;
 
                 // Set the display size to maintain visual dimensions
                 canvas.style.width = `${displayWidth}px`;
@@ -214,17 +215,10 @@ const PDFRenderer = React.memo(({
                     canvasContext.globalCompositeOperation = 'source-over';
                 }
 
-                canvasContext.scale(dpr, dpr);
-
-                canvasContext.clearRect(0, 0, displayWidth, displayHeight);
-
+                canvasContext.imageSmoothingEnabled = true;
                 canvasContext.imageSmoothingQuality = 'high';
 
-
-
-                canvasContext.drawImage(img, 0, 0, displayWidth, displayHeight);
-
-                canvasContext.setTransform(1, 0, 0, 1, 0, 0);
+                canvasContext.drawImage(img, 0, 0, displayWidth * dpr, displayHeight * dpr);
 
                 setCanvasWidth(displayWidth);
                 setCanvasHeight(displayHeight);
@@ -259,7 +253,7 @@ const PDFRenderer = React.memo(({
             }
             // Note: We don't destroy the PDF proxy here because it's shared/cached
         };
-    }, [canvasRef, currPage, renderedPageUrl, shouldRender, flipbookWidth, flipbookHeight, pagePosition, setCanvasWidth, setCanvasHeight, setCanvasScale, setRenderedPages, isBelow1000px, pdfUrl, loadPdf]);
+    }, [canvasRef, currPage, renderedPageUrl, shouldRender, flipbookWidth, flipbookHeight, pagePosition, setCanvasWidth, setCanvasHeight, setCanvasScale, setRenderedPages, isBelow1000px, pdfUrl, loadPdf, zoomLevel]);
 
     useEffect(() => {
         if (shouldClearQueue) {

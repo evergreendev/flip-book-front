@@ -38,7 +38,8 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
                                                                         setOverlaysToDelete,
                                                                         canvasWidth,
                                                                         canvasHeight,
-                                                                        canvasScale
+                                                                        canvasScale,
+                                                                        zoomLevel
                                                                     }) => {
     const editorInfo = useContext(editorContext);
     const {isBelow1000px} = useScreenSize();
@@ -308,9 +309,10 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
     const renderOverlay = useCallback((canvas: HTMLCanvasElement, hideOverlays: boolean) => {
         const overlayContext = canvas.getContext('2d');
         const currOverlays = overlays[thisPage - 1];
+        const dpr = (window.devicePixelRatio || 1) * zoomLevel;
 
         function convertToCanvasCoords([x, y, width, height]: [number, number, number, number]) {
-            const scale = canvasScale;
+            const scale = canvasScale * dpr;
             return [x * scale, canvas.height - ((y + height) * scale), width * scale, height * scale];
         }
 
@@ -358,7 +360,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
 
             overlayContext.globalAlpha = 1;
         }
-    }, [overlays, thisPage, canvasScale, activeOverlayId, editorInfo.mode]);
+    }, [overlays, thisPage, canvasScale, activeOverlayId, editorInfo.mode, zoomLevel]);
 
     const translateCoordinates = useCallback((e: MouseEvent) => {
         const canvas = overlayRef.current;
@@ -370,8 +372,10 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
         const rect = canvas.getBoundingClientRect();
         const mouseX = e.clientX - rect.left;
         const mouseY = rect.bottom - e.clientY;
-        const canvasScaledHeight = canvas.height / canvasScale;
-        const canvasScaledWidth = canvas.width / canvasScale;
+
+        const dpr = (window.devicePixelRatio || 1) * zoomLevel;
+        const canvasScaledHeight = (canvas.height / dpr) / canvasScale;
+        const canvasScaledWidth = (canvas.width / dpr) / canvasScale;
         const widthAdjust = canvas.getBoundingClientRect().width / canvasScaledWidth;
         const heightAdjust = canvas.getBoundingClientRect().height / canvasScaledHeight;
 
@@ -380,7 +384,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
         const adjustedY = transformedPoint.y / heightAdjust;
 
         return [adjustedX, adjustedY];
-    }, [canvasScale])
+    }, [canvasScale, zoomLevel])
 
     function handleMouseExit(e: React.MouseEvent) {
         e.preventDefault();
@@ -708,13 +712,19 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
     useEffect(() => {
         if (!overlayRef.current || !pdfCanvasRef || !pdfCanvasRef.current) return;
 
-        // Set the overlay canvas dimensions to match the PDF canvas
-        overlayRef.current.width = canvasWidth;
-        overlayRef.current.height = canvasHeight;
+        const dpr = (window.devicePixelRatio || 1) * zoomLevel;
+
+        // Set the overlay canvas dimensions to match the PDF canvas including DPR
+        overlayRef.current.width = canvasWidth * dpr;
+        overlayRef.current.height = canvasHeight * dpr;
+
+        // Set the display size to maintain visual dimensions
+        overlayRef.current.style.width = `${canvasWidth}px`;
+        overlayRef.current.style.height = `${canvasHeight}px`;
 
         // Re-render the overlay after resizing
         renderOverlay(overlayRef.current, editorInfo.mode !== "edit" && !showOverlays);
-    }, [canvasHeight, canvasWidth, editorInfo.mode, pdfCanvasRef, renderOverlay, showOverlays]);
+    }, [canvasHeight, canvasWidth, editorInfo.mode, pdfCanvasRef, renderOverlay, showOverlays, zoomLevel]);
 
     //overlay render effect
     useEffect(() => {

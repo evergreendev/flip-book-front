@@ -3,12 +3,22 @@ import React, {useCallback, useEffect} from "react";
 function useRenderQueue(
     currentPage: number,
     maxPages: number,
+    zoomLevel?: number,
 ) {
     const maxPagesToRender = 3;
     const maxQueueLookAhead = 5;
     const [shouldClearQueue, setShouldClearQueue] = React.useState(false);
     const [renderedPages, setRenderedPagesState] = React.useState<Set<number>>(new Set());
     const renderedPagesRef = React.useRef<Set<number>>(new Set());
+
+    const prevZoomLevelRef = React.useRef<number | undefined>(zoomLevel);
+
+    useEffect(() => {
+        if (zoomLevel !== undefined && prevZoomLevelRef.current !== undefined && zoomLevel !== prevZoomLevelRef.current) {
+            setShouldClearQueue(true);
+        }
+        prevZoomLevelRef.current = zoomLevel;
+    }, [zoomLevel]);
 
     const setRenderedPages = React.useCallback((update: React.SetStateAction<Set<number>>) => {
         setRenderedPagesState(prev => {

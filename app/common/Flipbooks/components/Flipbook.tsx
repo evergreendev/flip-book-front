@@ -571,7 +571,7 @@ export default function Flipbook({
         setRenderedPages,
         setShouldClearQueue,
         shouldClearQueue
-    } = useRenderQueue(currPage, maxPage || 0);
+    } = useRenderQueue(currPage, maxPage || 0, zoomLevel);
 
     const flipbookRef = useCallback((node: HTMLDivElement) => {
         if (node !== null) {
