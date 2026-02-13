@@ -503,7 +503,12 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
             if (insideOverlay && editorInfo.mode !== "edit") {
                 if (e.type === "click") {
                     addClick(flipbookId, thisPage, insideOverlay.id, insideOverlay.url);
-                    router.push(insideOverlay.url);
+                    const isIframe = window.self !== window.top;
+                    if (isIframe) {
+                        window.open(insideOverlay.url, '_top');
+                    } else {
+                        router.push(insideOverlay.url);
+                    }
                 }
             }
 
@@ -823,7 +828,8 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
         }
 
         // Open in new tab
-        window.open(url, '_blank');
+        const isIframe = window.self !== window.top;
+        window.open(url, isIframe ? '_top' : '_blank');
     };
 
     // Find the active overlay to position the delete button
@@ -839,6 +845,10 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
     useEffect(() => {
         if (editorInfo.mode === "edit") return;
         if (!overlayRef.current) return;
+
+        const isIframe = window.self !== window.top;
+        if (isIframe) return;
+
         // Show overlays immediately on page flip
         setShowOverlays(true);
         renderOverlay(overlayRef.current, false);
