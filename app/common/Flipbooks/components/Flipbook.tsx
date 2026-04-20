@@ -724,7 +724,7 @@ export default function Flipbook({
         <div className="h-full flex flex-col w-full">
             <div
                 ref={flipbookRef}
-                className={`overflow-hidden mx-auto my-4 w-full h-full flex-grow sm:h-[90vh] sm:aspect-[28/19] flex justify-center`}
+                className={`overflow-hidden mx-auto my-4 w-full h-full flex-grow sm:h-[90vh] sm:aspect-[28/19] flex justify-center ${isBelow1000px ? "px-0" : "px-24"}`}
                 style={{cursor: isPanning ? 'grabbing' : (zoomLevel > 1.0 ? 'grab' : 'default')}}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
@@ -738,7 +738,7 @@ export default function Flipbook({
                     e.preventDefault();
                     handlePreviousPage();
                 }}
-                        className={`${isBelow1000px ? "hidden" : ""} ${currPage <= 1 ? "text-gray-400 opacity-40" : "text-white"} absolute left-12 top-1/2 -translate-y-1/2`}>
+                        className={`${isBelow1000px ? "hidden" : ""} ${currPage <= 1 ? "text-gray-400 opacity-40" : "text-white"} absolute left-0 top-1/2 -translate-y-1/2 z-40`}>
                     <ChevronLeft size="5rem"/></button>
 
                 {/* Page turn indicators */}
@@ -830,7 +830,7 @@ export default function Flipbook({
                     e.preventDefault();
                     handleNextPage()
                 }}
-                        className={`${isBelow1000px ? "hidden" : ""} ${currPage >= maxPage ? "text-gray-400 opacity-40" : "text-white"} absolute right-12 top-1/2 -translate-y-1/2`}>
+                        className={`${isBelow1000px ? "hidden" : ""} ${currPage >= maxPage ? "text-gray-400 opacity-40" : "text-white"} absolute right-0 top-1/2 -translate-y-1/2`}>
                     <ChevronRight size="5rem"/></button>
                 {
                     devToolsAreOpen &&
