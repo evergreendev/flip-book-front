@@ -9,7 +9,7 @@ import Toolbar from "@/app/common/Flipbooks/components/Toolbar";
 import {ChevronLeft, ChevronRight,} from 'lucide-react';
 import {PDFDocumentProxy} from "pdfjs-dist";
 import {v4 as uuidv4} from "uuid";
-import {useRouter, useSearchParams} from "next/navigation";
+import {usePathname, useRouter, useSearchParams} from "next/navigation";
 import useRenderQueue from "@/app/common/Flipbooks/hooks/useRenderQueue";
 import {useScreenSize} from "@/app/common/Flipbooks/hooks/useScreenSize";
 import {useToggleDiagnostics} from "@/app/common/Flipbooks/hooks/useToggleDiagnostics";
@@ -155,6 +155,7 @@ export default function Flipbook({
     const {isBelow1000px} = useScreenSize();
 
     const router = useRouter();
+    const pathname = usePathname();
 
     useEffect(() => {
         if (editorInfo.setFlipbookContainer && editorInfo.flipbookContainer !== flipbookContainerRef.current) {
@@ -248,31 +249,21 @@ export default function Flipbook({
 
     // Check for page parameter in URL when component loads or URL changes
     useEffect(() => {
-        if (pageParam && maxPage) {
-            const pageNumber = parseInt(pageParam, 10);
-            // Ensure the page number is valid
-            if (!isNaN(pageNumber) && pageNumber >= 1 && pageNumber <= maxPage) {
-                // Only set if different to avoid unnecessary updates
-                if (currPage !== pageNumber) {
-                    setCurrPage(pageNumber);
-                }
-            }
+        if (!maxPage) return;
+
+        // If page parameter is absent, treat it as page 1
+        if (!pageParam) {
+            setCurrPage(prev => (prev === 1 ? prev : 1));
+            return;
+        }
+
+        const pageNumber = parseInt(pageParam, 10);
+        // Ensure the page number is valid
+        if (!isNaN(pageNumber) && pageNumber >= 1 && pageNumber <= maxPage) {
+            setCurrPage(prev => (prev === pageNumber ? prev : pageNumber));
         }
         // eslint-disable-next-line react-hooks/exhaustive-deps
     }, [maxPage, pageParam]);
-
-    // Update URL when page changes
-    useEffect(() => {
-        if (editorInfo.mode !== "edit" && currPage > 0) {
-            const params = new URLSearchParams(window.location.search);
-            const currentPageInUrl = params.get('page');
-            if (currentPageInUrl !== currPage.toString()) {
-                params.set('page', currPage.toString());
-                router.push(`?${params.toString()}`, { scroll: false });
-            }
-        }
-    }, [currPage, editorInfo.mode, router]);
-
 
     const handleMouseDown = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
         // Only enable panning if:
@@ -693,13 +684,19 @@ export default function Flipbook({
         const updateUrlWithPage = (pageNumber: number) => {
             // Create a new URLSearchParams object with the current query parameters
             const params = new URLSearchParams(searchParams.toString());
-            // Set the page parameter
-            params.set('page', pageNumber.toString());
+            // For page 1, keep URL clean by removing the page parameter
+            if (pageNumber <= 1) {
+                params.delete('page');
+            } else {
+                // Set the page parameter for pages greater than 1
+                params.set('page', pageNumber.toString());
+            }
             // Update the URL without refreshing the page
-            router.push(`?${params.toString()}`, {scroll: false});
+            const queryString = params.toString();
+            router.push(queryString ? `${pathname}?${queryString}` : pathname, {scroll: false});
         };
         updateUrlWithPage(currPage);
-    }, [currPage, router, searchParams]);
+    }, [currPage, pathname, router, searchParams]);
 
     /*const sizeKey = Math.floor(width / 100);*/
     const numberOfFigures = React.useMemo(() => Math.floor(Math.log10(maxPage)) + 1, [maxPage]);
