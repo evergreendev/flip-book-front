@@ -3,18 +3,18 @@
 import {deleteFlipBook} from "@/app/(admin)/admin/(protected)/dashboard/flipbooks/actions/flipbook";
 import {useRouter} from "next/navigation";
 import {LucideTrendingUp, Link as LinkIcon, LucideCheck, EyeIcon} from "lucide-react";
-import {AnalyticsRead} from "@/app/common/Analytics/types";
+
 import {EmbedDialog} from "@/app/(admin)/admin/(protected)/dashboard/flipbooks/FlipBookMultiView/EmbedDialog";
 import {useState} from "react";
 import Link from "next/link";
 
-const AdminViewToolBar = ({id, reads, pathName}: {
+const AdminViewToolBar = ({id, readCount, pathName}: {
     id: string,
-    reads: Record<string, AnalyticsRead[]>,
+    readCount: number,
     pathName: string | null
 }) => {
     const router = useRouter();
-    const readCount = Object.keys(reads).length;
+
     const [copied, setCopied] = useState(false);
 
     const copyToClipboard = async () => {
@@ -77,3 +77,4 @@ const AdminViewToolBar = ({id, reads, pathName}: {
 }
 
 export default AdminViewToolBar;
+

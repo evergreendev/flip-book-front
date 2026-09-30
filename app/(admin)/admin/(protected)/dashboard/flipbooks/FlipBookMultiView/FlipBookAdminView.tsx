@@ -4,15 +4,8 @@ import Link from "next/link";
 import {format} from "date-fns";
 import AdminViewToolBar from "@/app/(admin)/admin/(protected)/dashboard/flipbooks/FlipBookMultiView/AdminViewToolBar";
 
-const getReadsByFlipbookId = async (flipbookId: string): Promise<Response> => {
-
-    return await fetch(`${process.env.BACKEND_URL}/analytics/events/read/${flipbookId}`, {})
-}
-
-const FlipBookAdminView = async ({flipBook}: { flipBook: FlipBook }) => {
+const FlipBookAdminView = ({flipBook, coverBaseUrl, readCount}: { flipBook: FlipBook, coverBaseUrl: string, readCount: number }) => {
     const mode = "edit";
-    const reads = await getReadsByFlipbookId(flipBook.id);
-    const readsData = await reads.json();
 
     switch (mode) {
         case "edit":
@@ -24,7 +17,7 @@ const FlipBookAdminView = async ({flipBook}: { flipBook: FlipBook }) => {
                         flipBook.cover_path ?
                             <Image className="mr-4 group-hover:shadow-lg transition-shadow border border-gray-200"
                                    width={100} height={100}
-                                   src={process.env.PDF_URL + "/" + flipBook.cover_path} alt=""/> :
+                                   src={coverBaseUrl + "/" + flipBook.cover_path} alt=""/> :
                             <div className="size-44 mr-4 bg-gray-50"/>
                     }
                     <div className="flex justify-between w-full">
@@ -44,7 +37,7 @@ const FlipBookAdminView = async ({flipBook}: { flipBook: FlipBook }) => {
                     </div>
                 </Link>
                 <div className="ml-auto flex-shrink-0">
-                    <AdminViewToolBar id={flipBook.id} reads={readsData} pathName={flipBook.path_name}/>
+                    <AdminViewToolBar id={flipBook.id} readCount={readCount} pathName={flipBook.path_name}/>
                 </div>
             </div>
         default:
@@ -56,7 +49,7 @@ const FlipBookAdminView = async ({flipBook}: { flipBook: FlipBook }) => {
                             <Image
                                 className="w-full mx-auto group-hover:shadow-lg transition-shadow border border-gray-200"
                                 width={200} height={200}
-                                src={process.env.PDF_URL + "/" + flipBook.cover_path} alt=""/> :
+                                src={coverBaseUrl + "/" + flipBook.cover_path} alt=""/> :
                             <div className="size-44 w-full mx-auto bg-gray-50"/>
                     }
                 </Link>
@@ -78,3 +71,4 @@ const FlipBookAdminView = async ({flipBook}: { flipBook: FlipBook }) => {
 }
 
 export default FlipBookAdminView;
+

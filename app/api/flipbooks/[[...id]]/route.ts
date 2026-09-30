@@ -5,28 +5,31 @@ import {cookies} from "next/headers";
 const userTokenKey = "user_token";
 const refreshTokenKey = "refresh_token";
 
-export async function GET(request: NextRequest, {params}: { params: Promise<{ id: string }> }) {
+export async function GET(request: NextRequest, {params}: { params: Promise<{ id?: string[] }> }) {
     const cookieStore = await cookies();
     const userTokenFromCookies = cookieStore.get(userTokenKey);
     const refreshTokenFromCookies = cookieStore.get(refreshTokenKey);
     const {id} = await params;
     const searchParams = request.nextUrl.searchParams
-    const showDrafts = searchParams.get('showDrafts')
+    const query = new URLSearchParams();
+    for (const key of ['page', 'limit', 'orderBy', 'orderDirection']) {
+        const value = searchParams.get(key);
+        if (value !== null) query.set(key, value);
+    }
+    const showDrafts = searchParams.get('showDrafts');
+    if (showDrafts && showDrafts !== 'false') query.set('showDrafts', showDrafts);
 
     const userToken = await checkOrRefreshToken(userTokenFromCookies, refreshTokenFromCookies);
 
-    const res = await fetch(`${process.env.BACKEND_URL}/flipbooks/${id||""}?showDrafts=${showDrafts||"false"}`, {
+    const res = await fetch(`${process.env.BACKEND_URL}/flipbooks${id?.length ? '/' + id.join('/') : ''}?${query}`, {
         method: "GET",
+        cache: "no-store",
         headers: userToken ? {
             "Authorization": `Bearer ${userToken?.value}`,
         } : {}
     });
 
-    if (res.status !== 200){
-        return NextResponse.json({}, {status: 401});
-    }
-
     const data = await res.json();
 
-    return NextResponse.json(data);
+    return NextResponse.json(data, {status: res.status});
 }
