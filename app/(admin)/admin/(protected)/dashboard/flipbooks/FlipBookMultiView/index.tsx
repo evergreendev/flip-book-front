@@ -100,7 +100,7 @@ export default function FlipBookMultiView({coverBaseUrl}: {coverBaseUrl: string}
             </select></label>
         </div>
         {error && <div role="alert" className="text-red-700 mb-4">{error} <button className="underline" disabled={loading} onClick={() => setRetry(value => value + 1)}>Retry</button></div>}
-        {loading && <p role="status" className="mb-4">Loading flipbooks…</p>}
+        {loading && <p role="status" className="mb-4">Loading flipbooksâ€¦</p>}
         <div aria-busy={loading} className="grid grid-cols-1">
             {flipBooks.map(flipBook => <FlipBookAdminView key={flipBook.id} flipBook={flipBook} coverBaseUrl={coverBaseUrl} readCount={readCounts[flipBook.id] || 0}/>)}
             {!loading && !error && flipBooks.length === 0 && <p>No flipbooks found.</p>}
