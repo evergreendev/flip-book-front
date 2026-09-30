@@ -16,6 +16,8 @@ export async function GET(request: NextRequest, {params}: { params: Promise<{ id
         const value = searchParams.get(key);
         if (value !== null) query.set(key, value);
     }
+    const title = searchParams.get('title')?.trim();
+    if (title) query.set('title', title);
     const showDrafts = searchParams.get('showDrafts');
     if (showDrafts && showDrafts !== 'false') query.set('showDrafts', showDrafts);
 
