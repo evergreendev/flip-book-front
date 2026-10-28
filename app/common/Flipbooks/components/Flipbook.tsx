@@ -1,10 +1,10 @@
 "use client"
-import React, {HTMLAttributes, useCallback, useContext, useEffect, useRef, useState} from "react";
+import React, { useCallback, useContext, useEffect, useRef, useState} from "react";
 import editorContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/EditorContext";
 import {usePdfCache} from "@/app/common/Flipbooks/hooks/PdfCacheHook";
 import {Overlay} from "../types";
 import Page from "@/app/common/Flipbooks/components/Page";
-import {animated, to, useSpring} from "@react-spring/web";
+import {animated, useSpring} from "@react-spring/web";
 import Toolbar from "@/app/common/Flipbooks/components/Toolbar";
 import {ChevronLeft, ChevronRight,} from 'lucide-react';
 import {PDFDocumentProxy} from "pdfjs-dist";
@@ -15,6 +15,7 @@ import {useScreenSize} from "@/app/common/Flipbooks/hooks/useScreenSize";
 import {useToggleDiagnostics} from "@/app/common/Flipbooks/hooks/useToggleDiagnostics";
 import flipbookContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/FlipbookContext";
 import {addImpression, addReadSession, runHeartbeat, runReadSessionHeartbeat} from "@/app/common/Analytics/actions";
+import {PAGE_TURN_DURATION, adjacentPage, visiblePages} from "../pageTurn";
 import {getPdfPageCount} from "@/app/common/Flipbooks/actions/getPdfPageCount";
 
 async function generateOverlays(
@@ -136,7 +137,7 @@ export default function Flipbook({
     const [maxPage, setMaxPage] = useState<number>(0);
     const [isGenerating, setIsGenerating] = useState<boolean>(false);
     const [overlays, setOverlays] = useState<Overlay[][]>(formattedInitialOverlays);
-    const [animationDirection, setAnimationDirection] = useState<"left" | "right">("left");
+    const [pageWidth, setPageWidth] = useState(0);
     const [flipbookWidth, setFlipbookWidth] = useState<number>(0);
     const [flipbookHeight, setFlipbookHeight] = useState<number>(0);
     const [zoomLevel, setZoomLevel] = useState<number>(1.0);
@@ -165,21 +166,6 @@ export default function Flipbook({
 
 
     const pdfUrl = pdfPath + "/" + pdfId + ".pdf";
-
-    const [gradientSpring, gradientApi] = useSpring(() => ({
-        from: {
-            rotation: 0,
-            g1: 0,
-            g2: 0,
-            g3: 0,
-        },
-        to: {
-            rotation: 45,
-            g1: 1,
-            g2: 1,
-            g3: 1,
-        }
-    }));
 
     const {loadPdf, prefetchPdf} = usePdfCache();
 
@@ -330,29 +316,7 @@ export default function Flipbook({
                 runReadSessionHeartbeat(true);
             }
 
-            setAnimationDirection("right")
-            setCurrPage(prev => {
-                let newPage;
-                // If we're at page 3 or higher, generally flip 2 pages back
-                if (prev > 2) {
-                    // If we're at the last page of an even-numbered total, move back just 1 page
-                    if (maxPage % 2 !== 1 && prev === maxPage || isBelow1000px) {
-                        newPage = prev - 1;
-                    } else {
-                        newPage = prev - 2;
-                    }
-                }
-                // If we're at page 2, go to page 1
-                else if (prev === 2) {
-                    newPage = 1;
-                }
-                // Otherwise stay at page 1
-                else {
-                    newPage = 1;
-                }
-
-                return newPage;
-            });
+            setCurrPage(prev => adjacentPage(prev, maxPage, isBelow1000px, -1));
         },[editorInfo.mode, isBelow1000px, maxPage, setCurrPage])
 
 
@@ -374,30 +338,7 @@ export default function Flipbook({
             runReadSessionHeartbeat(true);
         }
 
-        setAnimationDirection("left");
-        setCurrPage(prev => {
-            let newPage;
-            // If we're at the second-to-last page of an odd-numbered total, move to the last page
-            if (maxPage % 2 === 1 && prev === maxPage - 1) {
-                newPage = maxPage;
-            } else if (isBelow1000px) {
-                newPage = prev + 1;
-            }
-            // If we can flip 2 pages forward without exceeding total pages
-            else if (prev + 2 <= maxPage) {
-                newPage = prev + 2;
-            }
-            // If we're one page away from the end, go to the last page
-            else if (prev + 1 <= maxPage) {
-                newPage = maxPage;
-            }
-            // Otherwise stay at the current page
-            else {
-                newPage = prev;
-            }
-
-            return newPage;
-        });
+        setCurrPage(prev => adjacentPage(prev, maxPage, isBelow1000px, 1));
     }, [editorInfo.mode, isBelow1000px, maxPage, setCurrPage]);
 
     const handleMouseUp = useCallback(() => {
@@ -636,43 +577,6 @@ export default function Flipbook({
 
     const devToolsAreOpen = useToggleDiagnostics();
 
-    // Effect to trigger gradient animation when current page changes
-    useEffect(() => {
-        if (animationDirection === "left") {
-            gradientApi.start({
-                to: {
-                    g1: 0,
-                    g2: 0,
-                    g3: 0,
-                    rotation: 90
-                },
-                from: {
-                    g1: 68,
-                    g2: 80,
-                    g3: 93,
-                    rotation: 133
-                },
-
-            });
-        } else {
-            gradientApi.start({
-                from: {
-                    g1: 0,
-                    g2: 7,
-                    g3: 23,
-                    rotation: 136
-                },
-                to: {
-                    g1: 100,
-                    g2: 100,
-                    g3: 100,
-                    rotation: 90
-                },
-            });
-        }
-
-    }, [animationDirection, currPage, gradientApi]);
-
     useEffect(() => {
         if (editorInfo.mode !== "edit") {
             addImpression(flipbookId, "flipbook");
@@ -721,7 +625,7 @@ export default function Flipbook({
         <div className="h-full flex flex-col w-full">
             <div
                 ref={flipbookRef}
-                className={`overflow-hidden mx-auto my-4 w-full h-full flex-grow sm:h-[90vh] sm:aspect-[28/19] flex justify-center ${isBelow1000px ? "px-0" : "px-24"}`}
+                className={`relative overflow-hidden mx-auto my-4 w-full h-full flex-grow sm:h-[90vh] sm:aspect-[28/19] flex justify-center ${isBelow1000px ? "px-0" : "px-24"}`}
                 style={{cursor: isPanning ? 'grabbing' : (zoomLevel > 1.0 ? 'grab' : 'default')}}
                 onMouseDown={handleMouseDown}
                 onMouseMove={handleMouseMove}
@@ -770,31 +674,22 @@ export default function Flipbook({
                 )}
 
                 <div
-                    className="relative flex h-full"
+                    className="relative w-full h-full motion-reduce:!transition-none"
                     style={{
-                        transform: zoomLevel > 1.0 ? `scale(${zoomLevel}) translate(${panPosition.x / zoomLevel}px, ${panPosition.y / zoomLevel}px)` : 'none',
+                        transform: `translateX(${isBelow1000px ? 0 : currPage === 1 ? -pageWidth / 2 : currPage === maxPage && maxPage % 2 === 0 ? pageWidth / 2 : 0}px) scale(${zoomLevel}) translate(${panPosition.x / zoomLevel}px, ${panPosition.y / zoomLevel}px)`,
                         transformOrigin: 'center center',
-                        transition: isPanning ? 'none' : 'transform 0.2s ease-out'
+                        transition: isPanning ? 'none' : `transform ${PAGE_TURN_DURATION}ms cubic-bezier(0.33, 0, 0.67, 1)`,
+                        perspective: `${Math.max(1200, flipbookWidth * 2)}px`,
+                        isolation: 'isolate',
+                        touchAction: zoomLevel > 1 ? 'none' : 'pan-y'
                     }}
                 >
-                    <animated.div
-                        className="absolute inset-0 pointer-events-none"
-                        style={{
-                            zIndex: 3,
-                            position: "absolute",
-                            background: to(
-                                [gradientSpring.rotation, gradientSpring.g1, gradientSpring.g2, gradientSpring.g3],
-                                (rotation, g1, g2, g3) => `linear-gradient(${rotation}deg,rgba(2, 0, 36, 0) ${g1}%, rgba(255,255,255, 1) ${g2}%, rgba(0, 212, 255, 0) ${g3}%)`
-                            )
-                        }}
-                        {...({} as HTMLAttributes<HTMLDivElement>)}
-                    />
                     {Array.from({length: maxPage}).map((_, index) => {
 
                         return (
                             <React.Fragment key={index}>
                                 {
-                                    !renderedPages.has(index + 1) && (currPage === index + 1 || currPage === index + 2) &&
+                                    !renderedPages.has(index + 1) && visiblePages(currPage, maxPage, isBelow1000px).includes(index + 1) &&
                                     <div
                                         className={`absolute ${isBelow1000px ? "" : "min-w-96"} inset-0 flex items-center justify-center bg-black bg-opacity-30 z-10`}>
                                         <div
@@ -803,6 +698,7 @@ export default function Flipbook({
                                 }
                                 <Page
                                     flipbookId={flipbookId}
+                                    onPageWidth={setPageWidth}
                                     renderedPageUrl={`${pdfPath}/page-${(index + 1).toString().padStart(numberOfFigures, '0')}.png`}
                                     flipBookWidth={flipbookWidth}
                                     flipBookHeight={flipbookHeight}
@@ -827,7 +723,7 @@ export default function Flipbook({
                     e.preventDefault();
                     handleNextPage()
                 }}
-                        className={`${isBelow1000px ? "hidden" : ""} ${currPage >= maxPage ? "text-gray-400 opacity-40" : "text-white"} absolute right-0 top-1/2 -translate-y-1/2`}>
+                        className={`${isBelow1000px ? "hidden" : ""} ${currPage >= maxPage ? "text-gray-400 opacity-40" : "text-white"} absolute right-0 top-1/2 -translate-y-1/2 z-40`}>
                     <ChevronRight size="5rem"/></button>
                 {
                     devToolsAreOpen &&

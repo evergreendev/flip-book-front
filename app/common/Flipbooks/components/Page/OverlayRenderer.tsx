@@ -3,6 +3,7 @@ import {useRouter} from 'next/navigation';
 import editorContext from "@/app/(admin)/admin/(protected)/dashboard/edit/context/EditorContext";
 import {v4 as uuidv4} from 'uuid';
 import {Overlay} from "../../types";
+import {visiblePages} from "../../pageTurn";
 import {Copy, Trash2, ClipboardPaste, ExternalLink} from "lucide-react";
 import Notification from "@/app/common/components/Notification";
 import {useScreenSize} from "@/app/common/Flipbooks/hooks/useScreenSize";
@@ -67,7 +68,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
     const router = useRouter();
 
     function isVisible(currentPage: number, thisPage: number, maxPage: number) {
-        return currentPage === thisPage || (!isBelow1000px && (currentPage === thisPage + 1 && currentPage !== 2 && currentPage !== maxPage));
+        return visiblePages(currentPage, maxPage || 0, isBelow1000px).includes(thisPage);
     }
 
     function findInsideOverlay(position: number[], overlays: Overlay[]) {
@@ -862,7 +863,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
 
     useEffect(() => {
         if (editorInfo.mode === "edit") return;
-        const isVisible = currentPage === thisPage || (!isBelow1000px && (currentPage === thisPage + 1 && currentPage !== 2 && currentPage !== maxPage));
+        const isVisible = visiblePages(currentPage, maxPage || 0, isBelow1000px).includes(thisPage);
         if (isVisible) {
             overlays[thisPage - 1]?.forEach((overlay) => addImpression(flipbookId, "overlay", thisPage - 1, overlay.id))
         }
