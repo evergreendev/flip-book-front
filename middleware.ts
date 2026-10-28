@@ -7,6 +7,15 @@ const COOKIE_NAME = 'user_session' // your analytics session id
 
 export async function middleware(req: NextRequest) {
     const res = NextResponse.next()
+    // Public recovery must work without analytics sessions or backend session calls.
+    if (/^\/reset-password\/?$/.test(req.nextUrl.pathname)) {
+        // Keep secrets out of Next's serialized router tree and browser history state.
+        // The head script captures the token from the original browser URL instead.
+        const cleanUrl = req.nextUrl.clone();
+        cleanUrl.search = "";
+        return NextResponse.rewrite(cleanUrl);
+    }
+    if (/^\/forgot-password\/?$/.test(req.nextUrl.pathname)) return res;
     const sessionIdFromCookie = req.cookies.get(COOKIE_NAME)?.value
 
     // If no session id cookie, create a new one

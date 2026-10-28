@@ -3,7 +3,7 @@ import LoginForm from "@/app/common/Auth/components/LoginForm";
 import {getUsers} from "../../common/Auth/actions";
 import RegisterForm from "@/app/common/Auth/components/RegisterForm";
 
-const Page = async () => {
+const Page = async ({searchParams}: {searchParams: Promise<{passwordReset?: string}>}) => {
 
     const users = await getUsers();
 
@@ -14,7 +14,7 @@ const Page = async () => {
     }
 
     return <div>
-        <LoginForm/>
+        <LoginForm passwordReset={(await searchParams).passwordReset === "success"}/>
     </div>
 }
 
