@@ -65,6 +65,9 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
     });
     // Controls visibility of overlays in view mode (non-edit)
     const [showOverlays, setShowOverlays] = useState(false);
+    const pageHoveredRef = useRef(false);
+    const hoveredOverlayIdRef = useRef<string | null>(null);
+    const pagePreviewRef = useRef(false);
     const router = useRouter();
 
     function isVisible(currentPage: number, thisPage: number, maxPage: number) {
@@ -317,13 +320,30 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
             return [x * scale, canvas.height - ((y + height) * scale), width * scale, height * scale];
         }
 
-        if (overlayContext && currOverlays?.length > 0) {
+        if (overlayContext) {
             overlayContext.clearRect(0, 0, canvas.width, canvas.height);
+            if (!currOverlays?.length) return;
 
             overlayContext.globalAlpha = hideOverlays ? 0 : .5;
 
             currOverlays.forEach(overlay => {
-                //console.log(overlay);
+                if (editorInfo.mode !== "edit") {
+                    if (hideOverlays) return;
+                    const [x, y, width, height] = convertToCanvasCoords([overlay.x, overlay.y, overlay.w, overlay.h]);
+                    const hovered = hoveredOverlayIdRef.current === overlay.id;
+                    const color = overlay.url ? "#338ccc" : "#808080";
+                    if (hovered) {
+                        overlayContext.globalAlpha = 0.18;
+                        overlayContext.fillStyle = color;
+                        overlayContext.fillRect(x, y, width, height);
+                    }
+                    overlayContext.globalAlpha = hovered ? 0.8 : 0.5;
+                    overlayContext.strokeStyle = color;
+                    overlayContext.lineWidth = (hovered ? 1.5 : 1) * dpr;
+                    const inset = overlayContext.lineWidth / 2;
+                    overlayContext.strokeRect(x + inset, y + inset, Math.max(0, width - inset * 2), Math.max(0, height - inset * 2));
+                    return;
+                }
                 if (activeOverlayId === overlay.id) {
                     overlayContext.fillStyle = "#338ccc";
                 } else if (!overlay.url) {
@@ -390,8 +410,10 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
     function handleMouseExit(e: React.MouseEvent) {
         e.preventDefault();
         if (!overlayRef.current) return;
-        setShowOverlays(false);
-        renderOverlay(overlayRef.current, true);
+        pageHoveredRef.current = false;
+        hoveredOverlayIdRef.current = null;
+        setShowOverlays(pagePreviewRef.current);
+        renderOverlay(overlayRef.current, editorInfo.mode !== "edit" && !pagePreviewRef.current);
         setCursorStyle("default");
     }
 
@@ -410,10 +432,17 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
 
             const insideOverlay = findInsideOverlay(position, currOverlays);
 
-            // In view mode, only show overlays when cursor intersects an overlay
+            // Outline every overlay on the page; fill only the hovered overlay.
             if (editorInfo.mode !== "edit") {
-                setShowOverlays(!!insideOverlay);
-                renderOverlay(overlayRef.current, !insideOverlay);
+                const bounds = overlayRef.current.getBoundingClientRect();
+                const pageHovered = e.clientX >= bounds.left && e.clientX < bounds.right
+                    && e.clientY >= bounds.top && e.clientY < bounds.bottom
+                    && isVisible(currentPage, thisPage, maxPage || 0);
+                pageHoveredRef.current = pageHovered;
+                hoveredOverlayIdRef.current = pageHovered ? insideOverlay?.id ?? null : null;
+                const visible = pageHovered || pagePreviewRef.current;
+                setShowOverlays(visible);
+                renderOverlay(overlayRef.current, !visible);
             } else {
                 // In edit mode, always show overlays
                 renderOverlay(overlayRef.current, false);
@@ -705,7 +734,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
             window.removeEventListener('click', handleMouse);
             window.removeEventListener('mouseup', handleMouseUp);
         };
-    }, [activeGrip, createOverlay, draggingMode, editorInfo, formOverlays, initialMouseOverlayMovePosition, mouseDragInitialPosition, movingOverlay, overlays, renderOverlay, router, setFormOverlays, setOverlays, thisPage, translateCoordinates]);
+    }, [activeGrip, createOverlay, draggingMode, editorInfo, formOverlays, initialMouseOverlayMovePosition, mouseDragInitialPosition, movingOverlay, overlays, renderOverlay, router, setFormOverlays, setOverlays, thisPage, translateCoordinates, currentPage, maxPage, isBelow1000px]);
 
     useEffect(() => {
         if (draggingMode === "create") {
@@ -847,18 +876,21 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
         if (editorInfo.mode === "edit") return;
         if (!overlayRef.current) return;
 
-        const isIframe = window.self !== window.top;
-        if (isIframe) return;
-
-        // Show overlays immediately on page flip
-        setShowOverlays(true);
-        renderOverlay(overlayRef.current, false);
+        hoveredOverlayIdRef.current = null;
+        pagePreviewRef.current = visiblePages(currentPage, maxPage || 0, isBelow1000px).includes(thisPage);
+        // Briefly reveal outlines on newly visible pages, including embedded readers.
+        setShowOverlays(pagePreviewRef.current || pageHoveredRef.current);
+        renderOverlay(overlayRef.current, !pagePreviewRef.current && !pageHoveredRef.current);
         const t = setTimeout(() => {
-            setShowOverlays(false);
-            if (overlayRef.current) renderOverlay(overlayRef.current, true);
+            pagePreviewRef.current = false;
+            setShowOverlays(pageHoveredRef.current);
+            if (overlayRef.current) renderOverlay(overlayRef.current, !pageHoveredRef.current);
         }, 500);
-        return () => clearTimeout(t);
-    }, [thisPage, editorInfo.mode, renderOverlay, currentPage]);
+        return () => {
+            clearTimeout(t);
+            pagePreviewRef.current = false;
+        };
+    }, [thisPage, editorInfo.mode, renderOverlay, currentPage, maxPage, isBelow1000px]);
 
 
     useEffect(() => {
@@ -886,6 +918,12 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
                 ref={overlayRef}
                 className="absolute left-0 right-0 top-auto"
                 style={{cursor: cursorStyle}}
+                onMouseEnter={() => {
+                    if (editorInfo.mode === "edit" || !overlayRef.current) return;
+                    pageHoveredRef.current = true;
+                    setShowOverlays(true);
+                    renderOverlay(overlayRef.current, false);
+                }}
                 onMouseDown={handleMouseDown}
                 onMouseLeave={handleMouseExit}
             />
