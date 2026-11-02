@@ -332,14 +332,14 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
                     const [x, y, width, height] = convertToCanvasCoords([overlay.x, overlay.y, overlay.w, overlay.h]);
                     const hovered = hoveredOverlayIdRef.current === overlay.id;
                     const color = overlay.url ? "#338ccc" : "#808080";
-                    if (hovered) {
+                    if (hovered || pagePreviewRef.current) {
                         overlayContext.globalAlpha = 0.18;
                         overlayContext.fillStyle = color;
                         overlayContext.fillRect(x, y, width, height);
                     }
-                    overlayContext.globalAlpha = hovered ? 0.8 : 0.5;
+                    overlayContext.globalAlpha = hovered ? 1 : 0.8;
                     overlayContext.strokeStyle = color;
-                    overlayContext.lineWidth = (hovered ? 1.5 : 1) * dpr;
+                    overlayContext.lineWidth = (hovered ? 2 : 1.5) * dpr;
                     const inset = overlayContext.lineWidth / 2;
                     overlayContext.strokeRect(x + inset, y + inset, Math.max(0, width - inset * 2), Math.max(0, height - inset * 2));
                     return;
@@ -878,7 +878,7 @@ const OverlayRenderer: React.FC<OverlayRendererProps> = React.memo(({
 
         hoveredOverlayIdRef.current = null;
         pagePreviewRef.current = visiblePages(currentPage, maxPage || 0, isBelow1000px).includes(thisPage);
-        // Briefly reveal outlines on newly visible pages, including embedded readers.
+        // Briefly reveal filled overlays on newly visible pages, including embedded readers.
         setShowOverlays(pagePreviewRef.current || pageHoveredRef.current);
         renderOverlay(overlayRef.current, !pagePreviewRef.current && !pageHoveredRef.current);
         const t = setTimeout(() => {
